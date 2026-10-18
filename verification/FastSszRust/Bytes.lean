@@ -16,7 +16,6 @@ set_option maxHeartbeats 1000000
 set_option maxRecDepth 2048
 
 namespace FastSszRust
-
 /-- [fast_ssz::bytes::ByteError]
     Source: 'crates/fast-ssz/src/bytes.rs', lines 5:0-9:1
     Visibility: public -/
@@ -25,6 +24,18 @@ inductive bytes.ByteError where
 | EmptyVector : bytes.ByteError
 | InvalidLength : bytes.ByteError
 | OverLimit : bytes.ByteError
+
+/-- [fast_ssz::bytes::encode_byte_list]:
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 32:0-37:1
+    Visibility: public -/
+def bytes.encode_byte_list
+  (bytes1 : Slice Std.U8) (limit : Std.Usize) :
+  RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
+  := do
+  let i := Slice.len bytes1
+  if i > limit
+  then ok (core.result.Result.Err bytes.ByteError.OverLimit)
+  else ok (core.result.Result.Ok bytes1)
 
 /-- [fast_ssz::bytes::encode_byte_vector]:
     Source: 'crates/fast-ssz/src/bytes.rs', lines 14:0-22:1
@@ -41,27 +52,6 @@ def bytes.encode_byte_vector
     then ok (core.result.Result.Err bytes.ByteError.InvalidLength)
     else ok (core.result.Result.Ok bytes1)
 
-/-- [fast_ssz::bytes::decode_byte_vector]:
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 25:0-27:1
-    Visibility: public -/
-def bytes.decode_byte_vector
-  (bytes1 : Slice Std.U8) (length : Std.Usize) :
-  RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
-  := do
-  bytes.encode_byte_vector bytes1 length
-
-/-- [fast_ssz::bytes::encode_byte_list]:
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 32:0-37:1
-    Visibility: public -/
-def bytes.encode_byte_list
-  (bytes1 : Slice Std.U8) (limit : Std.Usize) :
-  RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
-  := do
-  let i := Slice.len bytes1
-  if i > limit
-  then ok (core.result.Result.Err bytes.ByteError.OverLimit)
-  else ok (core.result.Result.Ok bytes1)
-
 /-- [fast_ssz::bytes::decode_byte_list]:
     Source: 'crates/fast-ssz/src/bytes.rs', lines 40:0-42:1
     Visibility: public -/
@@ -70,6 +60,15 @@ def bytes.decode_byte_list
   RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
   := do
   bytes.encode_byte_list bytes1 limit
+
+/-- [fast_ssz::bytes::decode_byte_vector]:
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 25:0-27:1
+    Visibility: public -/
+def bytes.decode_byte_vector
+  (bytes1 : Slice Std.U8) (length : Std.Usize) :
+  RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
+  := do
+  bytes.encode_byte_vector bytes1 length
 
 
 end FastSszRust

@@ -1,6 +1,6 @@
 ---
 title: Verification scope and trust boundary
-last_updated: 2026-10-22
+last_updated: 2026-10-19
 tags:
   - ssz
   - aeneas
@@ -8,8 +8,9 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean/ByteVector/ByteList codecs and SHA-256 node
-combination are implemented. `verification/targets.json` links seven operations
+**Not release complete:** Boolean/ByteVector/ByteList codecs, SHA-256 node
+combination and single-branch Merkle verification are implemented.
+`verification/targets.json` links nine operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -25,9 +26,21 @@ both compression blocks, padding and output encoding are connected to the unchan
 upstream SHA-256 implementation. No external hash-function correctness is assumed.
 RustCrypto `sha2` 0.10.9 is used only for differential tests.
 
+`calculate_merkle_root_refines` and `verify_merkle_proof_refines` connect the actual
+Rust APIs to `Ssz.calculateMerkleRoot` and `Ssz.verifyMerkleProof`. All `u128`
+indices and representable branch slices are covered. Node widths are enforced by
+`[u8; 32]`; their reference width checks are proved successful. Zero, the root
+index and incorrect branch lengths return the corresponding error category;
+a well-formed nonmatching proof returns false. Proofs cover index guards, sibling
+order, recursive termination, SHA-256 composition and bytewise root comparison.
+Error relations classify reasons, not the reference error's numeric diagnostics.
+Generic collections, paths, multiproofs and full-library conformance are not yet proved.
+
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered
-modules with their text and qualified names preserved; the complete module inventory
+modules with qualified names and declaration bodies preserved. Dependency-aware
+canonical ordering and inter-declaration whitespace avoid unrelated extraction
+order changes invalidating cached proofs. The complete module inventory
 is checked against fresh extraction. New traits/methods fail pending coverage support.
 Statement adequacy requires review. Negative fixtures reject custom/native axioms
 and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.

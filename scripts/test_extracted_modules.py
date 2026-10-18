@@ -40,6 +40,24 @@ class ExtractedModuleTests(unittest.TestCase):
         generated = result["FastSszRust/Sha256.lean"]
         self.assertLess(generated.index(first), generated.index(second))
 
+    def test_should_canonicalize_independent_declaration_order(self):
+        first = declaration("sha256", "def sha256.a := 1")
+        second = declaration("sha256", "def sha256.b := 2")
+        a = split_model(source(first, second))["FastSszRust/Sha256.lean"]
+        b = split_model(source(second, declaration("other", "def other.x := 3"), first))
+        self.assertEqual(a, b["FastSszRust/Sha256.lean"])
+
+    def test_should_order_types_before_constructor_references(self):
+        constructor = declaration("merkle", "def merkle.a := merkle.Z.Bad")
+        kind = declaration("merkle", "inductive merkle.Z where\n| Bad : merkle.Z")
+        model = split_model(source(constructor, kind))["FastSszRust/Merkle.lean"]
+        self.assertLess(model.index("inductive merkle.Z"), model.index("def merkle.a"))
+
+    def test_should_reject_duplicate_generated_names(self):
+        unit = declaration("scalar", "def scalar.item := 0")
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            split_model(source(unit, unit))
+
     def test_should_preserve_mutual_blocks_within_one_module(self):
         block = "mutual\n" + declaration("tree", "def tree.a := tree.b")
         block += declaration("tree", "def tree.b := tree.a") + "end\n"

@@ -51,32 +51,6 @@ structure sha256.State where
   g : Std.U32
   h : Std.U32
 
-/-- [fast_ssz::sha256::sigma0]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 35:0-37:1 -/
-def sha256.sigma0 (x : Std.U32) : RustM Std.U32 := do
-  let i ← x >>> 7#u32
-  let i1 ← x <<< 25#u32
-  let i2 ← lift (i ||| i1)
-  let i3 ← x >>> 18#u32
-  let i4 ← x <<< 14#u32
-  let i5 ← lift (i3 ||| i4)
-  let i6 ← lift (i2 ^^^ i5)
-  let i7 ← x >>> 3#u32
-  ok (i6 ^^^ i7)
-
-/-- [fast_ssz::sha256::sigma1]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 40:0-42:1 -/
-def sha256.sigma1 (x : Std.U32) : RustM Std.U32 := do
-  let i ← x >>> 17#u32
-  let i1 ← x <<< 15#u32
-  let i2 ← lift (i ||| i1)
-  let i3 ← x >>> 19#u32
-  let i4 ← x <<< 13#u32
-  let i5 ← lift (i3 ||| i4)
-  let i6 ← lift (i2 ^^^ i5)
-  let i7 ← x >>> 10#u32
-  ok (i6 ^^^ i7)
-
 /-- [fast_ssz::sha256::big_sigma0]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 45:0-47:1 -/
 def sha256.big_sigma0 (x : Std.U32) : RustM Std.U32 := do
@@ -116,6 +90,44 @@ def sha256.choose
   let i2 ← lift (i1 &&& z)
   ok (i ^^^ i2)
 
+/-- [fast_ssz::sha256::initial_schedule]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 76:0-83:1 -/
+def sha256.initial_schedule
+  (initial : Array Std.U32 16#usize) : RustM (Array Std.U32 64#usize) := do
+  let words := Array.repeat 64#usize 0#u32
+  let i ← Array.index_usize initial 0#usize
+  let words1 ← Array.update words 0#usize i
+  let i1 ← Array.index_usize initial 1#usize
+  let words2 ← Array.update words1 1#usize i1
+  let i2 ← Array.index_usize initial 2#usize
+  let words3 ← Array.update words2 2#usize i2
+  let i3 ← Array.index_usize initial 3#usize
+  let words4 ← Array.update words3 3#usize i3
+  let i4 ← Array.index_usize initial 4#usize
+  let words5 ← Array.update words4 4#usize i4
+  let i5 ← Array.index_usize initial 5#usize
+  let words6 ← Array.update words5 5#usize i5
+  let i6 ← Array.index_usize initial 6#usize
+  let words7 ← Array.update words6 6#usize i6
+  let i7 ← Array.index_usize initial 7#usize
+  let words8 ← Array.update words7 7#usize i7
+  let i8 ← Array.index_usize initial 8#usize
+  let words9 ← Array.update words8 8#usize i8
+  let i9 ← Array.index_usize initial 9#usize
+  let words10 ← Array.update words9 9#usize i9
+  let i10 ← Array.index_usize initial 10#usize
+  let words11 ← Array.update words10 10#usize i10
+  let i11 ← Array.index_usize initial 11#usize
+  let words12 ← Array.update words11 11#usize i11
+  let i12 ← Array.index_usize initial 12#usize
+  let words13 ← Array.update words12 12#usize i12
+  let i13 ← Array.index_usize initial 13#usize
+  let words14 ← Array.update words13 13#usize i13
+  let i14 ← Array.index_usize initial 14#usize
+  let words15 ← Array.update words14 14#usize i14
+  let i15 ← Array.index_usize initial 15#usize
+  Array.update words15 15#usize i15
+
 /-- [fast_ssz::sha256::majority]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 58:0-60:1 -/
 def sha256.majority
@@ -125,6 +137,32 @@ def sha256.majority
   let i2 ← lift (i ^^^ i1)
   let i3 ← lift (y &&& z)
   ok (i2 ^^^ i3)
+
+/-- [fast_ssz::sha256::sigma0]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 35:0-37:1 -/
+def sha256.sigma0 (x : Std.U32) : RustM Std.U32 := do
+  let i ← x >>> 7#u32
+  let i1 ← x <<< 25#u32
+  let i2 ← lift (i ||| i1)
+  let i3 ← x >>> 18#u32
+  let i4 ← x <<< 14#u32
+  let i5 ← lift (i3 ||| i4)
+  let i6 ← lift (i2 ^^^ i5)
+  let i7 ← x >>> 3#u32
+  ok (i6 ^^^ i7)
+
+/-- [fast_ssz::sha256::sigma1]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 40:0-42:1 -/
+def sha256.sigma1 (x : Std.U32) : RustM Std.U32 := do
+  let i ← x >>> 17#u32
+  let i1 ← x <<< 15#u32
+  let i2 ← lift (i ||| i1)
+  let i3 ← x >>> 19#u32
+  let i4 ← x <<< 13#u32
+  let i5 ← lift (i3 ||| i4)
+  let i6 ← lift (i2 ^^^ i5)
+  let i7 ← x >>> 10#u32
+  ok (i6 ^^^ i7)
 
 /-- [fast_ssz::sha256::word]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 62:0-64:1 -/
@@ -140,6 +178,93 @@ def sha256.word
   let i7 ← lift (i4 ||| i6)
   let i8 ← lift (UScalar.cast .U32 d)
   ok (i7 ||| i8)
+
+/-- [fast_ssz::sha256::digest]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 158:0-166:1 -/
+def sha256.digest (state : sha256.State) : RustM (Array Std.U8 32#usize) := do
+  let i ← state.a >>> 24#i32
+  let i1 ← lift (UScalar.cast .U8 i)
+  let i2 ← state.a >>> 16#i32
+  let i3 ← lift (UScalar.cast .U8 i2)
+  let i4 ← state.a >>> 8#i32
+  let i5 ← lift (UScalar.cast .U8 i4)
+  let i6 ← lift (UScalar.cast .U8 state.a)
+  let i7 ← state.b >>> 24#i32
+  let i8 ← lift (UScalar.cast .U8 i7)
+  let i9 ← state.b >>> 16#i32
+  let i10 ← lift (UScalar.cast .U8 i9)
+  let i11 ← state.b >>> 8#i32
+  let i12 ← lift (UScalar.cast .U8 i11)
+  let i13 ← lift (UScalar.cast .U8 state.b)
+  let i14 ← state.c >>> 24#i32
+  let i15 ← lift (UScalar.cast .U8 i14)
+  let i16 ← state.c >>> 16#i32
+  let i17 ← lift (UScalar.cast .U8 i16)
+  let i18 ← state.c >>> 8#i32
+  let i19 ← lift (UScalar.cast .U8 i18)
+  let i20 ← lift (UScalar.cast .U8 state.c)
+  let i21 ← state.d >>> 24#i32
+  let i22 ← lift (UScalar.cast .U8 i21)
+  let i23 ← state.d >>> 16#i32
+  let i24 ← lift (UScalar.cast .U8 i23)
+  let i25 ← state.d >>> 8#i32
+  let i26 ← lift (UScalar.cast .U8 i25)
+  let i27 ← lift (UScalar.cast .U8 state.d)
+  let i28 ← state.e >>> 24#i32
+  let i29 ← lift (UScalar.cast .U8 i28)
+  let i30 ← state.e >>> 16#i32
+  let i31 ← lift (UScalar.cast .U8 i30)
+  let i32 ← state.e >>> 8#i32
+  let i33 ← lift (UScalar.cast .U8 i32)
+  let i34 ← lift (UScalar.cast .U8 state.e)
+  let i35 ← state.f >>> 24#i32
+  let i36 ← lift (UScalar.cast .U8 i35)
+  let i37 ← state.f >>> 16#i32
+  let i38 ← lift (UScalar.cast .U8 i37)
+  let i39 ← state.f >>> 8#i32
+  let i40 ← lift (UScalar.cast .U8 i39)
+  let i41 ← lift (UScalar.cast .U8 state.f)
+  let i42 ← state.g >>> 24#i32
+  let i43 ← lift (UScalar.cast .U8 i42)
+  let i44 ← state.g >>> 16#i32
+  let i45 ← lift (UScalar.cast .U8 i44)
+  let i46 ← state.g >>> 8#i32
+  let i47 ← lift (UScalar.cast .U8 i46)
+  let i48 ← lift (UScalar.cast .U8 state.g)
+  let i49 ← state.h >>> 24#i32
+  let i50 ← lift (UScalar.cast .U8 i49)
+  let i51 ← state.h >>> 16#i32
+  let i52 ← lift (UScalar.cast .U8 i51)
+  let i53 ← state.h >>> 8#i32
+  let i54 ← lift (UScalar.cast .U8 i53)
+  let i55 ← lift (UScalar.cast .U8 state.h)
+  ok
+    (Array.make 32#usize [
+      i1, i3, i5, i6, i8, i10, i12, i13, i15, i17, i19, i20, i22, i24, i26,
+      i27, i29, i31, i33, i34, i36, i38, i40, i41, i43, i45, i47, i48, i50,
+      i52, i54, i55
+      ])
+
+/-- [fast_ssz::sha256::extend_schedule]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 85:0-90:1 -/
+def sha256.extend_schedule
+  (words : Array Std.U32 64#usize) (index : Std.Usize) :
+  RustM (Array Std.U32 64#usize)
+  := do
+  let i ← index - 16#usize
+  let i1 ← Array.index_usize words i
+  let i2 ← index - 15#usize
+  let i3 ← Array.index_usize words i2
+  let i4 ← sha256.sigma0 i3
+  let i5 ← lift (core.num.U32.wrapping_add i1 i4)
+  let i6 ← index - 7#usize
+  let i7 ← Array.index_usize words i6
+  let i8 ← lift (core.num.U32.wrapping_add i5 i7)
+  let i9 ← index - 2#usize
+  let i10 ← Array.index_usize words i9
+  let i11 ← sha256.sigma1 i10
+  let i12 ← lift (core.num.U32.wrapping_add i8 i11)
+  Array.update words index i12
 
 /-- [fast_ssz::sha256::input_words]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 66:0-74:1 -/
@@ -257,64 +382,44 @@ def sha256.input_words
       i103
       ])
 
-/-- [fast_ssz::sha256::initial_schedule]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 76:0-83:1 -/
-def sha256.initial_schedule
-  (initial : Array Std.U32 16#usize) : RustM (Array Std.U32 64#usize) := do
-  let words := Array.repeat 64#usize 0#u32
-  let i ← Array.index_usize initial 0#usize
-  let words1 ← Array.update words 0#usize i
-  let i1 ← Array.index_usize initial 1#usize
-  let words2 ← Array.update words1 1#usize i1
-  let i2 ← Array.index_usize initial 2#usize
-  let words3 ← Array.update words2 2#usize i2
-  let i3 ← Array.index_usize initial 3#usize
-  let words4 ← Array.update words3 3#usize i3
-  let i4 ← Array.index_usize initial 4#usize
-  let words5 ← Array.update words4 4#usize i4
-  let i5 ← Array.index_usize initial 5#usize
-  let words6 ← Array.update words5 5#usize i5
-  let i6 ← Array.index_usize initial 6#usize
-  let words7 ← Array.update words6 6#usize i6
-  let i7 ← Array.index_usize initial 7#usize
-  let words8 ← Array.update words7 7#usize i7
-  let i8 ← Array.index_usize initial 8#usize
-  let words9 ← Array.update words8 8#usize i8
-  let i9 ← Array.index_usize initial 9#usize
-  let words10 ← Array.update words9 9#usize i9
-  let i10 ← Array.index_usize initial 10#usize
-  let words11 ← Array.update words10 10#usize i10
-  let i11 ← Array.index_usize initial 11#usize
-  let words12 ← Array.update words11 11#usize i11
-  let i12 ← Array.index_usize initial 12#usize
-  let words13 ← Array.update words12 12#usize i12
-  let i13 ← Array.index_usize initial 13#usize
-  let words14 ← Array.update words13 13#usize i13
-  let i14 ← Array.index_usize initial 14#usize
-  let words15 ← Array.update words14 14#usize i14
-  let i15 ← Array.index_usize initial 15#usize
-  Array.update words15 15#usize i15
-
-/-- [fast_ssz::sha256::extend_schedule]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 85:0-90:1 -/
-def sha256.extend_schedule
-  (words : Array Std.U32 64#usize) (index : Std.Usize) :
-  RustM (Array Std.U32 64#usize)
+/-- [fast_ssz::sha256::round]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 105:0-123:1 -/
+def sha256.round
+  (state : sha256.State) (constant : Std.U32) (message : Std.U32) :
+  RustM sha256.State
   := do
-  let i ← index - 16#usize
-  let i1 ← Array.index_usize words i
-  let i2 ← index - 15#usize
-  let i3 ← Array.index_usize words i2
-  let i4 ← sha256.sigma0 i3
-  let i5 ← lift (core.num.U32.wrapping_add i1 i4)
-  let i6 ← index - 7#usize
-  let i7 ← Array.index_usize words i6
-  let i8 ← lift (core.num.U32.wrapping_add i5 i7)
-  let i9 ← index - 2#usize
-  let i10 ← Array.index_usize words i9
-  let i11 ← sha256.sigma1 i10
-  let i12 ← lift (core.num.U32.wrapping_add i8 i11)
-  Array.update words index i12
+  let i ← sha256.big_sigma1 state.e
+  let i1 ← lift (core.num.U32.wrapping_add state.h i)
+  let i2 ← sha256.choose state.e state.f state.g
+  let i3 ← lift (core.num.U32.wrapping_add i1 i2)
+  let i4 ← lift (core.num.U32.wrapping_add i3 constant)
+  let t1 ← lift (core.num.U32.wrapping_add i4 message)
+  let i5 ← sha256.big_sigma0 state.a
+  let i6 ← sha256.majority state.a state.b state.c
+  let t2 ← lift (core.num.U32.wrapping_add i5 i6)
+  let i7 ← lift (core.num.U32.wrapping_add t1 t2)
+  let i8 ← lift (core.num.U32.wrapping_add state.d t1)
+  ok
+    {
+      a := i7,
+      b := state.a,
+      c := state.b,
+      d := state.c,
+      e := i8,
+      f := state.e,
+      g := state.f,
+      h := state.g
+    }
+
+/-- [fast_ssz::sha256::round_at]:
+    Source: 'crates/fast-ssz/src/sha256.rs', lines 125:0-127:1 -/
+def sha256.round_at
+  (state : sha256.State) (words : Array Std.U32 64#usize) (index : Std.Usize) :
+  RustM sha256.State
+  := do
+  let i ← Array.index_usize sha256.ROUND_CONSTANTS index
+  let i1 ← Array.index_usize words index
+  sha256.round state i i1
 
 /-- [fast_ssz::sha256::schedule]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 92:0-103:1 -/
@@ -369,45 +474,6 @@ def sha256.schedule
   let words46 ← sha256.extend_schedule words45 61#usize
   let words47 ← sha256.extend_schedule words46 62#usize
   sha256.extend_schedule words47 63#usize
-
-/-- [fast_ssz::sha256::round]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 105:0-123:1 -/
-def sha256.round
-  (state : sha256.State) (constant : Std.U32) (message : Std.U32) :
-  RustM sha256.State
-  := do
-  let i ← sha256.big_sigma1 state.e
-  let i1 ← lift (core.num.U32.wrapping_add state.h i)
-  let i2 ← sha256.choose state.e state.f state.g
-  let i3 ← lift (core.num.U32.wrapping_add i1 i2)
-  let i4 ← lift (core.num.U32.wrapping_add i3 constant)
-  let t1 ← lift (core.num.U32.wrapping_add i4 message)
-  let i5 ← sha256.big_sigma0 state.a
-  let i6 ← sha256.majority state.a state.b state.c
-  let t2 ← lift (core.num.U32.wrapping_add i5 i6)
-  let i7 ← lift (core.num.U32.wrapping_add t1 t2)
-  let i8 ← lift (core.num.U32.wrapping_add state.d t1)
-  ok
-    {
-      a := i7,
-      b := state.a,
-      c := state.b,
-      d := state.c,
-      e := i8,
-      f := state.e,
-      g := state.f,
-      h := state.g
-    }
-
-/-- [fast_ssz::sha256::round_at]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 125:0-127:1 -/
-def sha256.round_at
-  (state : sha256.State) (words : Array Std.U32 64#usize) (index : Std.Usize) :
-  RustM sha256.State
-  := do
-  let i ← Array.index_usize sha256.ROUND_CONSTANTS index
-  let i1 ← Array.index_usize words index
-  sha256.round state i i1
 
 /-- [fast_ssz::sha256::rounds]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 129:0-141:1 -/
@@ -498,72 +564,6 @@ def sha256.compress
   let i7 ← lift (core.num.U32.wrapping_add initial.h working.h)
   ok { a := i, b := i1, c := i2, d := i3, e := i4, f := i5, g := i6, h := i7 }
 
-/-- [fast_ssz::sha256::digest]:
-    Source: 'crates/fast-ssz/src/sha256.rs', lines 158:0-166:1 -/
-def sha256.digest (state : sha256.State) : RustM (Array Std.U8 32#usize) := do
-  let i ← state.a >>> 24#i32
-  let i1 ← lift (UScalar.cast .U8 i)
-  let i2 ← state.a >>> 16#i32
-  let i3 ← lift (UScalar.cast .U8 i2)
-  let i4 ← state.a >>> 8#i32
-  let i5 ← lift (UScalar.cast .U8 i4)
-  let i6 ← lift (UScalar.cast .U8 state.a)
-  let i7 ← state.b >>> 24#i32
-  let i8 ← lift (UScalar.cast .U8 i7)
-  let i9 ← state.b >>> 16#i32
-  let i10 ← lift (UScalar.cast .U8 i9)
-  let i11 ← state.b >>> 8#i32
-  let i12 ← lift (UScalar.cast .U8 i11)
-  let i13 ← lift (UScalar.cast .U8 state.b)
-  let i14 ← state.c >>> 24#i32
-  let i15 ← lift (UScalar.cast .U8 i14)
-  let i16 ← state.c >>> 16#i32
-  let i17 ← lift (UScalar.cast .U8 i16)
-  let i18 ← state.c >>> 8#i32
-  let i19 ← lift (UScalar.cast .U8 i18)
-  let i20 ← lift (UScalar.cast .U8 state.c)
-  let i21 ← state.d >>> 24#i32
-  let i22 ← lift (UScalar.cast .U8 i21)
-  let i23 ← state.d >>> 16#i32
-  let i24 ← lift (UScalar.cast .U8 i23)
-  let i25 ← state.d >>> 8#i32
-  let i26 ← lift (UScalar.cast .U8 i25)
-  let i27 ← lift (UScalar.cast .U8 state.d)
-  let i28 ← state.e >>> 24#i32
-  let i29 ← lift (UScalar.cast .U8 i28)
-  let i30 ← state.e >>> 16#i32
-  let i31 ← lift (UScalar.cast .U8 i30)
-  let i32 ← state.e >>> 8#i32
-  let i33 ← lift (UScalar.cast .U8 i32)
-  let i34 ← lift (UScalar.cast .U8 state.e)
-  let i35 ← state.f >>> 24#i32
-  let i36 ← lift (UScalar.cast .U8 i35)
-  let i37 ← state.f >>> 16#i32
-  let i38 ← lift (UScalar.cast .U8 i37)
-  let i39 ← state.f >>> 8#i32
-  let i40 ← lift (UScalar.cast .U8 i39)
-  let i41 ← lift (UScalar.cast .U8 state.f)
-  let i42 ← state.g >>> 24#i32
-  let i43 ← lift (UScalar.cast .U8 i42)
-  let i44 ← state.g >>> 16#i32
-  let i45 ← lift (UScalar.cast .U8 i44)
-  let i46 ← state.g >>> 8#i32
-  let i47 ← lift (UScalar.cast .U8 i46)
-  let i48 ← lift (UScalar.cast .U8 state.g)
-  let i49 ← state.h >>> 24#i32
-  let i50 ← lift (UScalar.cast .U8 i49)
-  let i51 ← state.h >>> 16#i32
-  let i52 ← lift (UScalar.cast .U8 i51)
-  let i53 ← state.h >>> 8#i32
-  let i54 ← lift (UScalar.cast .U8 i53)
-  let i55 ← lift (UScalar.cast .U8 state.h)
-  ok
-    (Array.make 32#usize [
-      i1, i3, i5, i6, i8, i10, i12, i13, i15, i17, i19, i20, i22, i24, i26,
-      i27, i29, i31, i33, i34, i36, i38, i40, i41, i43, i45, i47, i48, i50,
-      i52, i54, i55
-      ])
-
 /-- [fast_ssz::sha256::hash_pair]:
     Source: 'crates/fast-ssz/src/sha256.rs', lines 169:0-184:1
     Visibility: public -/
@@ -591,5 +591,6 @@ def sha256.hash_pair
         0#u32, 0#u32, 0#u32, 0#u32, 0#u32, 0#u32, 512#u32
         ])
   sha256.digest s
+
 
 end FastSszRust

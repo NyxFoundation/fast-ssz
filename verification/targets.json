@@ -33,5 +33,15 @@
     "rust": "fast_ssz::sha256::hash_pair",
     "lean": "FastSszRust.sha256.hash_pair",
     "proof": "FastSszVerification.hash_pair_refines"
+  },
+  {
+    "rust": "fast_ssz::merkle::calculate_merkle_root",
+    "lean": "FastSszRust.merkle.calculate_merkle_root",
+    "proof": "FastSszVerification.calculate_merkle_root_refines"
+  },
+  {
+    "rust": "fast_ssz::merkle::verify_merkle_proof",
+    "lean": "FastSszRust.merkle.verify_merkle_proof",
+    "proof": "FastSszVerification.verify_merkle_proof_refines"
   }
 ]

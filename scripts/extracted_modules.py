@@ -1,5 +1,6 @@
 """Partition Aeneas declarations without changing their text or Lean names."""
 import re
+from graphlib import CycleError, TopologicalSorter
 
 NAMESPACE = "FastSszRust"
 DOC = re.compile(r"^/-- \[fast_ssz::([a-z][a-z0-9_]*)::", re.MULTILINE)
@@ -26,21 +27,57 @@ def declaration_units(body):
     return units
 
 
+def code_only(text):
+    text = re.sub(r"/-.*?-/", "", text, flags=re.DOTALL)
+    return re.sub(r'"(?:\\.|[^"\\])*"', '""', text)
+
+
+def graph_order(dependencies):
+    sorter = TopologicalSorter(dependencies)
+    try:
+        sorter.prepare()
+    except CycleError as error:
+        raise ValueError("generated declaration dependency cycle") from error
+    order = []
+    while sorter.is_active():
+        ready = sorted(sorter.get_ready())
+        order.extend(ready)
+        sorter.done(*ready)
+    return order
+
+
 def dependency_order(groups):
     dependencies = {}
     for module, declarations in groups.items():
-        code = re.sub(r"/-.*?-/", "", "".join(declarations), flags=re.DOTALL)
-        code = re.sub(r'"(?:\\.|[^"\\])*"', '""', code)
+        code = code_only("".join(declarations))
         references = set(re.findall(r"(?<![\w.])([a-z][a-z0-9_]*)\.", code))
         dependencies[module] = (references & groups.keys()) - {module}
-    order = []
-    while len(order) != len(groups):
-        ready = sorted(module for module in groups
-                       if module not in order and dependencies[module] <= set(order))
-        if not ready:
-            raise ValueError("generated module dependency cycle")
-        order.extend(ready)
-    return order, dependencies
+    return graph_order(dependencies), dependencies
+
+
+def canonical_declarations(module, units):
+    entries, owners = {}, {}
+    pattern = r"(?m)^[ \t]*(?:def|abbrev|structure|inductive|class)\s+([\w]+(?:\.[\w]+)+)"
+    for unit in units:
+        names = set(re.findall(pattern, code_only(unit)))
+        if not names or any(not name.startswith(module + ".") for name in names):
+            raise ValueError("unclassified generated declaration names")
+        if names & owners.keys():
+            raise ValueError("duplicate generated declaration names")
+        key = min(names)
+        entries[key] = unit.strip("\n") + "\n\n"
+        owners.update({name: key for name in names})
+    dependencies = {key: set() for key in entries}
+    for key, text in entries.items():
+        references = re.findall(r"(?<![\w.])([\w]+(?:\.[\w]+)+)", code_only(text))
+        for reference in references:
+            while "." in reference:
+                if reference in owners:
+                    dependencies[key].add(owners[reference])
+                    break
+                reference = reference.rsplit(".", 1)[0]
+        dependencies[key].discard(key)
+    return [entries[key] for key in graph_order(dependencies)]
 
 
 def split_model(source):
@@ -60,6 +97,7 @@ def split_model(source):
     names = {module: "".join(part.capitalize() for part in module.split("_")) for module in groups}
     if len(set(names.values())) != len(names):
         raise ValueError("generated module filename collision")
+    groups = {module: canonical_declarations(module, units) for module, units in groups.items()}
     order, dependencies = dependency_order(groups)
     output = {}
     for module in order:
