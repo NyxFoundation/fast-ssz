@@ -2,7 +2,7 @@ import Lean
 import FastSszVerification
 
 open Lean Elab Command
-/-- Inspect transitive dependencies of every implementation and proof declaration. -/
+/-- Audit transitive axioms. -/
 elab "audit_fast_ssz" : command => do
   let environment ← getEnv
   for entry in environment.constants.toList do
@@ -15,7 +15,7 @@ elab "audit_fast_ssz" : command => do
 
 audit_fast_ssz
 
-/-- Reject a registry entry unless it names a theorem about the extracted function. -/
+/-- Validate proof registration. -/
 elab "check_refinement " target:ident " via " claim:ident : command => do
   let targetName := target.getId
   let claimInfo ← getConstInfo claim.getId

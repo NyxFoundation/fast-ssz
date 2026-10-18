@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce and check the implemented SSZ proof slice, not full SSZ conformance."""
+"""Check the implemented SSZ proof slice, not full conformance."""
 
 import argparse
 import json
@@ -34,18 +34,18 @@ def load_pins():
 def load_targets(path=VERIFICATION / "targets.json"):
     targets = json.loads(path.read_text())
     if not isinstance(targets, list) or not targets:
-        raise ValueError("the extraction target list must be nonempty")
+        raise ValueError("nonempty targets required")
     for target in targets:
         if not isinstance(target, dict):
-            raise ValueError("each extraction target must be an object")
+            raise ValueError("target must be an object")
         for field, separator in (("rust", "::"), ("lean", "."), ("proof", ".")):
             if not isinstance(target.get(field), str):
-                raise ValueError(f"extraction target {field} must be a string")
+                raise ValueError(f"target {field} must be a string")
             parts = target[field].split(separator)
             if not all(re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", part) for part in parts):
-                raise ValueError(f"invalid {field} identifier in extraction targets")
+                raise ValueError(f"invalid {field} identifier")
     if len({target["rust"] for target in targets}) != len(targets):
-        raise ValueError("duplicate Rust extraction targets")
+        raise ValueError("duplicate targets")
     return targets
 
 
@@ -53,7 +53,7 @@ def tool_path(tool, pins):
     cache = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
     binary = cache / "hax" / "tools" / tool / pins["tools"][f"{tool}_version"] / tool
     if not binary.is_file():
-        raise ValueError(f"{tool} is not installed; run python3 scripts/verify.py bootstrap")
+        raise ValueError(f"{tool} unavailable; run verify.py bootstrap")
     return binary
 
 
@@ -65,7 +65,7 @@ def validate_pins(pins):
         hax = tomllib.load(source)
     lean = (VERIFICATION / "lean-toolchain").read_text().strip()
     if rust != tools["rust_toolchain"] or lean != tools["lean_toolchain"]:
-        raise ValueError("Rust or Lean toolchain differs from sources.lock")
+        raise ValueError("toolchain differs from sources.lock")
     for tool in ("charon", "aeneas"):
         if hax["tools"][tool] != tools[f"{tool}_version"]:
             raise ValueError(f"{tool} pin differs from sources.lock")
@@ -112,7 +112,7 @@ def validate_dependencies(pins):
 def bootstrap(pins):
     version = run(["cargo", "hax", "--version"], capture=True).splitlines()
     if f"version={pins['tools']['cargo_hax_version']}" not in version:
-        raise ValueError("install the cargo-hax version recorded in sources.lock")
+        raise ValueError("install cargo-hax from sources.lock")
     for tool in ("charon", "aeneas"):
         run(["cargo", "hax", "tools", "install", f"{tool}@{pins['tools'][f'{tool}_version']}"])
     validate_tools(pins)
@@ -140,7 +140,7 @@ def extract(pins, targets, destination):
 
 def assert_same_artifact(actual, expected):
     if actual != expected:
-        raise ValueError("Rust extraction is stale; run python3 scripts/verify.py extract and review the diff")
+        raise ValueError("stale extraction; run verify.py extract and review")
 
 
 def api_functions(document):
@@ -148,9 +148,9 @@ def api_functions(document):
         if item["crate_id"] != 0 or item["visibility"] != "public":
             continue
         if "trait" in item["inner"]:
-            raise ValueError("public traits require extending the proof coverage checker")
+            raise ValueError("public traits need proof coverage support")
         if "function" in item["inner"] and identifier not in document["paths"]:
-            raise ValueError("public associated functions require extending the proof coverage checker")
+            raise ValueError("public associated functions need proof coverage support")
     return {
         "::".join(item["path"])
         for item in document["paths"].values()
@@ -231,7 +231,7 @@ def check_rejection_guards(directory):
             text=True, capture_output=True, check=False,
         )
         if result.returncode == 0 or expected not in result.stdout + result.stderr:
-            raise ValueError(f"proof guard did not reject {label} for the expected reason")
+            raise ValueError(f"proof guard failed for {label}")
 
 
 def check(pins, targets, directory):

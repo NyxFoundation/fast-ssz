@@ -5,14 +5,14 @@ open Aeneas Aeneas.Std
 
 namespace FastSszVerification
 
-/-- The same eight bits in the implementation and reference representations. -/
+/-- Preserve the eight bits. -/
 def byteToSpec (byte : U8) : UInt8 := ⟨byte.bv⟩
 
-/-- Representation relation; it preserves order, length, and every bit. -/
+/-- Preserve byte order and length. -/
 def bytesToSpec (bytes : List U8) : Ssz.Bytes :=
   (bytes.map byteToSpec).toArray
 
-/-- The public error categories are a quotient of the reference errors. -/
+/-- Classify reference Boolean faults. -/
 def booleanResult (result : Except Ssz.Err Ssz.Value) :
     core.result.Result Bool FastSszRust.scalar.ScalarError :=
   match result with
@@ -25,14 +25,14 @@ theorem byteToSpec_injective : Function.Injective byteToSpec := by
   cases equal
   rfl
 
-/-- Rust encoding terminates successfully and returns exactly the reference bytes. -/
+/-- Exact encoding and termination. -/
 theorem encode_bool_refines (value : Bool) :
     ∃ encoded, FastSszRust.scalar.encode_bool value = RustM.ok encoded ∧
       Ssz.serialize .bool (.bool value) = .ok (bytesToSpec encoded.val) := by
   cases value <;> simp [FastSszRust.scalar.encode_bool, Ssz.serialize,
     bytesToSpec, byteToSpec, Array.make]
 
-/-- Rust decoding terminates without a panic and agrees on all byte slices. -/
+/-- Exact decoding of every slice without panic. -/
 theorem decode_bool_refines (bytes : Slice U8) :
     FastSszRust.scalar.decode_bool bytes =
       RustM.ok (booleanResult (Ssz.deserialize .bool (bytesToSpec bytes.val))) := by
