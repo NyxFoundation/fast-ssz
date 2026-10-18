@@ -1,2 +1,3 @@
 import FastSszVerification.Boolean
 import FastSszVerification.Bytes
+import FastSszVerification.Sha256

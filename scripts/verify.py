@@ -246,7 +246,7 @@ def check(pins, targets, directory):
     validate_dependencies(pins)
     check_proof_targets(targets, directory)
     check_rejection_guards(directory)
-    print(f"Verified implemented slice: {len(targets)} codec functions. This is NOT full SSZ conformance.")
+    print(f"Verified implemented slice: {len(targets)} public operations. This is NOT full SSZ conformance.")
 
 
 def main():

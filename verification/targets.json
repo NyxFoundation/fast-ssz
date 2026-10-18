@@ -28,5 +28,10 @@
     "rust": "fast_ssz::bytes::decode_byte_list",
     "lean": "FastSszRust.bytes.decode_byte_list",
     "proof": "FastSszVerification.byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::sha256::hash_pair",
+    "lean": "FastSszRust.sha256.hash_pair",
+    "proof": "FastSszVerification.hash_pair_refines"
   }
 ]

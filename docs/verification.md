@@ -8,14 +8,22 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** only Boolean/ByteVector/ByteList codecs exist.
-`verification/targets.json` links six functions to proofs over actual Aeneas output.
+**Not release complete:** Boolean/ByteVector/ByteList codecs and SHA-256 node
+combination are implemented. `verification/targets.json` links seven operations
+to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
 Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
 OverLimit/overLimit; other outcomes are false. Boolean errors classify scope/non-bit
 faults. Bounds cover `usize`, not all naturals. Zero-copy is source/test evidence,
 not a cost theorem. Derived error traits are not protocol proof targets.
+
+`hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`
+for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing path,
+not a general-purpose arbitrary-message SHA-256 API. Schedule, all 64 rounds,
+both compression blocks, padding and output encoding are connected to the unchanged
+upstream SHA-256 implementation. No external hash-function correctness is assumed.
+RustCrypto `sha2` 0.10.9 is used only for differential tests.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. New traits/methods fail pending coverage support.

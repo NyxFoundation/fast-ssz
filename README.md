@@ -1,15 +1,17 @@
 # fast-ssz
 
 Rust SSZ: Aeneas/Lean proofs before optimization.
-**Initial codec slice, not a complete SSZ library or production release.**
+**Verified baseline, not a complete SSZ library or production release.**
 Publishing is disabled; no performance superiority is claimed.
 
 Boolean and borrowed ByteVector/ByteList encode/decode are implemented and proved,
 including malformed inputs and illegal zero-length vector declarations.
+SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
+32-byte nodes. RustCrypto `sha2` is a test oracle only, not a runtime dependency.
 See [verification scope and trust](docs/verification.md).
 
 Integers, bitfields, generic collections, containers, Progressive types,
-CompatibleUnion, derive, SHA-256, roots, indices, Merkle proofs, official vectors
+CompatibleUnion, derive, hash-tree roots, indices, Merkle proofs, official vectors
 and benchmarks remain unfinished. The agreed release condition is not met.
 
 ## Example
@@ -19,6 +21,8 @@ use fast_ssz::scalar::{decode_bool, encode_bool};
 assert_eq!(encode_bool(true), [1]);
 assert_eq!(decode_bool(&[1]), Ok(true));
 assert!(decode_bool(&[2]).is_err());
+let parent = fast_ssz::sha256::hash_pair(&[0; 32], &[0; 32]);
+assert_eq!(parent[0], 0xf5);
 ```
 
 Add `fast-ssz = { path = "../fast-ssz/crates/fast-ssz" }` to Cargo's
