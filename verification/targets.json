@@ -43,5 +43,55 @@
     "rust": "fast_ssz::merkle::verify_merkle_proof",
     "lean": "FastSszRust.merkle.verify_merkle_proof",
     "proof": "FastSszVerification.verify_merkle_proof_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u8",
+    "lean": "FastSszRust.scalar.encode_u8",
+    "proof": "FastSszVerification.encode_u8_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u8",
+    "lean": "FastSszRust.scalar.decode_u8",
+    "proof": "FastSszVerification.decode_u8_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u16",
+    "lean": "FastSszRust.scalar.encode_u16",
+    "proof": "FastSszVerification.encode_u16_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u16",
+    "lean": "FastSszRust.scalar.decode_u16",
+    "proof": "FastSszVerification.decode_u16_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u32",
+    "lean": "FastSszRust.scalar.encode_u32",
+    "proof": "FastSszVerification.encode_u32_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u32",
+    "lean": "FastSszRust.scalar.decode_u32",
+    "proof": "FastSszVerification.decode_u32_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u64",
+    "lean": "FastSszRust.scalar.encode_u64",
+    "proof": "FastSszVerification.encode_u64_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u64",
+    "lean": "FastSszRust.scalar.decode_u64",
+    "proof": "FastSszVerification.decode_u64_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u128",
+    "lean": "FastSszRust.scalar.encode_u128",
+    "proof": "FastSszVerification.encode_u128_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u128",
+    "lean": "FastSszRust.scalar.decode_u128",
+    "proof": "FastSszVerification.decode_u128_refines"
   }
 ]

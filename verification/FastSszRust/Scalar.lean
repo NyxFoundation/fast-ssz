@@ -32,6 +32,36 @@ def scalar.encode_bool (value : Bool) : RustM (Array Std.U8 1#usize) := do
   then ok (Array.make 1#usize [ 1#u8 ])
   else ok (Array.make 1#usize [ 0#u8 ])
 
+/-- [fast_ssz::scalar::encode_u128]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 34:8-36:9
+    Visibility: public -/
+def scalar.encode_u128 (value : Std.U128) : RustM (Array Std.U8 16#usize) := do
+  ok (core.num.U128.to_le_bytes value)
+
+/-- [fast_ssz::scalar::encode_u16]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 34:8-36:9
+    Visibility: public -/
+def scalar.encode_u16 (value : Std.U16) : RustM (Array Std.U8 2#usize) := do
+  ok (core.num.U16.to_le_bytes value)
+
+/-- [fast_ssz::scalar::encode_u32]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 34:8-36:9
+    Visibility: public -/
+def scalar.encode_u32 (value : Std.U32) : RustM (Array Std.U8 4#usize) := do
+  ok (core.num.U32.to_le_bytes value)
+
+/-- [fast_ssz::scalar::encode_u64]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 34:8-36:9
+    Visibility: public -/
+def scalar.encode_u64 (value : Std.U64) : RustM (Array Std.U8 8#usize) := do
+  ok (core.num.U64.to_le_bytes value)
+
+/-- [fast_ssz::scalar::encode_u8]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 34:8-36:9
+    Visibility: public -/
+def scalar.encode_u8 (value : Std.U8) : RustM (Array Std.U8 1#usize) := do
+  ok (core.num.U8.to_le_bytes value)
+
 /-- [fast_ssz::scalar::decode_bool]:
     Source: 'crates/fast-ssz/src/scalar.rs', lines 20:0-29:1
     Visibility: public -/
@@ -48,6 +78,87 @@ def scalar.decode_bool
     | 0#uscalar => ok (core.result.Result.Ok false)
     | 1#uscalar => ok (core.result.Result.Ok true)
     | _ => ok (core.result.Result.Err scalar.ScalarError.InvalidBoolean)
+
+/-- [fast_ssz::scalar::decode_u128]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 39:8-44:9
+    Visibility: public -/
+def scalar.decode_u128
+  (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result Std.U128 scalar.ScalarError)
+  := do
+  let r ←
+    core.array.TryFromArrayCopySlice.try_from 16#usize core.marker.CopyU8
+      bytes1
+  match r with
+  | core.result.Result.Ok array =>
+    let i ← lift (core.num.U128.from_le_bytes array)
+    ok (core.result.Result.Ok i)
+  | core.result.Result.Err _ =>
+    ok (core.result.Result.Err scalar.ScalarError.InvalidLength)
+
+/-- [fast_ssz::scalar::decode_u16]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 39:8-44:9
+    Visibility: public -/
+def scalar.decode_u16
+  (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result Std.U16 scalar.ScalarError)
+  := do
+  let r ←
+    core.array.TryFromArrayCopySlice.try_from 2#usize core.marker.CopyU8 bytes1
+  match r with
+  | core.result.Result.Ok array =>
+    let i ← lift (core.num.U16.from_le_bytes array)
+    ok (core.result.Result.Ok i)
+  | core.result.Result.Err _ =>
+    ok (core.result.Result.Err scalar.ScalarError.InvalidLength)
+
+/-- [fast_ssz::scalar::decode_u32]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 39:8-44:9
+    Visibility: public -/
+def scalar.decode_u32
+  (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result Std.U32 scalar.ScalarError)
+  := do
+  let r ←
+    core.array.TryFromArrayCopySlice.try_from 4#usize core.marker.CopyU8 bytes1
+  match r with
+  | core.result.Result.Ok array =>
+    let i ← lift (core.num.U32.from_le_bytes array)
+    ok (core.result.Result.Ok i)
+  | core.result.Result.Err _ =>
+    ok (core.result.Result.Err scalar.ScalarError.InvalidLength)
+
+/-- [fast_ssz::scalar::decode_u64]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 39:8-44:9
+    Visibility: public -/
+def scalar.decode_u64
+  (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result Std.U64 scalar.ScalarError)
+  := do
+  let r ←
+    core.array.TryFromArrayCopySlice.try_from 8#usize core.marker.CopyU8 bytes1
+  match r with
+  | core.result.Result.Ok array =>
+    let i ← lift (core.num.U64.from_le_bytes array)
+    ok (core.result.Result.Ok i)
+  | core.result.Result.Err _ =>
+    ok (core.result.Result.Err scalar.ScalarError.InvalidLength)
+
+/-- [fast_ssz::scalar::decode_u8]:
+    Source: 'crates/fast-ssz/src/scalar.rs', lines 39:8-44:9
+    Visibility: public -/
+def scalar.decode_u8
+  (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result Std.U8 scalar.ScalarError)
+  := do
+  let r ←
+    core.array.TryFromArrayCopySlice.try_from 1#usize core.marker.CopyU8 bytes1
+  match r with
+  | core.result.Result.Ok array =>
+    let i ← lift (core.num.U8.from_le_bytes array)
+    ok (core.result.Result.Ok i)
+  | core.result.Result.Err _ =>
+    ok (core.result.Result.Err scalar.ScalarError.InvalidLength)
 
 
 end FastSszRust

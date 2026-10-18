@@ -10,6 +10,10 @@ theorem bytesToSpec_injective : Function.Injective bytesToSpec := by
   have lists := congrArg _root_.Array.toList same
   simpa [bytesToSpec] using lists
 
+@[simp] theorem bytesToSpec_size (bytes : List U8) :
+    (bytesToSpec bytes).size = bytes.length := by
+  simp [bytesToSpec]
+
 theorem bytesToSpec_array_size {n : Usize} (bytes : Array U8 n) :
     (bytesToSpec bytes.val).size = n.val := by
   simp [bytesToSpec]
