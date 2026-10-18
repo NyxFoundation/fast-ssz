@@ -61,6 +61,9 @@ def tool_path(tool, pins):
 
 def validate_pins(pins):
     tools = pins["tools"]
+    transparent = pins["extraction"]["transparent_items"]
+    if not isinstance(transparent, list) or not all(isinstance(item, str) and item for item in transparent):
+        raise ValueError("invalid transparent extraction items")
     with (ROOT / "rust-toolchain.toml").open("rb") as source:
         rust = tomllib.load(source)["toolchain"]["channel"]
     with (ROOT / "hax.toml").open("rb") as source:
@@ -126,6 +129,8 @@ def bootstrap(pins):
 def extract(pins, targets, destination):
     llbc = destination / "fast_ssz.llbc"
     arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas"]
+    for item in pins["extraction"]["transparent_items"]:
+        arguments.extend(["--include", item])
     for target in targets:
         arguments.extend(["--start-from", target["rust"]])
     arguments.extend([

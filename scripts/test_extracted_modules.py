@@ -58,6 +58,34 @@ class ExtractedModuleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate"):
             split_model(source(unit, unit))
 
+    def test_should_partition_transparent_foreign_crates(self):
+        foreign = "/-- [ruint::Uint] -/\nstructure ruint.Uint where\n  value : Nat\n"
+        own = declaration("scalar", "def scalar.item (x : ruint.Uint) := x.value")
+        result = split_model(source(own, foreign))
+        self.assertIn(foreign, result["FastSszRust/Ruint.lean"])
+        self.assertIn("import FastSszRust.Ruint", result["FastSszRust/Scalar.lean"])
+
+    def test_should_distinguish_std_names_from_extracted_core_definitions(self):
+        core = "/-- [core::num::{usize}::div_ceil] -/\ndef core.num.Usize.div_ceil := 0\n"
+        sha = declaration("sha256", "def sha256.item := core.num.U64.MAX")
+        ruint = "/-- [ruint::nlimbs] -/\ndef ruint.nlimbs := core.num.Usize.div_ceil\n"
+        result = split_model(source(core, sha, ruint))
+        self.assertNotIn("import FastSszRust.Core", result["FastSszRust/Sha256.lean"])
+        self.assertIn("import FastSszRust.Core", result["FastSszRust/Ruint.lean"])
+
+    def test_should_normalize_only_registry_source_locations(self):
+        template = ("/-- [ruint::Uint]\n"
+                    "    Source: '{home}/registry/src/index.crates.io-123/ruint-1.20.1/src/lib.rs', lines 1:0-2:0 -/\n"
+                    "structure ruint.Uint where\n  value : Nat\n")
+        first = split_model(source(template.format(home="/one/cargo")))
+        second = split_model(source(template.format(home="/different/cache")))
+        self.assertEqual(first, second)
+        self.assertIn("cargo-registry/ruint-1.20.1/src/lib.rs", first["FastSszRust/Ruint.lean"])
+
+    def test_should_reject_foreign_axioms_instead_of_partitioning_them(self):
+        with self.assertRaisesRegex(ValueError, "unclassified"):
+            split_model(source("/-- [ruint::Uint] -/\naxiom ruint.Uint : Type\n"))
+
     def test_should_preserve_mutual_blocks_within_one_module(self):
         block = "mutual\n" + declaration("tree", "def tree.a := tree.b")
         block += declaration("tree", "def tree.b := tree.a") + "end\n"

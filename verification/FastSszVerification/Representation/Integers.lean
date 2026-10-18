@@ -5,6 +5,10 @@ open Aeneas Aeneas.Std
 
 namespace FastSszVerification
 
+theorem bytesToSpec_of_bits (bytes : List Byte) :
+    bytesToSpec (bytes.map (@UScalar.mk .U8)) = (bytes.map UInt8.ofBitVec).toArray := by
+  simp [bytesToSpec, byteToSpec, List.map_map, Function.comp_def]
+
 theorem little_endian_head {width : Nat} (word : BitVec width) :
     UInt8.ofBitVec (word.setWidth 8) = UInt8.ofNat (word.toNat % 256) := by
   have same : word.setWidth 8 = BitVec.ofNat 8 (word.toNat % 256) := by
@@ -37,6 +41,11 @@ theorem serialize_uint_bits (width : Nat) (word : BitVec (8 * width)) :
   have bounded := word.isLt
   rw [little_endian_encode_refines]
   simp only [Ssz.serialize, if_pos bounded]
+
+theorem little_endian_cast {width other : Nat} (word : BitVec width) (same : width = other) :
+    (word.cast same).toLEBytes = word.toLEBytes := by
+  subst other
+  rfl
 
 theorem little_endian_roundtrip (bytes : List Byte) :
     (BitVec.fromLEBytes bytes).toLEBytes = bytes := by

@@ -8,9 +8,9 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean, uint8/16/32/64/128 and ByteVector/ByteList
+**Not release complete:** Boolean, uint8/16/32/64/128/256 and ByteVector/ByteList
 codecs, SHA-256 node combination and single-branch Merkle verification are implemented.
-`verification/targets.json` links nineteen operations
+`verification/targets.json` links twenty-one operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -23,6 +23,11 @@ Unsigned native codecs reuse Rust's standard little-endian and checked slice/arr
 conversions. Their actual models are proved against `Ssz.serialize`/`Ssz.deserialize`
 for every value and input slice. Generic bitvector/byte lemmas establish both
 encoding order and decoding value; only incorrect lengths are refused.
+`U256` is `ruint::Uint<256, 4>` pinned to 1.20.1. Its value view concatenates all
+four least-significant-first limbs, preserving all 256 bits. The reached library
+getters, constructor, mask/count checks and Rust's `usize::div_ceil` are extracted
+as real definitions and their required calls are proved. Ruint's unsafe byte casts
+and arithmetic APIs are neither used nor covered. No library-correctness axiom is added.
 
 `hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`
 for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing path,
@@ -45,7 +50,10 @@ Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs a
 pinned source integrity. Generated declarations are partitioned into dependency-ordered
 modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction
-order changes invalidating cached proofs. The complete module inventory
+order changes invalidating cached proofs. Registry source-location comments use
+portable package-relative paths; executable declaration bodies are unchanged.
+`sources.lock` explicitly names transparent foreign items; opaque foreign axioms
+are refused rather than treated as library contracts. The complete module inventory
 is checked against fresh extraction. New traits/methods fail pending coverage support.
 Statement adequacy requires review. Negative fixtures reject custom/native axioms
 and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.

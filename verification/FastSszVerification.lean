@@ -3,3 +3,4 @@ import FastSszVerification.Bytes
 import FastSszVerification.Sha256
 import FastSszVerification.Merkle
 import FastSszVerification.Unsigned
+import FastSszVerification.Unsigned.U256

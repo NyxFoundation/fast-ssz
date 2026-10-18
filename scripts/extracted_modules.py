@@ -3,7 +3,7 @@ import re
 from graphlib import CycleError, TopologicalSorter
 
 NAMESPACE = "FastSszRust"
-DOC = re.compile(r"^/-- \[fast_ssz::([a-z][a-z0-9_]*)::", re.MULTILINE)
+DOC = re.compile(r"^/-- \[(?:fast_ssz::)?([a-z][a-z0-9_]*)::", re.MULTILINE)
 
 
 def declaration_units(body):
@@ -46,20 +46,35 @@ def graph_order(dependencies):
     return order
 
 
+def declared_names(text):
+    pattern = r"(?m)^[ \t]*(?:def|abbrev|structure|inductive|class)\s+([\w]+(?:\.[\w]+)+)"
+    return set(re.findall(pattern, code_only(text)))
+
+
+def referenced_owners(text, owners):
+    dependencies = set()
+    references = re.findall(r"(?<![\w.])([\w]+(?:\.[\w]+)+)", code_only(text))
+    for reference in references:
+        while "." in reference:
+            if reference in owners:
+                dependencies.add(owners[reference])
+                break
+            reference = reference.rsplit(".", 1)[0]
+    return dependencies
+
+
 def dependency_order(groups):
-    dependencies = {}
-    for module, declarations in groups.items():
-        code = code_only("".join(declarations))
-        references = set(re.findall(r"(?<![\w.])([a-z][a-z0-9_]*)\.", code))
-        dependencies[module] = (references & groups.keys()) - {module}
+    owners = {name: module for module, units in groups.items()
+              for name in declared_names("".join(units))}
+    dependencies = {module: referenced_owners("".join(units), owners) - {module}
+                    for module, units in groups.items()}
     return graph_order(dependencies), dependencies
 
 
 def canonical_declarations(module, units):
     entries, owners = {}, {}
-    pattern = r"(?m)^[ \t]*(?:def|abbrev|structure|inductive|class)\s+([\w]+(?:\.[\w]+)+)"
     for unit in units:
-        names = set(re.findall(pattern, code_only(unit)))
+        names = declared_names(unit)
         if not names or any(not name.startswith(module + ".") for name in names):
             raise ValueError("unclassified generated declaration names")
         if names & owners.keys():
@@ -67,20 +82,16 @@ def canonical_declarations(module, units):
         key = min(names)
         entries[key] = unit.strip("\n") + "\n\n"
         owners.update({name: key for name in names})
-    dependencies = {key: set() for key in entries}
-    for key, text in entries.items():
-        references = re.findall(r"(?<![\w.])([\w]+(?:\.[\w]+)+)", code_only(text))
-        for reference in references:
-            while "." in reference:
-                if reference in owners:
-                    dependencies[key].add(owners[reference])
-                    break
-                reference = reference.rsplit(".", 1)[0]
-        dependencies[key].discard(key)
+    dependencies = {key: referenced_owners(text, owners) - {key}
+                    for key, text in entries.items()}
     return [entries[key] for key in graph_order(dependencies)]
 
 
 def split_model(source):
+    source = re.sub(
+        r"(?m)^(    Source: ')[^'\n]*/registry/src/[^/'\n]+/([^'\n]+)('.*)$",
+        r"\1cargo-registry/\2\3", source,
+    )
     marker, closing = f"namespace {NAMESPACE}\n", f"\nend {NAMESPACE}"
     if source.count(marker) != 1 or source.count(closing) != 1:
         raise ValueError("unexpected Aeneas namespace layout")

@@ -4,15 +4,17 @@ Rust SSZ: Aeneas/Lean proofs before optimization.
 **Verified baseline, not a complete SSZ library or production release.**
 Publishing is disabled; no performance superiority is claimed.
 
-Boolean, uint8/16/32/64/128 and borrowed ByteVector/ByteList codecs are implemented
+Boolean, all six unsigned integer widths and borrowed ByteVector/ByteList codecs are implemented
 and proved, including malformed inputs and illegal zero-length vector declarations.
 SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
 32-byte nodes. Single-branch root reconstruction and verification are implemented
 and proved across the full `u128` index domain, including malformed requests.
 RustCrypto `sha2` is a test oracle only, not a runtime dependency.
+`U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
+and proved, not assumed correct. Other `ruint` operations are outside these proofs.
 See [verification scope and trust](docs/verification.md).
 
-Uint256, bitfields, generic collections, containers, Progressive types,
+Bitfields, generic collections, containers, Progressive types,
 CompatibleUnion, derive, hash-tree roots, index/path APIs, multiproofs, official vectors
 and benchmarks remain unfinished. The agreed release condition is not met.
 

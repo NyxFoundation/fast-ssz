@@ -5,6 +5,9 @@ repository = "https://github.com/ethereum/ssz-specs"
 revision = "c68b96a852559284cc4311b6c14105bcf51ac6ce"
 upstream_lean_toolchain = "leanprover/lean4:v4.33.1"
 
+[extraction]
+transparent_items = ["ruint", "core::num::_::div_ceil"]
+
 [tools]
 cargo_hax_version = "0.4.0"
 charon_version = "nightly-2026.09.02"

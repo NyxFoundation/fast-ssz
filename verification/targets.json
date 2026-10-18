@@ -93,5 +93,15 @@
     "rust": "fast_ssz::scalar::decode_u128",
     "lean": "FastSszRust.scalar.decode_u128",
     "proof": "FastSszVerification.decode_u128_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u256",
+    "lean": "FastSszRust.scalar.encode_u256",
+    "proof": "FastSszVerification.encode_u256_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u256",
+    "lean": "FastSszRust.scalar.decode_u256",
+    "proof": "FastSszVerification.decode_u256_refines"
   }
 ]
