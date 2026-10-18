@@ -1,0 +1,9 @@
+[package]
+name = "fast-ssz"
+description = "SSZ implementation with Aeneas-extracted Lean semantics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
