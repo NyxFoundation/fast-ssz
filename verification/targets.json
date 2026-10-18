@@ -1,0 +1,32 @@
+[
+  {
+    "rust": "fast_ssz::scalar::encode_bool",
+    "lean": "FastSszRust.scalar.encode_bool",
+    "proof": "FastSszVerification.encode_bool_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_bool",
+    "lean": "FastSszRust.scalar.decode_bool",
+    "proof": "FastSszVerification.decode_bool_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::encode_byte_vector",
+    "lean": "FastSszRust.bytes.encode_byte_vector",
+    "proof": "FastSszVerification.byte_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::decode_byte_vector",
+    "lean": "FastSszRust.bytes.decode_byte_vector",
+    "proof": "FastSszVerification.byte_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::encode_byte_list",
+    "lean": "FastSszRust.bytes.encode_byte_list",
+    "proof": "FastSszVerification.byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::decode_byte_list",
+    "lean": "FastSszRust.bytes.decode_byte_list",
+    "proof": "FastSszVerification.byte_list_refines"
+  }
+]

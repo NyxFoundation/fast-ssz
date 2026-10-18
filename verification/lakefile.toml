@@ -1,0 +1,27 @@
+name = "FastSszVerification"
+version = "0.1.0"
+defaultTargets = ["FastSszVerification"]
+
+[leanOptions]
+warningAsError = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[lean_lib]]
+name = "FastSszVerification"
+roots = ["FastSszVerification.Audit"]
+
+[[lean_lib]]
+name = "FastSszRust"
+
+[[require]]
+name = "aeneas"
+git = "https://github.com/cryspen/aeneas"
+rev = "6852e6474ec508930acba4df79977b3483a10d10"
+subDir = "backends/lean"
+
+[[require]]
+name = "ssz"
+git = "https://github.com/ethereum/ssz-specs"
+rev = "c68b96a852559284cc4311b6c14105bcf51ac6ce"
+subDir = "lean"
