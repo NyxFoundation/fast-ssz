@@ -9,7 +9,7 @@ relaxedAutoImplicit = false
 
 [[lean_lib]]
 name = "FastSszVerification"
-roots = ["FastSszVerification.Audit"]
+roots = ["FastSszVerification", "FastSszVerification.Audit"]
 
 [[lean_lib]]
 name = "FastSszRust"
