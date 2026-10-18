@@ -103,5 +103,15 @@
     "rust": "fast_ssz::scalar::decode_u256",
     "lean": "FastSszRust.scalar.decode_u256",
     "proof": "FastSszVerification.decode_u256_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::encode_bit_vector",
+    "lean": "FastSszRust.bitfield.encode_bit_vector",
+    "proof": "FastSszVerification.encode_bit_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::decode_bit_vector",
+    "lean": "FastSszRust.bitfield.decode_bit_vector",
+    "proof": "FastSszVerification.decode_bit_vector_refines"
   }
 ]

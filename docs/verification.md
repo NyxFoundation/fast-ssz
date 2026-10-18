@@ -8,9 +8,9 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean, uint8/16/32/64/128/256 and ByteVector/ByteList
+**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector and ByteVector/ByteList
 codecs, SHA-256 node combination and single-branch Merkle verification are implemented.
-`verification/targets.json` links twenty-one operations
+`verification/targets.json` links twenty-three operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -28,6 +28,13 @@ four least-significant-first limbs, preserving all 256 bits. The reached library
 getters, constructor, mask/count checks and Rust's `usize::div_ceil` are extracted
 as real definitions and their required calls are proved. Ruint's unsafe byte casts
 and arithmetic APIs are neither used nor covered. No library-correctness axiom is added.
+
+Bitvector codecs cover every `usize` declaration and typed input, including
+zero-length declarations, wrong lengths and noncanonical high padding. Their
+actual Vec loops are proved terminating with decreasing natural measures; byte
+counts, indices, shifts and increments are proved safe. The value view preserves
+Boolean order exactly. Vec allocation uses Aeneas's model; OS/resource failures
+remain outside the guarantee.
 
 `hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`
 for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing path,
