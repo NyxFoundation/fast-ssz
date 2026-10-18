@@ -1,16 +1,10 @@
-import FastSszRust
+import FastSszRust.Scalar
+import FastSszVerification.Representation
 import Ssz.Codec.Deserialize
 
 open Aeneas Aeneas.Std
 
 namespace FastSszVerification
-
-/-- Preserve the eight bits. -/
-def byteToSpec (byte : U8) : UInt8 := ⟨byte.bv⟩
-
-/-- Preserve byte order and length. -/
-def bytesToSpec (bytes : List U8) : Ssz.Bytes :=
-  (bytes.map byteToSpec).toArray
 
 /-- Classify reference Boolean faults. -/
 def booleanResult (result : Except Ssz.Err Ssz.Value) :
@@ -19,11 +13,6 @@ def booleanResult (result : Except Ssz.Err Ssz.Value) :
   | .ok (.bool value) => .Ok value
   | .error (.scope _ _) => .Err .InvalidLength
   | _ => .Err .InvalidBoolean
-
-theorem byteToSpec_injective : Function.Injective byteToSpec := by
-  intro ⟨left⟩ ⟨right⟩ equal
-  cases equal
-  rfl
 
 /-- Exact encoding and termination. -/
 theorem encode_bool_refines (value : Bool) :

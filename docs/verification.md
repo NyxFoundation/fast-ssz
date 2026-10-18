@@ -26,7 +26,9 @@ upstream SHA-256 implementation. No external hash-function correctness is assume
 RustCrypto `sha2` 0.10.9 is used only for differential tests.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
-pinned source integrity. New traits/methods fail pending coverage support.
+pinned source integrity. Generated declarations are partitioned into dependency-ordered
+modules with their text and qualified names preserved; the complete module inventory
+is checked against fresh extraction. New traits/methods fail pending coverage support.
 Statement adequacy requires review. Negative fixtures reject custom/native axioms
 and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.
 

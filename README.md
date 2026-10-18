@@ -42,7 +42,8 @@ python3 scripts/verify.py check
 ```
 
 After Rust edits, run `python3 scripts/verify.py extract`, review the generated diff,
-update proofs, then rerun `check`. Never hand-edit `verification/FastSszRust.lean`.
+update proofs, then rerun `check`. Never hand-edit `verification/FastSszRust.lean`
+or the generated `verification/FastSszRust/` modules.
 Success covers the implemented slice only.
 
 MIT; see [third-party notices](THIRD_PARTY_NOTICES.md).

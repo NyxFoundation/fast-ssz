@@ -1,4 +1,5 @@
-import FastSszVerification.Boolean
+import FastSszVerification.Representation
+import FastSszRust.Sha256
 import Ssz.Merkle.Tree
 import Mathlib.Tactic.IntervalCases
 

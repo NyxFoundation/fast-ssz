@@ -1,4 +1,5 @@
 import Lean
+import FastSszRust
 import FastSszVerification
 
 open Lean Elab Command

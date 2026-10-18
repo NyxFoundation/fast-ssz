@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import verify
 
 ENTRY = {"rust": "fast_ssz::encode", "lean": "Rust.encode", "proof": "Proof.encode"}
@@ -47,6 +48,19 @@ class VerificationGateTests(unittest.TestCase):
                               ([None], "object"), ([{}], "string")):
             with self.subTest(data=data):
                 self.assert_invalid_targets(data, message)
+
+    def test_should_create_and_compare_the_complete_generated_module_inventory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.multiple(verify, VERIFICATION=root, GENERATED=root / "FastSszRust.lean",
+                                GENERATED_MODULES=root / "FastSszRust"):
+                artifacts = {"FastSszRust.lean": b"import FastSszRust.One\n",
+                             "FastSszRust/One.lean": b"generated declarations\n"}
+                verify.write_artifacts(artifacts)
+                self.assertEqual(verify.generated_artifacts(), artifacts)
+                with self.assertRaisesRegex(ValueError, "obsolete"):
+                    verify.write_artifacts({"FastSszRust.lean": b"changed"})
+                self.assertEqual(verify.generated_artifacts(), artifacts)
 
     def test_should_require_every_lean_file_in_the_audit_closure(self):
         with tempfile.TemporaryDirectory() as directory:

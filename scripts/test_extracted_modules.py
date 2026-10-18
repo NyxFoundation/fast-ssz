@@ -1,0 +1,86 @@
+"""Generated Lean layout must preserve declarations and dependency order."""
+import unittest
+from extracted_modules import split_model
+
+HEADER = "-- GENERATED\nimport Aeneas\nnamespace FastSszRust\n\n"
+FOOTER = "\nend FastSszRust\n"
+
+
+def source(*declarations):
+    return HEADER + "\n".join(declarations) + FOOTER
+
+
+def declaration(module, body):
+    return f"/-- [fast_ssz::{module}::item] -/\n{body}\n"
+
+
+class ExtractedModuleTests(unittest.TestCase):
+    def test_should_preserve_generated_declarations_verbatim(self):
+        scalar = declaration("scalar", "def scalar.item := 1")
+        sha = declaration("sha256", "def sha256.item := 2")
+        result = split_model(source(scalar, sha))
+        self.assertIn(scalar, result["FastSszRust/Scalar.lean"])
+        self.assertIn(sha, result["FastSszRust/Sha256.lean"])
+        self.assertNotIn(sha, result["FastSszRust/Scalar.lean"])
+        self.assertIn("import FastSszRust.Sha256", result["FastSszRust.lean"])
+
+    def test_should_import_dependencies_before_dependent_modules(self):
+        result = split_model(source(
+            declaration("merkle", "def merkle.item := sha256.item"),
+            declaration("sha256", "def sha256.item := 2"),
+        ))
+        self.assertIn("import FastSszRust.Sha256", result["FastSszRust/Merkle.lean"])
+        root = result["FastSszRust.lean"]
+        self.assertLess(root.index(".Sha256"), root.index(".Merkle"))
+
+    def test_should_keep_each_modules_original_declaration_order(self):
+        first = declaration("sha256", "def sha256.first := 1")
+        second = declaration("sha256", "def sha256.second := sha256.first")
+        result = split_model(source(first, declaration("scalar", "def scalar.x := 0"), second))
+        generated = result["FastSszRust/Sha256.lean"]
+        self.assertLess(generated.index(first), generated.index(second))
+
+    def test_should_preserve_mutual_blocks_within_one_module(self):
+        block = "mutual\n" + declaration("tree", "def tree.a := tree.b")
+        block += declaration("tree", "def tree.b := tree.a") + "end\n"
+        result = split_model(source(block))
+        self.assertIn(block, result["FastSszRust/Tree.lean"])
+
+    def test_should_reject_unterminated_or_cross_module_mutual_blocks(self):
+        with self.assertRaisesRegex(ValueError, "unterminated"):
+            split_model(source("mutual\n" + declaration("tree", "def tree.a := 0")))
+        block = "mutual\n" + declaration("one", "def one.a := two.b")
+        block += declaration("two", "def two.b := one.a") + "end\n"
+        with self.assertRaisesRegex(ValueError, "cross-module"):
+            split_model(source(block))
+
+    def test_should_ignore_strings_and_comments_when_discovering_dependencies(self):
+        result = split_model(source(
+            declaration("one", 'def one.a := "two.b"'),
+            declaration("two", "def two.b := one.a"),
+        ))
+        self.assertNotIn("import FastSszRust.Two", result["FastSszRust/One.lean"])
+
+    def test_should_reject_unrecognized_layout_instead_of_dropping_code(self):
+        with self.assertRaises(ValueError):
+            split_model("unrecognized Lean output")
+        with self.assertRaises(ValueError):
+            split_model(source("def unclassified := 1"))
+
+    def test_should_reject_dependency_cycles(self):
+        with self.assertRaisesRegex(ValueError, "cycle"):
+            split_model(source(
+                declaration("one", "def one.item := two.item"),
+                declaration("two", "def two.item := one.item"),
+            ))
+
+    def test_should_reject_colliding_module_file_names(self):
+        with self.assertRaisesRegex(ValueError, "collision"):
+            split_model(source(
+                declaration("one_two", "def one_two.item := 1"),
+                declaration("one__two", "def one__two.item := 2"),
+            ))
+
+
+if __name__ == "__main__":
+    unittest.main()

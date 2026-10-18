@@ -10,10 +10,12 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+from extracted_modules import split_model
 
 ROOT = Path(__file__).resolve().parents[1]
 VERIFICATION = ROOT / "verification"
 GENERATED = VERIFICATION / "FastSszRust.lean"
+GENERATED_MODULES = VERIFICATION / "FastSszRust"
 
 
 def run(arguments, *, cwd=ROOT, capture=False):
@@ -135,7 +137,25 @@ def extract(pins, targets, destination):
         "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",
         "-dest", destination, llbc,
     ])
-    return (destination / "FastSsz.lean").read_bytes()
+    source = (destination / "FastSsz.lean").read_text(encoding="utf-8")
+    return {path: content.encode("utf-8") for path, content in split_model(source).items()}
+
+
+def generated_artifacts():
+    paths = list(GENERATED_MODULES.rglob("*.lean"))
+    if GENERATED.is_file():
+        paths.append(GENERATED)
+    return {path.relative_to(VERIFICATION).as_posix(): path.read_bytes() for path in paths}
+
+
+def write_artifacts(artifacts):
+    obsolete = set(generated_artifacts()) - artifacts.keys()
+    if obsolete:
+        raise ValueError(f"obsolete generated modules need explicit removal: {sorted(obsolete)}")
+    for relative, content in artifacts.items():
+        path = VERIFICATION / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
 
 
 def assert_same_artifact(actual, expected):
@@ -240,7 +260,7 @@ def check(pins, targets, directory):
     run(["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"])
     run(["cargo", "test", "--workspace"])
     check_api(targets)
-    assert_same_artifact(extract(pins, targets, directory), GENERATED.read_bytes())
+    assert_same_artifact(extract(pins, targets, directory), generated_artifacts())
     assert_import_closure(VERIFICATION)
     run(["lake", "build", "FastSszVerification"], cwd=VERIFICATION)
     validate_dependencies(pins)
@@ -263,7 +283,7 @@ def main():
         directory = Path(temporary)
         if arguments.command == "extract":
             validate_tools(pins)
-            GENERATED.write_bytes(extract(pins, targets, directory))
+            write_artifacts(extract(pins, targets, directory))
         else:
             check(pins, targets, directory)
 

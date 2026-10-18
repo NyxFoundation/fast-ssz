@@ -1,4 +1,6 @@
-import FastSszVerification.Boolean
+import FastSszVerification.Representation
+import Ssz.Codec.Deserialize
+import FastSszRust.Bytes
 import Ssz.Type.Valid
 
 open Aeneas Aeneas.Std
