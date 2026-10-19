@@ -121,6 +121,7 @@ def bootstrap(pins):
     for tool in ("charon", "aeneas"):
         run(["cargo", "hax", "tools", "install", f"{tool}@{pins['tools'][f'{tool}_version']}"])
     validate_tools(pins)
+    miri_sysroot(pins)
     run(["lake", "exe", "cache", "get"], cwd=VERIFICATION)
     run(["lake", "build", "Aeneas", "Ssz"], cwd=VERIFICATION)
     validate_dependencies(pins)
@@ -137,7 +138,8 @@ def assert_extracted_targets(artifacts, targets):
 def extract(pins, targets, destination):
     methods = check_api(targets)
     llbc = destination / "nyx_ssz.llbc"
-    arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas"]
+    arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas",
+                 "--sysroot", miri_sysroot(pins)]
     for item in pins["extraction"]["transparent_items"]:
         arguments.extend(["--include", item])
     # Charon cannot start from inherent methods; require their concrete bodies
@@ -147,50 +149,45 @@ def extract(pins, targets, destination):
             arguments.extend(["--start-from", target["rust"]])
     arguments.extend([
         "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/nyx-ssz/Cargo.toml",
+        "--target-dir", destination / "cargo",
     ])
+    prepare_native_macros(destination / "cargo")
     run(arguments)
     run([
         tool_path("aeneas", pins), "-backend", "lean", "-namespace", "NyxSszRust",
         "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",
         "-dest", destination, llbc,
     ])
-    source = normalize_usize_division((destination / "NyxSsz.lean").read_text(encoding="utf-8"))
+    source = (destination / "NyxSsz.lean").read_text(encoding="utf-8")
     artifacts = split_model(source)
     assert_extracted_targets(artifacts, targets)
     return {path: content.encode("utf-8") for path, content in artifacts.items()}
 
 
-UNSTABLE_USIZE_DIVISION = (
-    "  massert (\u00ac (rhs = 0#usize))\n"
-    "  let d \u2190 Usize.div self rhs\n"
-    "  let r \u2190 Usize.rem self rhs\n"
-    "  if r > 0#usize\n"
-    "  then ok (Std.Usize.wrapping_add d 1#usize)\n"
-    "  else ok d\n"
-)
-STABLE_USIZE_DIVISION = (
-    "  let d \u2190 self / rhs\n"
-    "  let r \u2190 self % rhs\n"
-    "  if r > 0#usize\n"
-    "  then d + 1#usize\n"
-    "  else ok d\n"
-)
+def miri_sysroot(pins):
+    """Prepare the pinned standard-library MIR; never use a different sysroot."""
+    output = run([
+        "cargo", f"+{pins['tools']['rust_toolchain']}", "miri", "setup", "--print-sysroot",
+    ], capture=True).strip()
+    directory = Path(output)
+    if not output or not directory.is_absolute() or not directory.is_dir():
+        raise ValueError("Miri sysroot unavailable; run verify.py bootstrap")
+    return directory
 
 
-def normalize_usize_division(source):
-    """Use the checked operators supported by pinned Aeneas.
-
-    Without Miri, Charon names division `Usize.div`/`Usize.rem` and uses wrapping
-    addition. Those names are absent here. The operators reject a zero divisor, and
-    a nonzero remainder implies the quotient plus one cannot wrap.
-    """
-    count = source.count(UNSTABLE_USIZE_DIVISION)
-    if count > 1:
-        raise ValueError("ambiguous usize division extraction")
-    normalized = source.replace(UNSTABLE_USIZE_DIVISION, STABLE_USIZE_DIVISION, 1)
-    if any(token in normalized for token in ("Usize.div ", "Usize.rem ", "Std.Usize.wrapping_add")):
-        raise ValueError("unexpected usize division extraction")
-    return normalized
+def prepare_native_macros(target):
+    """Build host executables with the normal sysroot, before MIR extraction."""
+    metadata = json.loads(run([
+        "cargo", "metadata", "--locked", "--format-version", "1",
+    ], capture=True))
+    packages = [package["id"] for package in metadata["packages"]
+                if any("proc-macro" in item["kind"] for item in package["targets"])]
+    if not packages:
+        return
+    arguments = ["cargo", "build", "--locked", "--target-dir", target]
+    for package in packages:
+        arguments.extend(["--package", package])
+    run(arguments)
 
 
 def generated_artifacts():

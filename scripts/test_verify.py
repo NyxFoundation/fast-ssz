@@ -1,6 +1,7 @@
 """Proof gate regressions."""
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -17,15 +18,74 @@ class VerificationGateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 verify.load_targets(path)
 
-    def test_should_normalize_only_the_miri_dependent_usize_division(self):
-        unstable = "prefix\n" + verify.UNSTABLE_USIZE_DIVISION + "suffix\n"
-        stable = "prefix\n" + verify.STABLE_USIZE_DIVISION + "suffix\n"
-        self.assertEqual(verify.normalize_usize_division(unstable), stable)
-        self.assertEqual(verify.normalize_usize_division(stable), stable)
-        with self.assertRaisesRegex(ValueError, "unexpected"):
-            verify.normalize_usize_division("let d ← Usize.div self rhs\n")
-        with self.assertRaisesRegex(ValueError, "ambiguous"):
-            verify.normalize_usize_division(unstable + unstable)
+    def test_should_preserve_aeneas_bodies_and_select_the_prepared_sysroot(self):
+        body = (
+            "  massert (¬ (rhs = 0#usize))\n"
+            "  let d ← Usize.div self rhs\n"
+            "  let r ← Usize.rem self rhs\n"
+            "  if r > 0#usize\n"
+            "  then ok (Std.Usize.wrapping_add d 1#usize)\n"
+            "  else ok d\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory)
+            (destination / "NyxSsz.lean").write_text(body)
+            with patch.object(verify, "check_api", return_value=set()), \
+                 patch.object(verify, "tool_path", side_effect=lambda tool, _: tool), \
+                 patch.object(verify, "miri_sysroot", return_value=destination) as sysroot, \
+                 patch.object(verify, "prepare_native_macros", create=True) as native, \
+                 patch.object(verify, "run") as run, \
+                 patch.object(verify, "split_model", return_value={"Core.lean": body}) as partition:
+                result = verify.extract({"extraction": {"transparent_items": []}}, [], destination)
+            partition.assert_called_once_with(body)
+            sysroot.assert_called_once()
+            native.assert_called_once_with(destination / "cargo")
+            charon = run.call_args_list[0].args[0]
+            self.assertEqual(charon[charon.index("--sysroot") + 1], destination)
+            self.assertEqual(charon[charon.index("--target-dir") + 1], destination / "cargo")
+            self.assertEqual(result, {"Core.lean": body.encode("utf-8")})
+
+    def test_should_prepare_miri_using_the_pinned_rust_toolchain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(verify, "run", return_value=directory + "\n") as run:
+                self.assertEqual(verify.miri_sysroot(verify.load_pins()), Path(directory))
+            run.assert_called_once_with(
+                ["cargo", "+" + verify.load_pins()["tools"]["rust_toolchain"],
+                 "miri", "setup", "--print-sysroot"], capture=True,
+            )
+
+    def test_should_fail_closed_when_miri_is_unavailable(self):
+        error = subprocess.CalledProcessError(1, ["cargo", "miri", "setup"])
+        with patch.object(verify, "run", side_effect=error) as run:
+            with self.assertRaises(subprocess.CalledProcessError):
+                verify.miri_sysroot(verify.load_pins())
+            self.assertEqual(run.call_count, 1)
+
+    def test_should_reject_missing_or_relative_miri_sysroots(self):
+        for output in ("", "relative/sysroot", "/missing-nyx-ssz-miri-sysroot"):
+            with self.subTest(output=output), patch.object(verify, "run", return_value=output):
+                with self.assertRaisesRegex(ValueError, "Miri sysroot"):
+                    verify.miri_sysroot(verify.load_pins())
+
+    def test_should_prebuild_only_host_proc_macros_from_locked_metadata(self):
+        packages = [
+            {"id": "library@1.0", "targets": [{"kind": ["lib"]}]},
+            {"id": "derive@1.0", "targets": [{"kind": ["proc-macro"]}]},
+        ]
+        with patch.object(verify, "run", side_effect=[json.dumps({"packages": packages}), None]) as run:
+            verify.prepare_native_macros(Path("target"))
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(run.call_args.args[0], [
+            "cargo", "build", "--locked", "--target-dir", Path("target"),
+            "--package", "derive@1.0",
+        ])
+
+    def test_should_skip_host_build_when_no_proc_macros_are_present(self):
+        with patch.object(verify, "run", return_value=json.dumps({"packages": []})) as run:
+            verify.prepare_native_macros(Path("target"))
+        run.assert_called_once_with(
+            ["cargo", "metadata", "--locked", "--format-version", "1"], capture=True,
+        )
 
     def test_should_accept_identical_artifacts(self):
         verify.assert_same_artifact(b"generated", b"generated")

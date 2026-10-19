@@ -47,6 +47,8 @@ nyx-ssz = { git = "https://github.com/NyxFoundation/nyx-ssz" }
 ## Reproduce
 
 Requires Linux x86_64, Git, Python 3.11+, Rustup/Cargo, Elan and network access.
+The pinned Rust toolchain includes Miri and rust-src. Extraction requires their prepared
+standard-library MIR and fails if it is unavailable; generated function bodies are not rewritten.
 Proof dependencies are large.
 
 ```sh
