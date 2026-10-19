@@ -12,10 +12,10 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links fifty-one registered operations to proofs over actual
+`verification/targets.json` links fifty-two registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
-variable-vector layout validation and three immutable layout-view projections. `verification/traits.json` separately
+variable-vector/list layout validation and three immutable layout-view projections. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
 Collection storage proofs do not imply generic SSZ collection codecs.
@@ -143,6 +143,14 @@ range invariant established by decoding and preserved by private, immutable fiel
 Zero-copy is source/pointer-test evidence, not a cost theorem. The helper validates
 layout, not the containing type declaration or any element value. A zero count follows
 the reference's internal helper, not a legal zero-length Vector declaration.
+
+`sequence::variable_list_view` refines `Ssz.listSlices` for variable-width elements
+and every optional machine-size capacity. Empty input gives an empty view. Nonempty
+input must supply a complete first offset, at least four, aligned to the table width
+and within the byte scope. It determines the element count before checking capacity;
+capacity errors precede later offset-order errors. The inferred count and all error
+precedences match the reference. Bounded and unbounded forms reuse the proved
+fixed-count layout validator and its view invariant, without adding a format limit.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered

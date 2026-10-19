@@ -15,6 +15,9 @@ def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
   | .OffsetPastScope, .offsetPastScope => True
   | .ScopeTooSmall, .scopeTooSmall _ _ => True
   | .FirstOffset, .firstOffset _ _ => True
+  | .OffsetBelowTable, .offsetBelowTable => True
+  | .OffsetUnaligned, .offsetUnaligned => True
+  | .OverLimit, .overLimit _ _ => True
   | _, _ => False
 
 def codecEncodingAgrees

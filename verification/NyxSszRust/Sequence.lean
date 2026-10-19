@@ -59,7 +59,7 @@ def sequence.offset_spans_loop.body
   else ok (done (core.result.Result.Ok spans))
 
 /-- [nyx_ssz::sequence::read_offsets]: loop body 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 115:4-126:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 157:4-168:1 -/
 @[rust_loop_body]
 def sequence.read_offsets_loop.body
   (input : Slice Std.U8) (count : Std.Usize)
@@ -93,7 +93,7 @@ structure sequence.SequenceView where
   ranges : alloc.vec.Vec sequence.BodyRange
 
 /-- [nyx_ssz::sequence::body_ranges]: loop body 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 131:4-136:5 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 173:4-178:5 -/
 @[rust_loop_body]
 def sequence.body_ranges_loop.body
   (offsets : Slice Std.Usize) (spans : Slice Std.Usize)
@@ -128,7 +128,7 @@ def sequence.offset_spans_loop
     (spans, index)
 
 /-- [nyx_ssz::sequence::read_offsets]: loop 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 115:4-126:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 157:4-168:1 -/
 @[rust_loop]
 def sequence.read_offsets_loop
   (input : Slice Std.U8) (count : Std.Usize)
@@ -167,7 +167,7 @@ def sequence.SequenceView.len
   ok (alloc.vec.Vec.len self.ranges)
 
 /-- [nyx_ssz::sequence::body_ranges]: loop 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 131:4-136:5 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 173:4-178:5 -/
 @[rust_loop]
 def sequence.body_ranges_loop
   (offsets : Slice Std.Usize) (spans : Slice Std.Usize)
@@ -191,7 +191,7 @@ def sequence.offset_spans
     0#usize
 
 /-- [nyx_ssz::sequence::read_offsets]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 112:0-126:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 154:0-168:1 -/
 @[reducible]
 def sequence.read_offsets
   (input : Slice Std.U8) (count : Std.Usize) :
@@ -208,7 +208,7 @@ def sequence.SequenceView.is_empty
   ok (i = 0#usize)
 
 /-- [nyx_ssz::sequence::body_ranges]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 128:0-138:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 170:0-180:1 -/
 @[reducible]
 def sequence.body_ranges
   (offsets : Slice Std.Usize) (spans : Slice Std.Usize) :
@@ -261,6 +261,57 @@ def sequence.variable_vector_view
             | core.result.Result.Err error1 =>
               ok (core.result.Result.Err error1)
         | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
+
+/-- [nyx_ssz::sequence::variable_list_view]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 116:0-152:1
+    Visibility: public -/
+def sequence.variable_list_view
+  (input : Slice Std.U8) (limit : Option Std.Usize) :
+  RustM (core.result.Result sequence.SequenceView error.CodecError)
+  := do
+  let i := Slice.len input
+  let i1 ← lift (UScalar.cast .U128 i)
+  if i1 >= 4294967296#u128
+  then ok (core.result.Result.Err error.CodecError.SizeOverflow)
+  else
+    let b ← core.slice.Slice.is_empty input
+    if b
+    then
+      ok (core.result.Result.Ok
+        { input, ranges := (alloc.vec.Vec.new sequence.BodyRange) })
+    else
+      let i2 := Slice.len input
+      if i2 < 4#usize
+      then ok (core.result.Result.Err error.CodecError.ScopeTooSmall)
+      else
+        let s ←
+          core.slice.index.Slice.index
+            (core.slice.index.SliceIndexRangeToUsizeSlice Std.U8) input
+            { «end» := 4#usize }
+        let r ← scalar.decode_u32 s
+        match r with
+        | core.result.Result.Ok first =>
+          let first1 ← lift (UScalar.cast .Usize first)
+          if first1 < 4#usize
+          then ok (core.result.Result.Err error.CodecError.OffsetBelowTable)
+          else
+            let b1 ← core.num.Usize.is_multiple_of first1 4#usize
+            if b1
+            then
+              let i3 := Slice.len input
+              if first1 > i3
+              then ok (core.result.Result.Err error.CodecError.OffsetPastScope)
+              else
+                let count ← first1 / 4#usize
+                match limit with
+                | none => sequence.variable_vector_view input count
+                | some capacity =>
+                  if count > capacity
+                  then ok (core.result.Result.Err error.CodecError.OverLimit)
+                  else sequence.variable_vector_view input count
+            else ok (core.result.Result.Err error.CodecError.OffsetUnaligned)
+        | core.result.Result.Err _ =>
+          ok (core.result.Result.Err error.CodecError.InvalidLength)
 
 
 end NyxSszRust

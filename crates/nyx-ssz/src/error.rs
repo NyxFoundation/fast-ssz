@@ -10,6 +10,9 @@ pub enum CodecError {
     OffsetPastScope,
     ScopeTooSmall,
     FirstOffset,
+    OffsetBelowTable,
+    OffsetUnaligned,
+    OverLimit,
 }
 
 impl std::fmt::Display for CodecError {
@@ -22,6 +25,9 @@ impl std::fmt::Display for CodecError {
             Self::OffsetPastScope => "SSZ offset exceeds its input scope",
             Self::ScopeTooSmall => "SSZ input is smaller than its header",
             Self::FirstOffset => "SSZ first offset must follow its header",
+            Self::OffsetBelowTable => "SSZ first offset is below its table width",
+            Self::OffsetUnaligned => "SSZ first offset is not aligned to its table width",
+            Self::OverLimit => "SSZ element count exceeds its declared capacity",
         })
     }
 }
