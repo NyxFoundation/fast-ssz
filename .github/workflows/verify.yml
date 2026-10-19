@@ -1,0 +1,44 @@
+name: Verify implemented codec slice
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    strategy:
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install pinned Rust
+        run: rustup toolchain install nightly-2026-08-18 --profile minimal --component rustfmt --component clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - run: rustup component add llvm-tools --toolchain nightly-2026-08-18
+      - run: cargo install cargo-llvm-cov --version 0.8.7 --locked
+      - run: cargo llvm-cov --workspace --fail-under-lines 80
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+  refinement:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install pinned Rust
+        run: rustup toolchain install nightly-2026-08-18 --profile minimal --component rustfmt --component clippy
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6 # v1
+        with:
+          lake-package-directory: verification
+          auto-config: "false"
+          build: "false"
+          test: "false"
+          lint: "false"
+          use-mathlib-cache: "true"
+      - run: cargo install cargo-hax --version 0.4.0 --locked
+      - run: python3 scripts/verify.py bootstrap
+      - run: python3 scripts/verify.py check

@@ -1,0 +1,19 @@
+format_version = 1
+
+[specification]
+repository = "https://github.com/ethereum/ssz-specs"
+revision = "c68b96a852559284cc4311b6c14105bcf51ac6ce"
+upstream_lean_toolchain = "leanprover/lean4:v4.33.1"
+
+[extraction]
+transparent_items = ["ruint", "core::num::_::div_ceil"]
+
+[tools]
+cargo_hax_version = "0.4.0"
+charon_version = "nightly-2026.09.02"
+charon_revision = "fea3fc68d445181cf4ce094855a43a17192a2b12"
+aeneas_version = "nightly-2026.09.03-6852e64"
+aeneas_repository = "https://github.com/cryspen/aeneas"
+aeneas_revision = "6852e6474ec508930acba4df79977b3483a10d10"
+rust_toolchain = "nightly-2026-08-18"
+lean_toolchain = "leanprover/lean4:v4.31.0"
