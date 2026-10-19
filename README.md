@@ -4,9 +4,11 @@ Rust SSZ: Aeneas/Lean proofs before optimization.
 **Verified baseline, not a complete SSZ library or production release.**
 Publishing is disabled; no performance superiority is claimed.
 
-Boolean, all six unsigned integer widths, Bitvector/Bitlist and borrowed
-ByteVector/ByteList/ProgressiveByteList codecs are implemented and proved,
+Boolean, all six unsigned integer widths, Bitvector/Bitlist/ProgressiveBitlist and
+borrowed ByteVector/ByteList/ProgressiveByteList codecs are implemented and proved,
 including malformed inputs and illegal zero-length vector declarations.
+ProgressiveBitlist decoding returns a validated zero-copy `BitListView`, exposing
+its canonical SSZ bytes and a widened bit count without Boolean expansion.
 All seven basic types also have proved `hash_tree_root` operations.
 SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
 32-byte nodes. Generic node Merkleization supports optional capacities and zero padding

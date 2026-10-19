@@ -1,4 +1,4 @@
-//! Canonical SSZ bitvectors, with low bits first and zero high padding.
+//! Canonical SSZ bitfields, with low bits first and canonical padding/delimiters.
 
 /// A bitfield value, declaration or byte encoding violates SSZ.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -10,6 +10,29 @@ pub enum BitfieldError {
     EmptyEncoding,
     NoDelimiter,
     TrailingZeros,
+}
+
+/// A validated progressive bitlist borrowing its canonical SSZ encoding.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BitListView<'a> {
+    encoded: &'a [u8],
+}
+
+impl<'a> BitListView<'a> {
+    /// Return the borrowed encoding, including its mandatory delimiter bit.
+    pub fn as_ssz_bytes(&self) -> &'a [u8] {
+        self.encoded
+    }
+
+    /// Return the data bit count, excluding the delimiter.
+    ///
+    /// The count is widened because packed input can hold more bits than `usize` counts.
+    pub fn len_bits(&self) -> u128 {
+        let bytes = self.as_ssz_bytes();
+        let final_byte = bytes[bytes.len() - 1];
+        let whole = (bytes.len() - 1) as u128;
+        whole * 8 + highest_bit(final_byte) as u128
+    }
 }
 
 fn bit_at(bits: &[bool], index: usize) -> u8 {
@@ -148,4 +171,53 @@ pub fn decode_bit_list(bytes: &[u8], limit: usize) -> Result<Vec<bool>, Bitfield
         return Err(BitfieldError::OverLimit);
     }
     Ok(unpack_bits(bytes, base + high))
+}
+
+/// Encode a progressive bitlist with no capacity or an optional declared capacity.
+pub fn encode_progressive_bit_list(
+    bits: &[bool],
+    limit: Option<usize>,
+) -> Result<Vec<u8>, BitfieldError> {
+    let capacity = match limit {
+        Some(capacity) => capacity,
+        None => usize::MAX,
+    };
+    encode_bit_list(bits, capacity)
+}
+
+/// Decode a progressive bitlist without copying or expanding its packed bits.
+///
+/// `None` imposes no declared capacity. A successful view keeps the canonical
+/// encoding, including the delimiter, and a bit count excluding that delimiter.
+///
+/// ```
+/// use fast_ssz::bitfield::decode_progressive_bit_list;
+/// let encoded = [0x0d];
+/// let view = decode_progressive_bit_list(&encoded, None).unwrap();
+/// assert_eq!(view.len_bits(), 3);
+/// assert_eq!(view.as_ssz_bytes(), &encoded);
+/// ```
+pub fn decode_progressive_bit_list(
+    bytes: &[u8],
+    limit: Option<usize>,
+) -> Result<BitListView<'_>, BitfieldError> {
+    if bytes.is_empty() {
+        return Err(BitfieldError::EmptyEncoding);
+    }
+    let final_byte = bytes[bytes.len() - 1];
+    if final_byte == 0 {
+        return Err(if all_zero(bytes) {
+            BitfieldError::NoDelimiter
+        } else {
+            BitfieldError::TrailingZeros
+        });
+    }
+    let view = BitListView { encoded: bytes };
+    let bit_len = view.len_bits();
+    if let Some(capacity) = limit {
+        if bit_len > capacity as u128 {
+            return Err(BitfieldError::OverLimit);
+        }
+    }
+    Ok(view)
 }

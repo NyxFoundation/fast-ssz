@@ -173,5 +173,25 @@
     "rust": "fast_ssz::merkle::merkleize",
     "lean": "FastSszRust.merkle.merkleize",
     "proof": "FastSszVerification.merkleize_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::encode_progressive_bit_list",
+    "lean": "FastSszRust.bitfield.encode_progressive_bit_list",
+    "proof": "FastSszVerification.encode_progressive_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::decode_progressive_bit_list",
+    "lean": "FastSszRust.bitfield.decode_progressive_bit_list",
+    "proof": "FastSszVerification.decode_progressive_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::BitListView::as_ssz_bytes",
+    "lean": "FastSszRust.bitfield.BitListView.as_ssz_bytes",
+    "proof": "FastSszVerification.bit_list_view_as_ssz_bytes_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::BitListView::len_bits",
+    "lean": "FastSszRust.bitfield.BitListView.len_bits",
+    "proof": "FastSszVerification.bit_list_view_len_bits_refines"
   }
 ]

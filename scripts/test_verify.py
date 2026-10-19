@@ -30,11 +30,67 @@ class VerificationGateTests(unittest.TestCase):
                  for i, (c, k) in enumerate(items)}
         self.assertEqual(verify.api_functions({"paths": paths}), {"fast_ssz::encode"})
 
-    def test_should_reject_unhandled_associated_functions_and_traits(self):
+    def test_should_discover_public_inherent_methods_using_their_type_paths(self):
+        document = {
+            "paths": {"10": {"crate_id": 0, "kind": "struct",
+                               "path": ["fast_ssz", "bitfield", "BitListView"]}},
+            "index": {
+                "20": {"crate_id": 0, "visibility": "default", "inner": {"impl": {
+                    "trait": None, "for": {"resolved_path": {"id": 10}}, "items": [30, 31]}}},
+                "30": {"crate_id": 0, "visibility": "public", "name": "len_bits",
+                       "inner": {"function": {}}},
+                "31": {"crate_id": 0, "visibility": "default", "name": "private_helper",
+                       "inner": {"function": {}}},
+            },
+        }
+        methods = {"fast_ssz::bitfield::BitListView::len_bits"}
+        self.assertEqual(verify.api_functions(document), methods)
+        with self.assertRaisesRegex(ValueError, "missing"):
+            verify.assert_api_covered(verify.api_functions(document), [ENTRY])
+
+    def test_should_reject_methods_without_a_discoverable_public_type(self):
+        document = {
+            "paths": {},
+            "index": {
+                "20": {"crate_id": 0, "visibility": "default", "inner": {"impl": {
+                    "trait": None, "for": {"resolved_path": {"id": 10}}, "items": [30]}}},
+                "30": {"crate_id": 0, "visibility": "public", "name": "len_bits",
+                       "inner": {"function": {}}},
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "associated"):
+            verify.api_functions(document)
+
+    def test_should_reject_ambiguous_inherent_method_paths(self):
+        document = {
+            "paths": {"10": {"crate_id": 0, "kind": "struct", "path": ["fast_ssz", "View"]}},
+            "index": {
+                "20": {"crate_id": 0, "visibility": "default", "inner": {"impl": {
+                    "trait": None, "for": {"resolved_path": {"id": 10}}, "items": [30, 31]}}},
+                "30": {"crate_id": 0, "visibility": "public", "name": "len",
+                       "inner": {"function": {}}},
+                "31": {"crate_id": 0, "visibility": "public", "name": "len",
+                       "inner": {"function": {}}},
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            verify.api_functions(document)
+
+    def test_should_reject_unknown_associated_functions_and_traits(self):
         for kind in ("function", "trait"):
             item = {"crate_id": 0, "visibility": "public", "inner": {kind: {}}}
             with self.subTest(kind=kind), self.assertRaises(ValueError):
                 verify.api_functions({"paths": {}, "index": {"0": item}})
+
+    def test_should_require_concrete_extraction_of_every_registered_method(self):
+        method = {"rust": "fast_ssz::bitfield::BitListView::len_bits",
+                  "lean": "FastSszRust.bitfield.BitListView.len_bits",
+                  "proof": "Proof.len_bits"}
+        artifacts = {"Bitfield.lean": "def bitfield.BitListView.len_bits := value\n"}
+        verify.assert_extracted_targets(artifacts, [method])
+        for source in ("", "axiom bitfield.BitListView.len_bits : Nat\n"):
+            with self.subTest(source=source), self.assertRaisesRegex(ValueError, "not extracted"):
+                verify.assert_extracted_targets({"Bitfield.lean": source}, [method])
 
     def test_should_require_exact_api_coverage(self):
         verify.assert_api_covered({ENTRY["rust"]}, [ENTRY])

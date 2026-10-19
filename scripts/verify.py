@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
-from extracted_modules import split_model
+from extracted_modules import NAMESPACE, declared_names, split_model
 
 ROOT = Path(__file__).resolve().parents[1]
 VERIFICATION = ROOT / "verification"
@@ -126,13 +126,25 @@ def bootstrap(pins):
     validate_dependencies(pins)
 
 
+def assert_extracted_targets(artifacts, targets):
+    definitions = {f"{NAMESPACE}.{name}" for source in artifacts.values()
+                   for name in declared_names(source)}
+    missing = sorted({target["lean"] for target in targets} - definitions)
+    if missing:
+        raise ValueError(f"registered operations were not extracted: {missing}")
+
+
 def extract(pins, targets, destination):
+    methods = check_api(targets)
     llbc = destination / "fast_ssz.llbc"
     arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas"]
     for item in pins["extraction"]["transparent_items"]:
         arguments.extend(["--include", item])
+    # Charon cannot start from inherent methods; require their concrete bodies
+    # through registered call graphs instead of accepting an opaque declaration.
     for target in targets:
-        arguments.extend(["--start-from", target["rust"]])
+        if target["rust"] not in methods:
+            arguments.extend(["--start-from", target["rust"]])
     arguments.extend([
         "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/fast-ssz/Cargo.toml",
     ])
@@ -143,7 +155,9 @@ def extract(pins, targets, destination):
         "-dest", destination, llbc,
     ])
     source = (destination / "FastSsz.lean").read_text(encoding="utf-8")
-    return {path: content.encode("utf-8") for path, content in split_model(source).items()}
+    artifacts = split_model(source)
+    assert_extracted_targets(artifacts, targets)
+    return {path: content.encode("utf-8") for path, content in artifacts.items()}
 
 
 def generated_artifacts():
@@ -168,19 +182,44 @@ def assert_same_artifact(actual, expected):
         raise ValueError("stale extraction; run verify.py extract and review")
 
 
+def inherent_method_paths(document):
+    index = document.get("index", {})
+    methods = {}
+    for item in index.values():
+        implementation = item["inner"].get("impl")
+        if item["crate_id"] != 0 or not implementation or implementation.get("trait") is not None:
+            continue
+        reference = implementation.get("for", {}).get("resolved_path", {})
+        owner = document["paths"].get(str(reference.get("id")))
+        if not owner or owner["crate_id"] != 0:
+            continue
+        for identifier in implementation["items"]:
+            method = index.get(str(identifier))
+            if not method or method["crate_id"] != 0 or method["visibility"] != "public":
+                continue
+            if "function" not in method["inner"]:
+                continue
+            path = "::".join([*owner["path"], method["name"]])
+            if path in methods.values():
+                raise ValueError("ambiguous associated function path")
+            methods[str(identifier)] = path
+    return methods
+
+
 def api_functions(document):
+    methods = inherent_method_paths(document)
     for identifier, item in document.get("index", {}).items():
         if item["crate_id"] != 0 or item["visibility"] != "public":
             continue
         if "trait" in item["inner"]:
             raise ValueError("public traits need proof coverage support")
-        if "function" in item["inner"] and identifier not in document["paths"]:
-            raise ValueError("public associated functions need proof coverage support")
+        if "function" in item["inner"] and identifier not in document["paths"] and identifier not in methods:
+            raise ValueError("public associated function has no discoverable type path")
     return {
         "::".join(item["path"])
         for item in document["paths"].values()
         if item["crate_id"] == 0 and item["kind"] == "function"
-    }
+    } | set(methods.values())
 
 
 def assert_api_covered(functions, targets):
@@ -199,6 +238,7 @@ def check_api(targets):
     ])
     document = json.loads((directory / "doc" / "fast_ssz.json").read_text())
     assert_api_covered(api_functions(document), targets)
+    return set(inherent_method_paths(document).values())
 
 
 def assert_import_closure(directory):
@@ -264,7 +304,6 @@ def check(pins, targets, directory):
     run(["cargo", "fmt", "--all", "--", "--check"])
     run(["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"])
     run(["cargo", "test", "--workspace"])
-    check_api(targets)
     assert_same_artifact(extract(pins, targets, directory), generated_artifacts())
     assert_import_closure(VERIFICATION)
     run(["lake", "build", "FastSszVerification"], cwd=VERIFICATION)

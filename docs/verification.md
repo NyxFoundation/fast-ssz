@@ -8,11 +8,11 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist and borrowed
+**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links thirty-five operations
+`verification/targets.json` links thirty-nine operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -51,6 +51,16 @@ arithmetic is guarded before multiplication/addition; both guards are proved equ
 to the reference's natural-number count check. The all-zero scan has a decreasing
 measure and prefix invariant. Vec allocation uses Aeneas's model; OS/resource failures
 remain outside the guarantee.
+
+ProgressiveBitlist accepts optional capacities, including no capacity, without
+imposing a new format limit. The borrowed `BitListView` stores only validated,
+immutable encoded bytes. Its value view is the reference's packed-bit decoding,
+not a projection discarding bit contents. Returned views are proved nonempty and
+canonical; their length getter's nonempty precondition is discharged by the decoder
+and preserved by private fields and borrowing. The exact storage getter is also
+audited. Bit counts use `u128` as an implementation choice to represent up to eight
+times a `usize` byte count, not as an SSZ requirement. Widening, arithmetic safety,
+all error classes and both bounded/unbounded codecs are proved.
 
 Basic `hash_tree_root` operations cover Boolean and all six unsigned widths, for
 every typed value. They refine the unchanged `Ssz.hashTreeRoot`, through its actual
@@ -93,8 +103,12 @@ order changes invalidating cached proofs. Registry source-location comments use
 portable package-relative paths; executable declaration bodies are unchanged.
 `sources.lock` explicitly names transparent foreign items; opaque foreign axioms
 are refused rather than treated as library contracts. The complete module inventory
-is checked against fresh extraction. New traits/methods fail pending coverage support.
-Statement adequacy requires review. Negative fixtures reject custom/native axioms
+is checked against fresh extraction. Public inherent methods are discovered from
+Rustdoc's implementation/type paths, and unknown or ambiguous paths are refused.
+Pinned Charon cannot start at inherent methods: they must be reached through registered
+call graphs, and every registered operation must have a concrete extracted definition.
+Opaque declarations cannot satisfy that check. Public traits still fail pending
+coverage support. Statement adequacy requires review. Negative fixtures reject custom/native axioms
 and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.
 
 Pinned Cryspen Aeneas uses Lean 4.31.0; upstream SSZ pins 4.33.1.
