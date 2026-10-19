@@ -12,8 +12,9 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links thirty-nine operations
-to proofs over actual Aeneas output.
+`verification/targets.json` links forty-three public operations to proofs over actual
+Aeneas output: the thirty-nine existing codec/hash/view operations and four new owned
+collection storage operations. Collection storage proofs do not imply generic SSZ codecs.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
 Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
@@ -93,7 +94,21 @@ index and incorrect branch lengths return the corresponding error category;
 a well-formed nonmatching proof returns false. Proofs cover index guards, sibling
 order, recursive termination, SHA-256 composition and bytewise root comparison.
 Error relations classify reasons, not the reference error's numeric diagnostics.
-Generic collections, paths, multiproofs and full-library conformance are not yet proved.
+Generic collection codecs, paths, multiproofs and full-library conformance are not yet proved.
+
+`collections::Vector<T, N>` and `collections::List<T, MAX>` own a private `Vec<T>`.
+Their generic constructors are proved for every element type and machine-size bound:
+vector declarations must be nonzero and match exactly; list lengths must not exceed
+the capacity, including zero capacity. Every success contains the original vector;
+every failure returns every original element with the exact error kind. Immutable
+projections preserve all elements and their order. Returning rejected storage avoids
+invoking user element destructors inside a constructor. Zero-sized unit-array fields
+retain const bounds in generic extraction without storing runtime bytes; Debug omits
+those markers so formatting is not proportional to the declared bound. Rust tests
+check allocation identity, no in-constructor element drops, nested non-Copy elements,
+formatting and maximum machine counts for zero-sized elements. These are shape/storage
+contracts, not element validity, serialization, tree-root or allocation-cost theorems.
+No `Ssz` trait or generic collection codec is provided in this slice yet.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered
