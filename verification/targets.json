@@ -193,5 +193,25 @@
     "rust": "nyx_ssz::bitfield::BitListView::len_bits",
     "lean": "NyxSszRust.bitfield.BitListView.len_bits",
     "proof": "NyxSszVerification.bit_list_view_len_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::vector",
+    "lean": "NyxSszRust.collections.vector",
+    "proof": "NyxSszVerification.vector_storage_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::list",
+    "lean": "NyxSszRust.collections.list",
+    "proof": "NyxSszVerification.list_storage_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::Vector::as_slice",
+    "lean": "NyxSszRust.collections.Vector.as_slice",
+    "proof": "NyxSszVerification.vector_as_slice_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::List::as_slice",
+    "lean": "NyxSszRust.collections.List.as_slice",
+    "proof": "NyxSszVerification.list_as_slice_refines"
   }
 ]

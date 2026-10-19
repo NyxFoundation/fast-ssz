@@ -1,5 +1,6 @@
 -- Generated module entry point; declarations are unchanged Aeneas output.
 import NyxSszRust.Bytes
+import NyxSszRust.Collections
 import NyxSszRust.Core
 import NyxSszRust.Sha256
 import NyxSszRust.Bitfield

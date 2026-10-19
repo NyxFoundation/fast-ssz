@@ -5,6 +5,7 @@ pub use ruint::aliases::U256;
 
 pub mod bitfield;
 pub mod bytes;
+pub mod collections;
 pub mod merkle;
 pub mod scalar;
 pub mod sha256;

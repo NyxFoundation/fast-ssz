@@ -19,7 +19,12 @@ RustCrypto `sha2` is a test oracle only, not a runtime dependency.
 and proved, not assumed correct. Other `ruint` operations are outside these proofs.
 See [verification scope and trust](docs/verification.md).
 
-Generic collections, containers, remaining Progressive types,
+Owned `collections::Vector<T, N>` and `collections::List<T, MAX>` now enforce
+exact/nonzero vector lengths and list capacities. Constructors and immutable projections
+are proved for arbitrary element types; rejected inputs return their original storage.
+This is a storage contract, not a generic element-codec or wire-layout proof.
+
+Generic collection codecs, the `Ssz` trait, containers, remaining Progressive types,
 CompatibleUnion, derive, composite hash-tree roots, index/path APIs, multiproofs, official vectors
 and benchmarks remain unfinished. The agreed release condition is not met.
 
@@ -43,6 +48,22 @@ Add this Git dependency to Cargo's `[dependencies]` (the crate is not published)
 ```toml
 nyx-ssz = { git = "https://github.com/NyxFoundation/nyx-ssz" }
 ```
+
+## Typed storage
+
+```rust
+use nyx_ssz::collections::{list, vector, List, Vector};
+let pair: Vector<u64, 2> = vector(vec![10, 20]).unwrap();
+let values: List<_, 4> = list(vec![pair]).unwrap();
+assert_eq!(values.as_slice()[0].as_slice(), &[10, 20]);
+let rejected = list::<_, 0>(vec![7u8]).unwrap_err();
+assert_eq!(rejected.values, vec![7]);
+```
+
+Fields are private and projections are immutable, so safe callers cannot resize the
+collections. Arbitrary nested/non-`Copy` elements are supported, but no `Ssz` trait
+or generic collection serializer is provided yet. Allocation identity and absence of
+element drops inside constructors are checked by Rust tests, not runtime-cost theorems.
 
 ## Reproduce
 
