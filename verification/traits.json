@@ -1,0 +1,50 @@
+[
+  {
+    "rust": "nyx_ssz::codec::Ssz",
+    "law": "NyxSszVerification.CodecLaw",
+    "members": {
+      "FIXED_SIZE": "assoc_const",
+      "IS_BASIC": "assoc_const",
+      "encode": "function",
+      "decode": "function",
+      "hash_tree_root": "function"
+    },
+    "instances": [
+      {
+        "type": "bool",
+        "lean": "NyxSszRust.Bool.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.bool_codec_refines"
+      },
+      {
+        "type": "u8",
+        "lean": "NyxSszRust.U8.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.u8_codec_refines"
+      },
+      {
+        "type": "u16",
+        "lean": "NyxSszRust.U16.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.u16_codec_refines"
+      },
+      {
+        "type": "u32",
+        "lean": "NyxSszRust.U32.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.u32_codec_refines"
+      },
+      {
+        "type": "u64",
+        "lean": "NyxSszRust.U64.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.u64_codec_refines"
+      },
+      {
+        "type": "u128",
+        "lean": "NyxSszRust.U128.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.u128_codec_refines"
+      },
+      {
+        "type": "crate::U256",
+        "lean": "NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSsz",
+        "proof": "NyxSszVerification.u256_codec_refines"
+      }
+    ]
+  }
+]

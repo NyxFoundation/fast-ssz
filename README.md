@@ -24,7 +24,12 @@ exact/nonzero vector lengths and list capacities. Constructors and immutable pro
 are proved for arbitrary element types; rejected inputs return their original storage.
 This is a storage contract, not a generic element-codec or wire-layout proof.
 
-Generic collection codecs, the `Ssz` trait, containers, remaining Progressive types,
+The `codec::Ssz` trait provides a uniform interface for Boolean and all six unsigned
+widths. Its seven library implementations have proved size metadata, basic/composite
+classification, encoding, decoding and roots. External implementations are not
+implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
+
+Generic collection codecs, collection trait implementations, containers, remaining Progressive types,
 CompatibleUnion, derive, composite hash-tree roots, index/path APIs, multiproofs, official vectors
 and benchmarks remain unfinished. The agreed release condition is not met.
 
@@ -49,6 +54,25 @@ Add this Git dependency to Cargo's `[dependencies]` (the crate is not published)
 nyx-ssz = { git = "https://github.com/NyxFoundation/nyx-ssz" }
 ```
 
+## Typed codecs
+
+```rust
+use nyx_ssz::codec::{decode, encode, hash_tree_root, Ssz};
+let value = 0x1234u16;
+let bytes = encode(&value).unwrap();
+assert_eq!(bytes, [0x34, 0x12]);
+assert_eq!(decode::<u16>(&bytes), Ok(value));
+assert_eq!(u16::FIXED_SIZE, Ok(Some(2)));
+let root = hash_tree_root(&value).unwrap();
+assert_eq!(&root[..2], bytes.as_slice());
+```
+
+`FIXED_SIZE` distinguishes fixed widths, variable layouts (`Ok(None)`) and an
+unrepresentable width (`Err(SizeOverflow)`). `IS_BASIC` controls packing before
+collection Merkleization. `CodecError` implements the standard error interfaces.
+Only the seven basic-type implementations are currently included; storage collections
+below do not implement `Ssz` yet. Borrowed byte/bit codecs remain separate APIs.
+
 ## Typed storage
 
 ```rust
@@ -61,8 +85,8 @@ assert_eq!(rejected.values, vec![7]);
 ```
 
 Fields are private and projections are immutable, so safe callers cannot resize the
-collections. Arbitrary nested/non-`Copy` elements are supported, but no `Ssz` trait
-or generic collection serializer is provided yet. Allocation identity and absence of
+collections. Arbitrary nested/non-`Copy` elements are supported, but collection
+`Ssz` implementations and generic collection serializers are not provided yet. Allocation identity and absence of
 element drops inside constructors are checked by Rust tests, not runtime-cost theorems.
 
 ## Reproduce

@@ -1,0 +1,85 @@
+import NyxSszRust.Codec
+import NyxSszVerification.Bytes
+import Ssz.Codec.Root
+
+open Aeneas Aeneas.Std Aeneas.Std.WP
+
+namespace NyxSszVerification
+
+/-- Unmapped faults cannot count as conformance. -/
+def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
+  | .InvalidLength, .scope _ _ => True
+  | .InvalidBoolean, .notABit _ => True
+  | .SizeOverflow, .offsetOverflow _ => True
+  | _, _ => False
+
+def codecEncodingAgrees
+    (actual : core.result.Result (alloc.vec.Vec U8) NyxSszRust.error.CodecError)
+    (expected : Except Ssz.Err Ssz.Bytes) : Prop :=
+  match actual, expected with
+  | .Ok bytes, .ok data => bytesToSpec bytes.val = data
+  | .Err error, .error fault => codecFaultAgrees error fault
+  | _, _ => False
+
+def codecDecodingAgrees {T : Type} (observe : T → Ssz.Value)
+    (actual : core.result.Result T NyxSszRust.error.CodecError)
+    (expected : Except Ssz.Err Ssz.Value) : Prop :=
+  match actual, expected with
+  | .Ok value, .ok expected => observe value = expected
+  | .Err error, .error fault => codecFaultAgrees error fault
+  | _, _ => False
+
+def codecRootAgrees
+    (actual : core.result.Result (Array U8 32#usize) NyxSszRust.error.CodecError)
+    (expected : Except Ssz.Err Ssz.Bytes) : Prop :=
+  match actual, expected with
+  | .Ok root, .ok bytes => bytesToSpec root.val = bytes
+  | .Err error, .error fault => codecFaultAgrees error fault
+  | _, _ => False
+
+/-- Metadata reports overflow instead of conflating it with variable layout. -/
+def codecWidthAgrees
+    (actual : core.result.Result (Option Usize) NyxSszRust.error.CodecError)
+    (expected : Option Nat) : Prop :=
+  match actual, expected with
+  | .Ok none, none => True
+  | .Ok (some width), some expected => width.val = expected
+  | .Err .SizeOverflow, some expected => Usize.max < expected
+  | _, _ => False
+
+def checkedHashTreeRoot (shape : Ssz.Desc) (value : Ssz.Value) : Except Ssz.Err Ssz.Bytes := do
+  shape.wellFormed
+  Ssz.hashTreeRoot shape value
+
+/-- A caller-supplied dictionary is not presumed lawful. Library instances prove this predicate. -/
+structure CodecLaw {T : Type} (codecInst : NyxSszRust.codec.Ssz T)
+    (shape : Ssz.Desc) (observe : T → Ssz.Value) : Prop where
+  width : codecInst.FIXED_SIZE ⦃ actual => codecWidthAgrees actual shape.fixedSize ⦄
+  basic : codecInst.IS_BASIC ⦃ actual => actual = shape.isBasic ⦄
+  encode : ∀ value, codecInst.encode value ⦃ actual =>
+    codecEncodingAgrees actual (checkedSerialize shape (observe value)) ⦄
+  decode : ∀ bytes, codecInst.decode bytes ⦃ actual =>
+    codecDecodingAgrees observe actual (checkedDeserialize shape (bytesToSpec bytes.val)) ⦄
+  root : ∀ value, codecInst.hash_tree_root value ⦃ actual =>
+    codecRootAgrees actual (checkedHashTreeRoot shape (observe value)) ⦄
+
+theorem codec_encode_refines {T : Type} (codecInst : NyxSszRust.codec.Ssz T)
+    (shape : Ssz.Desc) (observe : T → Ssz.Value) (law : CodecLaw codecInst shape observe) (value : T) :
+    NyxSszRust.codec.encode codecInst value ⦃ actual =>
+      codecEncodingAgrees actual (checkedSerialize shape (observe value)) ⦄ := by
+  exact law.encode value
+
+theorem codec_decode_refines {T : Type} (codecInst : NyxSszRust.codec.Ssz T)
+    (shape : Ssz.Desc) (observe : T → Ssz.Value) (law : CodecLaw codecInst shape observe)
+    (bytes : Slice U8) :
+    NyxSszRust.codec.decode codecInst bytes ⦃ actual =>
+      codecDecodingAgrees observe actual (checkedDeserialize shape (bytesToSpec bytes.val)) ⦄ := by
+  exact law.decode bytes
+
+theorem codec_hash_tree_root_refines {T : Type} (codecInst : NyxSszRust.codec.Ssz T)
+    (shape : Ssz.Desc) (observe : T → Ssz.Value) (law : CodecLaw codecInst shape observe) (value : T) :
+    NyxSszRust.codec.hash_tree_root codecInst value ⦃ actual =>
+      codecRootAgrees actual (checkedHashTreeRoot shape (observe value)) ⦄ := by
+  exact law.root value
+
+end NyxSszVerification

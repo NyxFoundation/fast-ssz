@@ -3,7 +3,10 @@ import re
 from graphlib import CycleError, TopologicalSorter
 
 NAMESPACE = "NyxSszRust"
-DOC = re.compile(r"^/-- \[(?:nyx_ssz::)?([a-z][a-z0-9_]*)::", re.MULTILINE)
+DOC = re.compile(
+    r"^/-- (?:Trait (?:declaration|implementation): )?\[(?:nyx_ssz::)?([a-z][a-z0-9_]*)::",
+    re.MULTILINE,
+)
 
 
 def declaration_units(body):
@@ -64,18 +67,21 @@ def referenced_owners(text, owners):
 
 
 def dependency_order(groups):
-    owners = {name: module for module, units in groups.items()
-              for name in declared_names("".join(units))}
+    entries = [(name, module) for module, units in groups.items()
+               for name in declared_names("".join(units))]
+    if len({name for name, _ in entries}) != len(entries):
+        raise ValueError("duplicate generated declaration names across modules")
+    owners = dict(entries)
     dependencies = {module: referenced_owners("".join(units), owners) - {module}
                     for module, units in groups.items()}
     return graph_order(dependencies), dependencies
 
 
-def canonical_declarations(module, units):
+def canonical_declarations(units):
     entries, owners = {}, {}
     for unit in units:
         names = declared_names(unit)
-        if not names or any(not name.startswith(module + ".") for name in names):
+        if not names:
             raise ValueError("unclassified generated declaration names")
         if names & owners.keys():
             raise ValueError("duplicate generated declaration names")
@@ -108,7 +114,7 @@ def split_model(source):
     names = {module: "".join(part.capitalize() for part in module.split("_")) for module in groups}
     if len(set(names.values())) != len(names):
         raise ValueError("generated module filename collision")
-    groups = {module: canonical_declarations(module, units) for module, units in groups.items()}
+    groups = {module: canonical_declarations(units) for module, units in groups.items()}
     order, dependencies = dependency_order(groups)
     output = {}
     for module in order:
