@@ -96,7 +96,7 @@ fn should_expose_protocol_errors_through_standard_error_interfaces() {
         ),
         (
             CodecError::SizeOverflow,
-            "SSZ type size is not representable",
+            "SSZ size exceeds its supported representation",
         ),
     ];
     for (error, expected) in cases {

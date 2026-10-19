@@ -2,6 +2,7 @@
 -- [nyx_ssz]
 import Aeneas
 import NyxSszRust.Error
+import NyxSszRust.Scalar
 open Aeneas Aeneas.Std RustM ControlFlow Error
 set_option linter.dupNamespace false
 set_option linter.hashCommand false
@@ -17,8 +18,14 @@ set_option maxHeartbeats 1000000
 set_option maxRecDepth 2048
 
 namespace NyxSszRust
+/-- [nyx_ssz::sequence::BodyRange]
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 6:0-9:1 -/
+structure sequence.BodyRange where
+  start : Std.Usize
+  «end» : Std.Usize
+
 /-- [nyx_ssz::sequence::offset_spans]: loop body 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 13:4-31:1
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 53:4-71:1
     Visibility: public -/
 @[rust_loop_body]
 def sequence.offset_spans_loop.body
@@ -51,8 +58,63 @@ def sequence.offset_spans_loop.body
         ok (cont (spans1, next_index))
   else ok (done (core.result.Result.Ok spans))
 
+/-- [nyx_ssz::sequence::read_offsets]: loop body 0:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 115:4-126:1 -/
+@[rust_loop_body]
+def sequence.read_offsets_loop.body
+  (input : Slice Std.U8) (count : Std.Usize)
+  (offsets : alloc.vec.Vec Std.Usize) (index : Std.Usize) :
+  RustM (ControlFlow ((alloc.vec.Vec Std.Usize) × Std.Usize)
+    (core.result.Result (alloc.vec.Vec Std.Usize) error.CodecError))
+  := do
+  if index < count
+  then
+    let start ← index * 4#usize
+    let «end» ← start + 4#usize
+    let s ←
+      core.slice.index.Slice.index (core.slice.index.SliceIndexRangeUsizeSlice
+        Std.U8) input { start, «end» }
+    let r ← scalar.decode_u32 s
+    match r with
+    | core.result.Result.Ok offset =>
+      let offset1 ← lift (UScalar.cast .Usize offset)
+      let offsets1 ← alloc.vec.Vec.push offsets offset1
+      let index1 ← index + 1#usize
+      ok (cont (offsets1, index1))
+    | core.result.Result.Err _ =>
+      ok (done (core.result.Result.Err error.CodecError.InvalidLength))
+  else ok (done (core.result.Result.Ok offsets))
+
+/-- [nyx_ssz::sequence::SequenceView]
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 13:0-16:1
+    Visibility: public -/
+structure sequence.SequenceView where
+  input : Slice Std.U8
+  ranges : alloc.vec.Vec sequence.BodyRange
+
+/-- [nyx_ssz::sequence::body_ranges]: loop body 0:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 131:4-136:5 -/
+@[rust_loop_body]
+def sequence.body_ranges_loop.body
+  (offsets : Slice Std.Usize) (spans : Slice Std.Usize)
+  (ranges : alloc.vec.Vec sequence.BodyRange) (index : Std.Usize) :
+  RustM (ControlFlow ((alloc.vec.Vec sequence.BodyRange) × Std.Usize)
+    (alloc.vec.Vec sequence.BodyRange))
+  := do
+  let i := Slice.len offsets
+  if index < i
+  then
+    let start ← Slice.index_usize offsets index
+    let i1 ← Slice.index_usize spans index
+    let «end» ← start + i1
+    let ranges1 ←
+      alloc.vec.Vec.push ranges ({ start, «end» } : sequence.BodyRange)
+    let index1 ← index + 1#usize
+    ok (cont (ranges1, index1))
+  else ok (done ranges)
+
 /-- [nyx_ssz::sequence::offset_spans]: loop 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 13:4-31:1
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 53:4-71:1
     Visibility: public -/
 @[rust_loop]
 def sequence.offset_spans_loop
@@ -65,8 +127,60 @@ def sequence.offset_spans_loop
       spans1 index1)
     (spans, index)
 
+/-- [nyx_ssz::sequence::read_offsets]: loop 0:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 115:4-126:1 -/
+@[rust_loop]
+def sequence.read_offsets_loop
+  (input : Slice Std.U8) (count : Std.Usize)
+  (offsets : alloc.vec.Vec Std.Usize) (index : Std.Usize) :
+  RustM (core.result.Result (alloc.vec.Vec Std.Usize) error.CodecError)
+  := do
+  loop
+    (fun (offsets1, index1) => sequence.read_offsets_loop.body input count
+      offsets1 index1)
+    (offsets, index)
+
+/-- [nyx_ssz::sequence::{nyx_ssz::sequence::SequenceView<'a>}::get]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 36:4-42:5
+    Visibility: public -/
+def sequence.SequenceView.get
+  (self : sequence.SequenceView) (index : Std.Usize) :
+  RustM (Option (Slice Std.U8))
+  := do
+  let i := alloc.vec.Vec.len self.ranges
+  if index >= i
+  then ok none
+  else
+    let range ←
+      alloc.vec.Vec.index (core.slice.index.SliceIndexUsizeSlice
+        sequence.BodyRange) self.ranges index
+    let s ←
+      core.slice.index.Slice.index (core.slice.index.SliceIndexRangeUsizeSlice
+        Std.U8) self.input { start := range.start, «end» := range.end }
+    ok (some s)
+
+/-- [nyx_ssz::sequence::{nyx_ssz::sequence::SequenceView<'a>}::len]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 22:4-24:5
+    Visibility: public -/
+def sequence.SequenceView.len
+  (self : sequence.SequenceView) : RustM Std.Usize := do
+  ok (alloc.vec.Vec.len self.ranges)
+
+/-- [nyx_ssz::sequence::body_ranges]: loop 0:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 131:4-136:5 -/
+@[rust_loop]
+def sequence.body_ranges_loop
+  (offsets : Slice Std.Usize) (spans : Slice Std.Usize)
+  (ranges : alloc.vec.Vec sequence.BodyRange) (index : Std.Usize) :
+  RustM (alloc.vec.Vec sequence.BodyRange)
+  := do
+  loop
+    (fun (ranges1, index1) => sequence.body_ranges_loop.body offsets spans
+      ranges1 index1)
+    (ranges, index)
+
 /-- [nyx_ssz::sequence::offset_spans]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 10:0-31:1
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 50:0-71:1
     Visibility: public -/
 @[reducible]
 def sequence.offset_spans
@@ -75,6 +189,78 @@ def sequence.offset_spans
   := do
   sequence.offset_spans_loop offsets scope (alloc.vec.Vec.new Std.Usize)
     0#usize
+
+/-- [nyx_ssz::sequence::read_offsets]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 112:0-126:1 -/
+@[reducible]
+def sequence.read_offsets
+  (input : Slice Std.U8) (count : Std.Usize) :
+  RustM (core.result.Result (alloc.vec.Vec Std.Usize) error.CodecError)
+  := do
+  sequence.read_offsets_loop input count (alloc.vec.Vec.new Std.Usize) 0#usize
+
+/-- [nyx_ssz::sequence::{nyx_ssz::sequence::SequenceView<'a>}::is_empty]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 29:4-31:5
+    Visibility: public -/
+def sequence.SequenceView.is_empty
+  (self : sequence.SequenceView) : RustM Bool := do
+  let i ← sequence.SequenceView.len self
+  ok (i = 0#usize)
+
+/-- [nyx_ssz::sequence::body_ranges]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 128:0-138:1 -/
+@[reducible]
+def sequence.body_ranges
+  (offsets : Slice Std.Usize) (spans : Slice Std.Usize) :
+  RustM (alloc.vec.Vec sequence.BodyRange)
+  := do
+  sequence.body_ranges_loop offsets spans (alloc.vec.Vec.new
+    sequence.BodyRange) 0#usize
+
+/-- [nyx_ssz::sequence::variable_vector_view]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 82:0-110:1
+    Visibility: public -/
+def sequence.variable_vector_view
+  (input : Slice Std.U8) (count : Std.Usize) :
+  RustM (core.result.Result sequence.SequenceView error.CodecError)
+  := do
+  let i := Slice.len input
+  let i1 ← lift (UScalar.cast .U128 i)
+  if i1 >= 4294967296#u128
+  then ok (core.result.Result.Err error.CodecError.SizeOverflow)
+  else
+    let i2 := Slice.len input
+    let i3 ← i2 / 4#usize
+    if count > i3
+    then ok (core.result.Result.Err error.CodecError.ScopeTooSmall)
+    else
+      if count = 0#usize
+      then
+        ok (core.result.Result.Ok
+          { input, ranges := (alloc.vec.Vec.new sequence.BodyRange) })
+      else
+        let r ← sequence.read_offsets input count
+        match r with
+        | core.result.Result.Ok offsets =>
+          let i4 ←
+            alloc.vec.Vec.index (core.slice.index.SliceIndexUsizeSlice
+              Std.Usize) offsets 0#usize
+          let i5 ← count * 4#usize
+          if i4 != i5
+          then ok (core.result.Result.Err error.CodecError.FirstOffset)
+          else
+            let s := alloc.vec.Vec.deref offsets
+            let i6 := Slice.len input
+            let r1 ← sequence.offset_spans s i6
+            match r1 with
+            | core.result.Result.Ok spans =>
+              let s1 := alloc.vec.Vec.deref offsets
+              let s2 := alloc.vec.Vec.deref spans
+              let v ← sequence.body_ranges s1 s2
+              ok (core.result.Result.Ok { input, ranges := v })
+            | core.result.Result.Err error1 =>
+              ok (core.result.Result.Err error1)
+        | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
 
 
 end NyxSszRust

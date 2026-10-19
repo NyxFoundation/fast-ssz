@@ -12,9 +12,10 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links forty-seven registered operations to proofs over actual
+`verification/targets.json` links fifty-one registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
-storage operations, three generic codec dispatchers and numeric offset-span validation. `verification/traits.json` separately
+storage operations, three generic codec dispatchers, numeric offset-span validation,
+variable-vector layout validation and three immutable layout-view projections. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
 Collection storage proofs do not imply generic SSZ collection codecs.
@@ -131,6 +132,18 @@ are safe even at machine maxima. This numeric helper does not enforce a four-byt
 wire envelope, validate the first offset/header, or parse input bytes; those are
 separate layout checks, not silently presumed complete here.
 
+`sequence::variable_vector_view` refines `Ssz.vectorSlices` for every variable-width
+element descriptor, machine-size count and input slice. It checks the less-than-2^32
+composite envelope, fixed-count header budget and exact first offset before numeric
+span validation. Its offset-read and range-construction loops terminate and have safe
+arithmetic, indexing and pushes. Successful `SequenceView` values retain the original
+input and validated immutable ranges; `len`, `is_empty` and `get` preserve every body
+and order, including empty bodies and out-of-range queries. Getter safety uses the
+range invariant established by decoding and preserved by private, immutable fields.
+Zero-copy is source/pointer-test evidence, not a cost theorem. The helper validates
+layout, not the containing type declaration or any element value. A zero count follows
+the reference's internal helper, not a legal zero-length Vector declaration.
+
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered
 modules with qualified names and declaration bodies preserved. Dependency-aware
@@ -151,9 +164,12 @@ been removed; its byte-equality check did not establish equivalence to the origi
 are refused rather than treated as library contracts. The complete module inventory
 is checked against fresh extraction. Public inherent methods are discovered from
 Rustdoc's implementation/type paths, and unknown or ambiguous paths are refused.
-Pinned Charon cannot start at inherent methods: they must be reached through registered
-call graphs, and every registered operation must have a concrete extracted definition.
-Opaque declarations cannot satisfy that check. Unregistered public traits fail. For `Ssz`,
+Pinned Charon cannot select inherent methods by explicit paths. They use real call
+graphs or explicit `verify::start_from` declaration attributes. The `verification`
+Cargo feature enables only tool registration and those attributes; it does not select
+alternate executable bodies. Normal consumers do not need the feature. Extraction
+selects the annotated methods, while exact Rustdoc registration and concrete-body
+checks remain mandatory; opaque declarations cannot satisfy coverage. Unregistered public traits fail. For `Ssz`,
 Rustdoc declaration/implementation inventories and concretely extracted dictionaries must
 match the registry exactly. Lean checks that each theorem establishes the supported
 unconditional `CodecLaw` for that precise dictionary; unrelated theorems, impossible

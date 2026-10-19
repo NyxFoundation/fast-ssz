@@ -17,7 +17,7 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::error::CodecError]
-    Source: 'crates/nyx-ssz/src/error.rs', lines 5:0-11:1
+    Source: 'crates/nyx-ssz/src/error.rs', lines 5:0-13:1
     Visibility: public -/
 @[discriminant isize]
 inductive error.CodecError where
@@ -26,6 +26,8 @@ inductive error.CodecError where
 | SizeOverflow : error.CodecError
 | OffsetUnordered : error.CodecError
 | OffsetPastScope : error.CodecError
+| ScopeTooSmall : error.CodecError
+| FirstOffset : error.CodecError
 
 
 end NyxSszRust

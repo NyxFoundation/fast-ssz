@@ -140,11 +140,12 @@ def extract(pins, targets, destination, contracts):
     methods = check_api(targets, contracts)
     llbc = destination / "nyx_ssz.llbc"
     arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas",
-                 "--sysroot", miri_sysroot(pins)]
+                 "--start-from-attribute=verify::start_from", "--sysroot", miri_sysroot(pins)]
     for item in pins["extraction"]["transparent_items"]:
         arguments.extend(["--include", item])
-    # Charon cannot start from inherent methods; require their concrete bodies
-    # through registered call graphs instead of accepting an opaque declaration.
+    # Explicit method paths are unsupported by pinned Charon. Selected methods
+    # use declaration-only entry attributes; other methods need real call graphs.
+    # Exact coverage still requires a concrete body for every registered method.
     for target in targets:
         if target["rust"] not in methods:
             arguments.extend(["--start-from", target["rust"]])
@@ -152,7 +153,7 @@ def extract(pins, targets, destination, contracts):
         arguments.extend(["--start-from", contract["rust"].rsplit("::", 1)[0]])
     arguments.extend([
         "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/nyx-ssz/Cargo.toml",
-        "--target-dir", destination / "cargo",
+        "--features", "verification", "--target-dir", destination / "cargo",
     ])
     prepare_native_macros(destination / "cargo")
     run(arguments)
