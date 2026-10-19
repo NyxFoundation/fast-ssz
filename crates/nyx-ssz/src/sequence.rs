@@ -3,16 +3,16 @@
 use crate::error::CodecError;
 
 #[derive(Debug, Eq, PartialEq)]
-struct BodyRange {
-    start: usize,
-    end: usize,
+pub(crate) struct BodyRange {
+    pub(crate) start: usize,
+    pub(crate) end: usize,
 }
 
 /// Validated body ranges borrowing a single immutable SSZ encoding.
 #[derive(Debug, Eq, PartialEq)]
 pub struct SequenceView<'a> {
-    input: &'a [u8],
-    ranges: Vec<BodyRange>,
+    pub(crate) input: &'a [u8],
+    pub(crate) ranges: Vec<BodyRange>,
 }
 
 impl<'a> SequenceView<'a> {

@@ -11,6 +11,7 @@ import sys
 import tempfile
 import tomllib
 from extracted_modules import NAMESPACE, declared_names, split_model
+from llbc_drops import assert_safe_drops
 from trait_contracts import load_contracts, validate_traits, assert_extracted_instances
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -139,7 +140,7 @@ def assert_extracted_targets(artifacts, targets):
 def extract(pins, targets, destination, contracts):
     methods = check_api(targets, contracts)
     llbc = destination / "nyx_ssz.llbc"
-    arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas",
+    arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas", "--precise-drops",
                  "--start-from-attribute=verify::start_from", "--sysroot", miri_sysroot(pins)]
     for item in pins["extraction"]["transparent_items"]:
         arguments.extend(["--include", item])
@@ -157,6 +158,7 @@ def extract(pins, targets, destination, contracts):
     ])
     prepare_native_macros(destination / "cargo")
     run(arguments)
+    assert_safe_drops(json.loads(llbc.read_text(encoding="utf-8")))
     run([
         tool_path("aeneas", pins), "-backend", "lean", "-namespace", "NyxSszRust",
         "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",

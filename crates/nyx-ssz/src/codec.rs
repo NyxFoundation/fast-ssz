@@ -31,6 +31,56 @@ pub fn decode<T: Ssz>(bytes: &[u8]) -> Result<T, DecodeFailure<T::DecodeState>> 
     T::decode(bytes)
 }
 
+/// Owned values retained when a sequence element refuses its byte range.
+pub struct SequenceDecodeState<T: Ssz> {
+    pub values: Vec<T>,
+    pub child: Option<T::DecodeState>,
+}
+
+/// Decode validated body ranges, retaining every completed value on failure.
+///
+/// The view validates layout, not the element type declaration. Each element
+/// codec validates its own value; an empty view invokes no element codecs.
+pub fn decode_elements<T: Ssz>(
+    view: &crate::sequence::SequenceView<'_>,
+) -> Result<Vec<T>, DecodeFailure<SequenceDecodeState<T>>> {
+    decode_ranges(view.input, &view.ranges)
+}
+
+fn decode_ranges<T: Ssz>(
+    input: &[u8],
+    ranges: &[crate::sequence::BodyRange],
+) -> Result<Vec<T>, DecodeFailure<SequenceDecodeState<T>>> {
+    let mut values = Vec::new();
+    let mut index = 0;
+    while index < ranges.len() {
+        let range = &ranges[index];
+        let value = match decode_range::<T>(input, range.start, range.end) {
+            Ok(value) => value,
+            Err(failure) => {
+                return Err(DecodeFailure {
+                    kind: failure.kind,
+                    state: SequenceDecodeState {
+                        values,
+                        child: Some(failure.state),
+                    },
+                })
+            }
+        };
+        values.push(value);
+        index += 1;
+    }
+    Ok(values)
+}
+
+fn decode_range<T: Ssz>(
+    input: &[u8],
+    start: usize,
+    end: usize,
+) -> Result<T, DecodeFailure<T::DecodeState>> {
+    T::decode(&input[start..end])
+}
+
 /// Compute a typed value's SSZ root using its codec.
 pub fn hash_tree_root<T: Ssz>(value: &T) -> Result<[u8; 32], CodecError> {
     value.hash_tree_root()

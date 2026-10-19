@@ -4,6 +4,7 @@ import Aeneas
 import NyxSszRust.Error
 import NyxSszRust.Ruint
 import NyxSszRust.Scalar
+import NyxSszRust.Sequence
 import NyxSszRust.TreeHash
 open Aeneas Aeneas.Std RustM ControlFlow Error
 set_option linter.dupNamespace false
@@ -21,7 +22,7 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 60:12-60:82
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:12-110:82
     Visibility: public -/
 @[global_simps, irreducible]
 def Bool.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -29,13 +30,13 @@ def Bool.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 1#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 61:12-61:40
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 111:12-111:40
     Visibility: public -/
 @[global_simps, irreducible]
 def Bool.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 77:12-79:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 127:12-129:13
     Visibility: public -/
 def Bool.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : Bool) :
@@ -45,7 +46,7 @@ def Bool.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u128}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 60:12-60:82
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:12-110:82
     Visibility: public -/
 @[global_simps, irreducible]
 def U128.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -53,13 +54,13 @@ def U128.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 16#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u128}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 61:12-61:40
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 111:12-111:40
     Visibility: public -/
 @[global_simps, irreducible]
 def U128.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u128}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 77:12-79:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 127:12-129:13
     Visibility: public -/
 def U128.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : Std.U128) :
@@ -69,7 +70,7 @@ def U128.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u16}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 60:12-60:82
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:12-110:82
     Visibility: public -/
 @[global_simps, irreducible]
 def U16.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -77,13 +78,13 @@ def U16.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 2#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u16}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 61:12-61:40
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 111:12-111:40
     Visibility: public -/
 @[global_simps, irreducible]
 def U16.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u16}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 77:12-79:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 127:12-129:13
     Visibility: public -/
 def U16.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : Std.U16) :
@@ -93,7 +94,7 @@ def U16.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u32}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 60:12-60:82
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:12-110:82
     Visibility: public -/
 @[global_simps, irreducible]
 def U32.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -101,13 +102,13 @@ def U32.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 4#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u32}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 61:12-61:40
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 111:12-111:40
     Visibility: public -/
 @[global_simps, irreducible]
 def U32.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u32}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 77:12-79:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 127:12-129:13
     Visibility: public -/
 def U32.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : Std.U32) :
@@ -117,7 +118,7 @@ def U32.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u64}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 60:12-60:82
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:12-110:82
     Visibility: public -/
 @[global_simps, irreducible]
 def U64.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -125,13 +126,13 @@ def U64.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 8#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u64}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 61:12-61:40
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 111:12-111:40
     Visibility: public -/
 @[global_simps, irreducible]
 def U64.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u64}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 77:12-79:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 127:12-129:13
     Visibility: public -/
 def U64.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : Std.U64) :
@@ -141,7 +142,7 @@ def U64.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u8}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 60:12-60:82
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:12-110:82
     Visibility: public -/
 @[global_simps, irreducible]
 def U8.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -149,13 +150,13 @@ def U8.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 1#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u8}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 61:12-61:40
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 111:12-111:40
     Visibility: public -/
 @[global_simps, irreducible]
 def U8.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u8}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 77:12-79:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 127:12-129:13
     Visibility: public -/
 def U8.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : Std.U8) :
@@ -163,6 +164,14 @@ def U8.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   := do
   let a ← tree_hash.hash_tree_root_u8 self
   ok (core.result.Result.Ok a)
+
+/-- [nyx_ssz::codec::SequenceDecodeState]
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 35:0-38:1
+    Visibility: public -/
+structure codec.SequenceDecodeState (T : Type) (Clause0_DecodeState : Type)
+  where
+  values : alloc.vec.Vec T
+  child : Option Clause0_DecodeState
 
 /-- Trait declaration: [nyx_ssz::codec::Ssz]
     Source: 'crates/nyx-ssz/src/codec.rs', lines 12:0-22:1
@@ -178,7 +187,7 @@ structure codec.Ssz (Self : Type) (Self_DecodeState : Type) where
     error.CodecError)
 
 /-- [nyx_ssz::codec::fixed_bytes]: loop body 0:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 42:4-45:5 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 92:4-95:5 -/
 @[rust_loop_body]
 def codec.fixed_bytes_loop.body
   {N : Std.Usize} (input : Array Std.U8 N) (output : alloc.vec.Vec Std.U8)
@@ -195,7 +204,7 @@ def codec.fixed_bytes_loop.body
   else ok (done output)
 
 /-- [nyx_ssz::codec::scalar_error]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 49:0-54:1 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 99:0-104:1 -/
 def codec.scalar_error
   (error1 : scalar.ScalarError) : RustM error.CodecError := do
   match error1 with
@@ -203,7 +212,7 @@ def codec.scalar_error
   | scalar.ScalarError.InvalidBoolean => ok error.CodecError.InvalidBoolean
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for ruint::Uint<256usize, 4usize>}::FIXED_SIZE]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 93:4-93:71
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 143:4-143:71
     Visibility: public -/
 @[global_simps, irreducible]
 def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -211,13 +220,13 @@ def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
   core.result.Result.Ok (some 32#usize)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for ruint::Uint<256usize, 4usize>}::IS_BASIC]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 94:4-94:32
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 144:4-144:32
     Visibility: public -/
 @[global_simps, irreducible]
 def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.IS_BASIC : Bool := true
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for ruint::Uint<256usize, 4usize>}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 110:4-112:5
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 160:4-162:5
     Visibility: public -/
 def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : ruint.Uint 256#usize 4#usize) :
@@ -227,7 +236,7 @@ def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 67:12-75:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 117:12-125:13
     Visibility: public -/
 def Bool.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -241,7 +250,7 @@ def Bool.Insts.Nyx_sszCodecSszTuple.decode
     ok (core.result.Result.Err { kind := ce, state := () })
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u128}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 67:12-75:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 117:12-125:13
     Visibility: public -/
 def U128.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -255,7 +264,7 @@ def U128.Insts.Nyx_sszCodecSszTuple.decode
     ok (core.result.Result.Err { kind := ce, state := () })
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u16}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 67:12-75:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 117:12-125:13
     Visibility: public -/
 def U16.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -269,7 +278,7 @@ def U16.Insts.Nyx_sszCodecSszTuple.decode
     ok (core.result.Result.Err { kind := ce, state := () })
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u32}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 67:12-75:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 117:12-125:13
     Visibility: public -/
 def U32.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -283,7 +292,7 @@ def U32.Insts.Nyx_sszCodecSszTuple.decode
     ok (core.result.Result.Err { kind := ce, state := () })
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u64}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 67:12-75:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 117:12-125:13
     Visibility: public -/
 def U64.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -297,7 +306,7 @@ def U64.Insts.Nyx_sszCodecSszTuple.decode
     ok (core.result.Result.Err { kind := ce, state := () })
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u8}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 67:12-75:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 117:12-125:13
     Visibility: public -/
 def U8.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -320,6 +329,19 @@ def codec.decode
   := do
   SszInst.decode bytes1
 
+/-- [nyx_ssz::codec::decode_range]:
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 76:0-82:1 -/
+def codec.decode_range
+  {T : Type} {Clause0_DecodeState : Type} (SszInst : codec.Ssz T
+  Clause0_DecodeState) (input : Slice Std.U8) (start : Std.Usize)
+  («end» : Std.Usize) :
+  RustM (core.result.Result T (error.DecodeFailure Clause0_DecodeState))
+  := do
+  let s ←
+    core.slice.index.Slice.index (core.slice.index.SliceIndexRangeUsizeSlice
+      Std.U8) input { start, «end» }
+  SszInst.decode s
+
 /-- [nyx_ssz::codec::encode]:
     Source: 'crates/nyx-ssz/src/codec.rs', lines 25:0-27:1
     Visibility: public -/
@@ -331,7 +353,7 @@ def codec.encode
   SszInst.encode value
 
 /-- [nyx_ssz::codec::fixed_bytes]: loop 0:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 42:4-45:5 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 92:4-95:5 -/
 @[rust_loop]
 def codec.fixed_bytes_loop
   {N : Std.Usize} (input : Array Std.U8 N) (output : alloc.vec.Vec Std.U8)
@@ -343,7 +365,7 @@ def codec.fixed_bytes_loop
     (output, index)
 
 /-- [nyx_ssz::codec::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 35:0-37:1
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 85:0-87:1
     Visibility: public -/
 def codec.hash_tree_root
   {T : Type} {Clause0_DecodeState : Type} (SszInst : codec.Ssz T
@@ -353,7 +375,7 @@ def codec.hash_tree_root
   SszInst.hash_tree_root value
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for ruint::Uint<256usize, 4usize>}::decode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 100:4-108:5
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 150:4-158:5
     Visibility: public -/
 def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -367,15 +389,45 @@ def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.decode
     let ce ← codec.scalar_error error1
     ok (core.result.Result.Err { kind := ce, state := () })
 
+/-- [nyx_ssz::codec::decode_ranges]: loop body 0:
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 56:4-74:1 -/
+@[rust_loop_body]
+def codec.decode_ranges_loop.body
+  {T : Type} {Clause0_DecodeState : Type} (SszInst : codec.Ssz T
+  Clause0_DecodeState) (input : Slice Std.U8)
+  (ranges : Slice sequence.BodyRange) (values : alloc.vec.Vec T)
+  (index : Std.Usize) :
+  RustM (ControlFlow ((alloc.vec.Vec T) × Std.Usize) (core.result.Result
+    (alloc.vec.Vec T) (error.DecodeFailure (codec.SequenceDecodeState T
+    Clause0_DecodeState))))
+  := do
+  let i := Slice.len ranges
+  if index < i
+  then
+    let range ← Slice.index_usize ranges index
+    let r ← codec.decode_range SszInst input range.start range.end
+    match r with
+    | core.result.Result.Ok value =>
+      let values1 ← alloc.vec.Vec.push values value
+      let index1 ← index + 1#usize
+      ok (cont (values1, index1))
+    | core.result.Result.Err failure =>
+      ok (done (core.result.Result.Err
+        {
+          kind := failure.kind,
+          state := { values, child := (some failure.state) }
+        }))
+  else ok (done (core.result.Result.Ok values))
+
 /-- [nyx_ssz::codec::fixed_bytes]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 39:0-47:1 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 89:0-97:1 -/
 @[reducible]
 def codec.fixed_bytes
   {N : Std.Usize} (input : Array Std.U8 N) : RustM (alloc.vec.Vec Std.U8) := do
   codec.fixed_bytes_loop input (alloc.vec.Vec.new Std.U8) 0#usize
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 63:12-65:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 113:12-115:13
     Visibility: public -/
 def Bool.Insts.Nyx_sszCodecSszTuple.encode
   (self : Bool) :
@@ -386,7 +438,7 @@ def Bool.Insts.Nyx_sszCodecSszTuple.encode
   ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u128}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 63:12-65:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 113:12-115:13
     Visibility: public -/
 def U128.Insts.Nyx_sszCodecSszTuple.encode
   (self : Std.U128) :
@@ -397,7 +449,7 @@ def U128.Insts.Nyx_sszCodecSszTuple.encode
   ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u16}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 63:12-65:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 113:12-115:13
     Visibility: public -/
 def U16.Insts.Nyx_sszCodecSszTuple.encode
   (self : Std.U16) :
@@ -408,7 +460,7 @@ def U16.Insts.Nyx_sszCodecSszTuple.encode
   ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u32}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 63:12-65:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 113:12-115:13
     Visibility: public -/
 def U32.Insts.Nyx_sszCodecSszTuple.encode
   (self : Std.U32) :
@@ -419,7 +471,7 @@ def U32.Insts.Nyx_sszCodecSszTuple.encode
   ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u64}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 63:12-65:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 113:12-115:13
     Visibility: public -/
 def U64.Insts.Nyx_sszCodecSszTuple.encode
   (self : Std.U64) :
@@ -430,7 +482,7 @@ def U64.Insts.Nyx_sszCodecSszTuple.encode
   ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u8}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 63:12-65:13
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 113:12-115:13
     Visibility: public -/
 def U8.Insts.Nyx_sszCodecSszTuple.encode
   (self : Std.U8) :
@@ -440,8 +492,24 @@ def U8.Insts.Nyx_sszCodecSszTuple.encode
   let v ← codec.fixed_bytes a
   ok (core.result.Result.Ok v)
 
+/-- [nyx_ssz::codec::decode_ranges]: loop 0:
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 56:4-74:1 -/
+@[rust_loop]
+def codec.decode_ranges_loop
+  {T : Type} {Clause0_DecodeState : Type} (SszInst : codec.Ssz T
+  Clause0_DecodeState) (input : Slice Std.U8)
+  (ranges : Slice sequence.BodyRange) (values : alloc.vec.Vec T)
+  (index : Std.Usize) :
+  RustM (core.result.Result (alloc.vec.Vec T) (error.DecodeFailure
+    (codec.SequenceDecodeState T Clause0_DecodeState)))
+  := do
+  loop
+    (fun (values1, index1) => codec.decode_ranges_loop.body SszInst input
+      ranges values1 index1)
+    (values, index)
+
 /-- [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for ruint::Uint<256usize, 4usize>}::encode]:
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 96:4-98:5
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 146:4-148:5
     Visibility: public -/
 def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.encode
   (self : ruint.Uint 256#usize 4#usize) :
@@ -452,7 +520,7 @@ def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.encode
   ok (core.result.Result.Ok v)
 
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 58:8-80:9 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 108:8-130:9 -/
 @[reducible]
 def Bool.Insts.Nyx_sszCodecSszTuple : codec.Ssz Bool Unit := {
   FIXED_SIZE := ok Bool.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -463,7 +531,7 @@ def Bool.Insts.Nyx_sszCodecSszTuple : codec.Ssz Bool Unit := {
 }
 
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u128}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 58:8-80:9 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 108:8-130:9 -/
 @[reducible]
 def U128.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U128 Unit := {
   FIXED_SIZE := ok U128.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -474,7 +542,7 @@ def U128.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U128 Unit := {
 }
 
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u16}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 58:8-80:9 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 108:8-130:9 -/
 @[reducible]
 def U16.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U16 Unit := {
   FIXED_SIZE := ok U16.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -485,7 +553,7 @@ def U16.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U16 Unit := {
 }
 
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u32}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 58:8-80:9 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 108:8-130:9 -/
 @[reducible]
 def U32.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U32 Unit := {
   FIXED_SIZE := ok U32.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -496,7 +564,7 @@ def U32.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U32 Unit := {
 }
 
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u64}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 58:8-80:9 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 108:8-130:9 -/
 @[reducible]
 def U64.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U64 Unit := {
   FIXED_SIZE := ok U64.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -507,7 +575,7 @@ def U64.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U64 Unit := {
 }
 
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for u8}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 58:8-80:9 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 108:8-130:9 -/
 @[reducible]
 def U8.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U8 Unit := {
   FIXED_SIZE := ok U8.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE
@@ -517,8 +585,20 @@ def U8.Insts.Nyx_sszCodecSszTuple : codec.Ssz Std.U8 Unit := {
   hash_tree_root := U8.Insts.Nyx_sszCodecSszTuple.hash_tree_root
 }
 
+/-- [nyx_ssz::codec::decode_ranges]:
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 50:0-74:1 -/
+@[reducible]
+def codec.decode_ranges
+  {T : Type} {Clause0_DecodeState : Type} (SszInst : codec.Ssz T
+  Clause0_DecodeState) (input : Slice Std.U8)
+  (ranges : Slice sequence.BodyRange) :
+  RustM (core.result.Result (alloc.vec.Vec T) (error.DecodeFailure
+    (codec.SequenceDecodeState T Clause0_DecodeState)))
+  := do
+  codec.decode_ranges_loop SszInst input ranges (alloc.vec.Vec.new T) 0#usize
+
 /-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for ruint::Uint<256usize, 4usize>}]
-    Source: 'crates/nyx-ssz/src/codec.rs', lines 91:0-113:1 -/
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 141:0-163:1 -/
 @[reducible]
 def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple : codec.Ssz (ruint.Uint 256#usize
   4#usize) Unit := {
@@ -528,6 +608,18 @@ def ruint.Uint2564.Insts.Nyx_sszCodecSszTuple : codec.Ssz (ruint.Uint 256#usize
   decode := ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.decode
   hash_tree_root := ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.hash_tree_root
 }
+
+/-- [nyx_ssz::codec::decode_elements]:
+    Source: 'crates/nyx-ssz/src/codec.rs', lines 44:0-48:1
+    Visibility: public -/
+def codec.decode_elements
+  {T : Type} {Clause0_DecodeState : Type} (SszInst : codec.Ssz T
+  Clause0_DecodeState) (view : sequence.SequenceView) :
+  RustM (core.result.Result (alloc.vec.Vec T) (error.DecodeFailure
+    (codec.SequenceDecodeState T Clause0_DecodeState)))
+  := do
+  let s := alloc.vec.Vec.deref view.ranges
+  codec.decode_ranges SszInst view.input s
 
 
 end NyxSszRust
