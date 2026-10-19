@@ -7,6 +7,7 @@ import NyxSszRust.Sha256
 import NyxSszRust.Bitfield
 import NyxSszRust.Merkle
 import NyxSszRust.Ruint
+import NyxSszRust.Sequence
 import NyxSszRust.Scalar
 import NyxSszRust.TreeHash
 import NyxSszRust.Codec

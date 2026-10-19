@@ -228,5 +228,10 @@
     "rust": "nyx_ssz::codec::hash_tree_root",
     "lean": "NyxSszRust.codec.hash_tree_root",
     "proof": "NyxSszVerification.codec_hash_tree_root_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::offset_spans",
+    "lean": "NyxSszRust.sequence.offset_spans",
+    "proof": "NyxSszVerification.offset_spans_refines"
   }
 ]

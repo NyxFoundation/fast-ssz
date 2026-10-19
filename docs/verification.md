@@ -12,9 +12,9 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links forty-six registered operations to proofs over actual
+`verification/targets.json` links forty-seven registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
-storage operations and three generic codec dispatchers. `verification/traits.json` separately
+storage operations, three generic codec dispatchers and numeric offset-span validation. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
 Collection storage proofs do not imply generic SSZ collection codecs.
@@ -121,6 +121,15 @@ are checked safe. Scalar error conversion preserves exact error classes. Dispatc
 are conditional on `CodecLaw`: an external handwritten dictionary is callable but is not
 presumed lawful. Only supported, explicitly registered library instances are certified.
 Error formatting and external implementations are Rust tests, not protocol proof targets.
+
+`sequence::offset_spans` refines `Ssz.offsetSpans` for every representable offset
+slice and scope, preserving every span and both exact ordering/scope error categories.
+Repeated offsets yield empty bodies. Unordered pairs are checked before the final
+scope error, matching reference recursion. The loop's prefix/suffix invariant and
+decreasing measure prove termination; indexing, increments, subtraction and pushes
+are safe even at machine maxima. This numeric helper does not enforce a four-byte
+wire envelope, validate the first offset/header, or parse input bytes; those are
+separate layout checks, not silently presumed complete here.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered
