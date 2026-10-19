@@ -233,5 +233,25 @@
     "rust": "nyx_ssz::sequence::offset_spans",
     "lean": "NyxSszRust.sequence.offset_spans",
     "proof": "NyxSszVerification.offset_spans_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::variable_vector_view",
+    "lean": "NyxSszRust.sequence.variable_vector_view",
+    "proof": "NyxSszVerification.variable_vector_view_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::SequenceView::len",
+    "lean": "NyxSszRust.sequence.SequenceView.len",
+    "proof": "NyxSszVerification.sequence_view_len_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::SequenceView::is_empty",
+    "lean": "NyxSszRust.sequence.SequenceView.is_empty",
+    "proof": "NyxSszVerification.sequence_view_is_empty_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::SequenceView::get",
+    "lean": "NyxSszRust.sequence.SequenceView.get",
+    "proof": "NyxSszVerification.sequence_view_get_refines"
   }
 ]

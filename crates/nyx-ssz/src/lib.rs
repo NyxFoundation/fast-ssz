@@ -1,5 +1,7 @@
 #![doc = include_str!("../../../README.md")]
 #![forbid(unsafe_code)]
+#![cfg_attr(feature = "verification", feature(register_tool))]
+#![cfg_attr(feature = "verification", register_tool(verify))]
 
 pub use ruint::aliases::U256;
 

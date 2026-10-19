@@ -8,6 +8,8 @@ pub enum CodecError {
     SizeOverflow,
     OffsetUnordered,
     OffsetPastScope,
+    ScopeTooSmall,
+    FirstOffset,
 }
 
 impl std::fmt::Display for CodecError {
@@ -15,9 +17,11 @@ impl std::fmt::Display for CodecError {
         formatter.write_str(match self {
             Self::InvalidLength => "SSZ input has an invalid byte length",
             Self::InvalidBoolean => "SSZ boolean must be encoded as zero or one",
-            Self::SizeOverflow => "SSZ type size is not representable",
+            Self::SizeOverflow => "SSZ size exceeds its supported representation",
             Self::OffsetUnordered => "SSZ offsets must be nondecreasing",
             Self::OffsetPastScope => "SSZ offset exceeds its input scope",
+            Self::ScopeTooSmall => "SSZ input is smaller than its header",
+            Self::FirstOffset => "SSZ first offset must follow its header",
         })
     }
 }
