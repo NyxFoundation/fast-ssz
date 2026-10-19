@@ -17,6 +17,16 @@ class VerificationGateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 verify.load_targets(path)
 
+    def test_should_normalize_only_the_miri_dependent_usize_division(self):
+        unstable = "prefix\n" + verify.UNSTABLE_USIZE_DIVISION + "suffix\n"
+        stable = "prefix\n" + verify.STABLE_USIZE_DIVISION + "suffix\n"
+        self.assertEqual(verify.normalize_usize_division(unstable), stable)
+        self.assertEqual(verify.normalize_usize_division(stable), stable)
+        with self.assertRaisesRegex(ValueError, "unexpected"):
+            verify.normalize_usize_division("let d ← Usize.div self rhs\n")
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            verify.normalize_usize_division(unstable + unstable)
+
     def test_should_accept_identical_artifacts(self):
         verify.assert_same_artifact(b"generated", b"generated")
 
