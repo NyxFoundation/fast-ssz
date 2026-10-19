@@ -17,8 +17,15 @@ set_option maxHeartbeats 1000000
 set_option maxRecDepth 2048
 
 namespace FastSszRust
+/-- [fast_ssz::merkle::MerkleizeError]
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 19:0-21:1
+    Visibility: public -/
+@[discriminant isize]
+inductive merkle.MerkleizeError where
+| LimitTooSmall : merkle.MerkleizeError
+
 /-- [fast_ssz::merkle::ProofError]
-    Source: 'crates/fast-ssz/src/merkle.rs', lines 10:0-14:1
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 11:0-15:1
     Visibility: public -/
 @[discriminant isize]
 inductive merkle.ProofError where
@@ -27,7 +34,7 @@ inductive merkle.ProofError where
 | InvalidBranchLength : merkle.ProofError
 
 /-- [fast_ssz::merkle::climb]:
-    Source: 'crates/fast-ssz/src/merkle.rs', lines 16:0-27:1 -/
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 76:0-87:1 -/
 def merkle.climb
   (current : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
   (index : Std.U128) :
@@ -51,8 +58,32 @@ def merkle.climb
     merkle.climb parent s i1
 partial_fixpoint
 
+/-- [fast_ssz::merkle::depth_for]:
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 23:0-28:1 -/
+def merkle.depth_for (count : Std.Usize) : RustM Std.Usize := do
+  if count <= 1#usize
+  then ok 0#usize
+  else
+    let i ← count / 2#usize
+    let i1 ← count % 2#usize
+    let i2 ← i + i1
+    let i3 ← merkle.depth_for i2
+    1#usize + i3
+partial_fixpoint
+
+/-- [fast_ssz::merkle::zero_root]:
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 30:0-36:1 -/
+def merkle.zero_root (depth : Std.Usize) : RustM (Array Std.U8 32#usize) := do
+  if depth = 0#usize
+  then ok (Array.repeat 32#usize 0#u8)
+  else
+    let i ← depth - 1#usize
+    let below ← merkle.zero_root i
+    sha256.hash_pair below below
+partial_fixpoint
+
 /-- [fast_ssz::merkle::calculate_merkle_root]:
-    Source: 'crates/fast-ssz/src/merkle.rs', lines 34:0-49:1
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 94:0-109:1
     Visibility: public -/
 def merkle.calculate_merkle_root
   (leaf : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
@@ -76,8 +107,69 @@ def merkle.calculate_merkle_root
           let a ← merkle.climb leaf proof index
           ok (core.result.Result.Ok a)
 
+/-- [fast_ssz::merkle::subtree_root]:
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 38:0-56:1 -/
+def merkle.subtree_root
+  (chunks : Slice (Array Std.U8 32#usize)) (depth : Std.Usize) :
+  RustM (Array Std.U8 32#usize)
+  := do
+  let b ← core.slice.Slice.is_empty chunks
+  if b
+  then merkle.zero_root depth
+  else
+    if depth = 0#usize
+    then Slice.index_usize chunks 0#usize
+    else
+      let below ← depth - 1#usize
+      let half ← 1#usize <<< below
+      let i := Slice.len chunks
+      let (left, right) ←
+        if i <= half
+        then
+          do
+          let a ← merkle.subtree_root chunks below
+          let a1 ← merkle.zero_root below
+          ok (a, a1)
+        else
+          do
+          let s ←
+            core.slice.index.Slice.index
+              (core.slice.index.SliceIndexRangeToUsizeSlice (Array Std.U8
+              32#usize)) chunks { «end» := half }
+          let a ← merkle.subtree_root s below
+          let s1 ←
+            core.slice.index.Slice.index
+              (core.slice.index.SliceIndexRangeFromUsizeSlice (Array Std.U8
+              32#usize)) chunks { start := half }
+          let a1 ← merkle.subtree_root s1 below
+          ok (a, a1)
+      sha256.hash_pair left right
+partial_fixpoint
+
+/-- [fast_ssz::merkle::merkleize]:
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 63:0-74:1
+    Visibility: public -/
+def merkle.merkleize
+  (chunks : Slice (Array Std.U8 32#usize)) (limit : Option Std.Usize) :
+  RustM (core.result.Result (Array Std.U8 32#usize) merkle.MerkleizeError)
+  := do
+  match limit with
+  | none =>
+    let capacity := Slice.len chunks
+    let i ← merkle.depth_for capacity
+    let a ← merkle.subtree_root chunks i
+    ok (core.result.Result.Ok a)
+  | some capacity =>
+    let i := Slice.len chunks
+    if i > capacity
+    then ok (core.result.Result.Err merkle.MerkleizeError.LimitTooSmall)
+    else
+      let i1 ← merkle.depth_for capacity
+      let a ← merkle.subtree_root chunks i1
+      ok (core.result.Result.Ok a)
+
 /-- [fast_ssz::merkle::verify_merkle_proof]:
-    Source: 'crates/fast-ssz/src/merkle.rs', lines 52:0-62:1
+    Source: 'crates/fast-ssz/src/merkle.rs', lines 112:0-122:1
     Visibility: public -/
 def merkle.verify_merkle_proof
   (leaf : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))

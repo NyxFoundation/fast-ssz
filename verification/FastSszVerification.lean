@@ -3,6 +3,7 @@ import FastSszVerification.Bytes
 import FastSszVerification.ProgressiveBytes
 import FastSszVerification.Sha256
 import FastSszVerification.Merkle
+import FastSszVerification.Merkleize
 import FastSszVerification.Unsigned
 import FastSszVerification.Unsigned.U256
 import FastSszVerification.Bitfield

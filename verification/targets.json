@@ -168,5 +168,10 @@
     "rust": "fast_ssz::tree_hash::hash_tree_root_u256",
     "lean": "FastSszRust.tree_hash.hash_tree_root_u256",
     "proof": "FastSszVerification.hash_tree_root_u256_refines"
+  },
+  {
+    "rust": "fast_ssz::merkle::merkleize",
+    "lean": "FastSszRust.merkle.merkleize",
+    "proof": "FastSszVerification.merkleize_refines"
   }
 ]

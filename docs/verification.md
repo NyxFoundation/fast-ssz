@@ -10,8 +10,9 @@ tags:
 
 **Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
-single-branch Merkle verification and all basic-type roots are implemented.
-`verification/targets.json` links thirty-four operations
+single-branch Merkle verification, generic node Merkleization and all basic-type
+roots are implemented.
+`verification/targets.json` links thirty-five operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -66,6 +67,14 @@ both compression blocks, padding and output encoding are connected to the unchan
 upstream SHA-256 implementation. No external hash-function correctness is assumed.
 RustCrypto `sha2` 0.10.9 is used only for differential tests.
 
+`merkleize_refines` covers all complete-node slices and every optional `usize`
+capacity against `Ssz.merkleizeBounded`. Empty trees, zero capacity, undersized
+capacity errors and rounding up `usize::MAX` are covered. Depth uses overflow-free
+halving rather than materializing the next power of two. Recursive calls decrease
+the count or depth; every shift and slice boundary is proved safe. Zero subtrees
+are computed without allocating padding and proved equal to the reference's cache.
+These are correctness/termination guarantees, not allocation or runtime cost theorems.
+
 `calculate_merkle_root_refines` and `verify_merkle_proof_refines` connect the actual
 Rust APIs to `Ssz.calculateMerkleRoot` and `Ssz.verifyMerkleProof`. All `u128`
 indices and representable branch slices are covered. Node widths are enforced by
@@ -90,7 +99,9 @@ and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.
 
 Pinned Cryspen Aeneas uses Lean 4.31.0; upstream SSZ pins 4.33.1.
 The unchanged executable modules and imported codec lemmas build with 4.31.0 here.
-Not all upstream proof modules do (`Codec.Admits` exceeds its recursion limit).
+Not all upstream proof modules do (`Codec.Admits` exceeds its recursion limit;
+`Proofs.Merkle.Tree` has incompatible monadic simplification). Needed tree cache
+and evaluation laws are re-proved locally over the unchanged executable definitions.
 Unqualified `lake update` changes the toolchain.
 Trust includes Lean's kernel, Charon/Aeneas/models, Rust's compiler/runtime and
 downloaded tools/caches. Pins do not prove binary integrity; English/formal-model

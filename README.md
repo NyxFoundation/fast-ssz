@@ -9,7 +9,8 @@ ByteVector/ByteList/ProgressiveByteList codecs are implemented and proved,
 including malformed inputs and illegal zero-length vector declarations.
 All seven basic types also have proved `hash_tree_root` operations.
 SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
-32-byte nodes. Single-branch root reconstruction and verification are implemented
+32-byte nodes. Generic node Merkleization supports optional capacities and zero padding
+without allocating a padded tree. Single-branch root reconstruction and verification are implemented
 and proved across the full `u128` index domain, including malformed requests.
 RustCrypto `sha2` is a test oracle only, not a runtime dependency.
 `U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
