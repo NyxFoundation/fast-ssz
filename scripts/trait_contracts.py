@@ -6,7 +6,7 @@ from extracted_modules import NAMESPACE, declaration_units, declared_names
 
 IDENTIFIER = r"[A-Za-z_][A-Za-z_0-9]*"
 IMPLEMENTATION = re.compile(
-    rf"^/-- Trait implementation: \[[^\n]*\{{impl ({IDENTIFIER}(?:::{IDENTIFIER})*)\s"
+    rf"^/-- Trait implementation: \[[^\n]*\{{impl ({IDENTIFIER}(?:::{IDENTIFIER})*)(?=[<\s])"
 )
 
 
@@ -27,7 +27,7 @@ def validate_contract(contract):
     members = contract["members"]
     if not isinstance(members, dict) or not members:
         raise ValueError("nonempty trait member inventory required")
-    if any(not qualified(name, "::") or kind not in ("function", "assoc_const")
+    if any(not qualified(name, "::") or kind not in ("function", "assoc_const", "assoc_type")
            for name, kind in members.items()):
         raise ValueError("unsupported trait member")
     instances = contract["instances"]

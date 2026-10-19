@@ -8,7 +8,7 @@ from trait_contracts import load_contracts, validate_traits, assert_extracted_in
 
 CONTRACT = {
     "rust": "nyx_ssz::codec::Ssz", "law": "NyxSszVerification.CodecLaw",
-    "members": {"FIXED_SIZE": "assoc_const", "encode": "function"},
+    "members": {"FIXED_SIZE": "assoc_const", "encode": "function", "DecodeState": "assoc_type"},
     "instances": [{"type": "bool", "lean": "NyxSszRust.Bool.Insts.Ssz",
                    "proof": "NyxSszVerification.bool_law"}],
 }
@@ -17,12 +17,14 @@ CONTRACT = {
 def document():
     return {"paths": {"1": {"path": ["nyx_ssz", "codec", "Ssz"]}}, "index": {
         "1": {"crate_id": 0, "visibility": "public", "name": "Ssz",
-              "inner": {"trait": {"items": [2, 3], "implementations": [4]}}},
+              "inner": {"trait": {"items": [2, 3, 7], "implementations": [4]}}},
         "2": {"name": "FIXED_SIZE", "inner": {"assoc_const": {}}},
         "3": {"name": "encode", "inner": {"function": {}}},
-        "4": {"inner": {"impl": {"for": {"primitive": "bool"}, "items": [5, 6]}}},
+        "4": {"inner": {"impl": {"for": {"primitive": "bool"}, "items": [5, 6, 8]}}},
         "5": {"name": "FIXED_SIZE", "inner": {"assoc_const": {}}},
         "6": {"name": "encode", "inner": {"function": {}}},
+        "7": {"name": "DecodeState", "inner": {"assoc_type": {}}},
+        "8": {"name": "DecodeState", "inner": {"assoc_type": {}}},
     }}
 
 
@@ -35,7 +37,7 @@ class TraitContractTests(unittest.TestCase):
 
     def test_should_require_exact_declaration_and_instance_inventories(self):
         contracts = self.load([CONTRACT])
-        self.assertEqual(validate_traits(document(), contracts), {"2", "3", "5", "6"})
+        self.assertEqual(validate_traits(document(), contracts), {"2", "3", "5", "6", "7", "8"})
         for mutation in ("trait", "member", "instance"):
             data = document()
             if mutation == "trait":
@@ -47,6 +49,18 @@ class TraitContractTests(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 validate_traits(data, contracts)
             contracts = self.load([CONTRACT])
+
+    def test_should_reject_missing_or_miskinded_associated_types(self):
+        contracts = self.load([CONTRACT])
+        for owner, field, identifier in (("1", "trait", 7), ("4", "impl", 8)):
+            for change in ("missing", "kind"):
+                data = document()
+                if change == "missing":
+                    data["index"][owner]["inner"][field]["items"].remove(identifier)
+                else:
+                    data["index"][str(identifier)]["inner"] = {"function": {}}
+                with self.subTest(owner=owner, change=change), self.assertRaises(ValueError):
+                    validate_traits(data, contracts)
 
     def test_should_reject_duplicate_traits_instances_and_malformed_identifiers(self):
         duplicate_instance = copy.deepcopy(CONTRACT)
@@ -63,7 +77,7 @@ class TraitContractTests(unittest.TestCase):
 
     def test_should_require_the_exact_extracted_trait_dictionary_inventory(self):
         source = (
-            "/-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz for bool}] -/\n"
+            "/-- Trait implementation: [nyx_ssz::codec::{impl nyx_ssz::codec::Ssz<()> for bool}] -/\n"
             "def Bool.Insts.Ssz : codec.Ssz Bool := dictionary\n"
         )
         assert_extracted_instances({"Codec.lean": source}, [CONTRACT])

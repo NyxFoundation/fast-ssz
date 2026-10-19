@@ -28,6 +28,8 @@ The `codec::Ssz` trait provides a uniform interface for Boolean and all six unsi
 widths. Its seven library implementations have proved size metadata, basic/composite
 classification, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
+Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
+partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `CodecError`.
 The shared offset-span validator and fixed- or inferred-count variable-element layout
 parsers are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
 headers, four-byte size envelope and body ranges. It does not decode element values.
@@ -75,6 +77,18 @@ unrepresentable width (`Err(SizeOverflow)`). `IS_BASIC` controls packing before
 collection Merkleization. `CodecError` implements the standard error interfaces.
 Only the seven basic-type implementations are currently included; storage collections
 below do not implement `Ssz` yet. Borrowed byte/bit codecs remain separate APIs.
+
+```rust
+use nyx_ssz::{codec::decode, error::CodecError};
+let failure = decode::<u16>(&[0]).unwrap_err();
+assert_eq!(failure.kind, CodecError::InvalidLength);
+assert_eq!(failure.state, ());
+```
+
+External implementations declare their own `DecodeState`. Error state is returned
+unchanged by the dispatcher; callers decide when to inspect or drop it. Formatting
+reports only the error kind and does not require or reveal the state. There is no
+legacy state-discarding decoder wrapper.
 
 ## Borrowed sequence layout
 

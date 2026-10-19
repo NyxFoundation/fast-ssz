@@ -78,7 +78,8 @@ theorem decode_adapter {T : Type} {observe : T → Ssz.Value} {expected : Except
         | .Ok value => RustM.ok (core.result.Result.Ok value)
         | .Err error =>
           let mapped ← NyxSszRust.codec.scalar_error error
-          RustM.ok (core.result.Result.Err mapped)) ⦃ actual =>
+          RustM.ok (core.result.Result.Err
+            ({ kind := mapped, state := () } : NyxSszRust.error.DecodeFailure Unit))) ⦃ actual =>
       codecDecodingAgrees observe actual expected ⦄ := by
   apply spec_bind decoding
   intro actual agrees

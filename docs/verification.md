@@ -121,7 +121,15 @@ preserves every byte; a decreasing measure proves termination and all indices/in
 are checked safe. Scalar error conversion preserves exact error classes. Dispatcher proofs
 are conditional on `CodecLaw`: an external handwritten dictionary is callable but is not
 presumed lawful. Only supported, explicitly registered library instances are certified.
-Error formatting and external implementations are Rust tests, not protocol proof targets.
+The trait's `DecodeState` associated type is inventoried in declarations and every
+implementation. Decoding returns `DecodeFailure<DecodeState>`, whose kind is related
+to the reference fault. All seven basic dictionaries have unit state; the unit-state
+lemma proves error state is empty. A separate function-equality theorem proves that
+dispatch forwards the exact result, including arbitrary owned state, not only its
+protocol observation. The wire law alone is not an ownership proof for future generic
+collection decoders. Error formatting and external implementations are Rust tests,
+not protocol proof targets; a non-Debug state/drop-counter test checks that forwarding
+and formatting do not invoke its destructor or expose it.
 
 `sequence::offset_spans` refines `Ssz.offsetSpans` for every representable offset
 slice and scope, preserving every span and both exact ordering/scope error categories.
@@ -178,8 +186,8 @@ Cargo feature enables only tool registration and those attributes; it does not s
 alternate executable bodies. Normal consumers do not need the feature. Extraction
 selects the annotated methods, while exact Rustdoc registration and concrete-body
 checks remain mandatory; opaque declarations cannot satisfy coverage. Unregistered public traits fail. For `Ssz`,
-Rustdoc declaration/implementation inventories and concretely extracted dictionaries must
-match the registry exactly. Lean checks that each theorem establishes the supported
+Rustdoc declaration/implementation inventories, including associated types, and
+concretely extracted dictionaries must match the registry exactly. Lean checks that each theorem establishes the supported
 unconditional `CodecLaw` for that precise dictionary; unrelated theorems, impossible
 premises, reflexive/vacuous predicates and another dictionary's proof are refused. Trait declarations and implementations are
 partitioned by their Rust source module while preserving native-type Lean namespaces.
@@ -195,5 +203,12 @@ Unqualified `lake update` changes the toolchain.
 Trust includes Lean's kernel, Charon/Aeneas/models, Rust's compiler/runtime and
 downloaded tools/caches. Pins do not prove binary integrity; English/formal-model
 alignment remains upstream.
+Pinned Aeneas `filter_marker_traits` removes `core::marker::Destruct`, even when
+Charon receives `--precise-drops`. A runtime counterexample with a panicking destructor
+and the generated model confirmed that this does not verify user destructor execution.
+The axiom audit cannot detect this semantic erasure. Generic constructors return rejected
+storage, and typed decode errors must retain partial ownership rather than silently drop
+arbitrary elements inside the operation. Existing basic decode states are empty; generic
+collection decoder retention still requires its own implementation and proof.
 OS faults/resource exhaustion and whole-library/cryptographic security are excluded.
 x86_64 extraction requires the prepared Miri sysroot. Native aarch64 extraction has not been exercised.

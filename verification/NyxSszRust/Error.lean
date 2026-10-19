@@ -32,5 +32,12 @@ inductive error.CodecError where
 | OffsetUnaligned : error.CodecError
 | OverLimit : error.CodecError
 
+/-- [nyx_ssz::error::DecodeFailure]
+    Source: 'crates/nyx-ssz/src/error.rs', lines 23:0-26:1
+    Visibility: public -/
+structure error.DecodeFailure (State : Type) where
+  kind : error.CodecError
+  state : State
+
 
 end NyxSszRust
