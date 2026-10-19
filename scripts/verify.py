@@ -14,8 +14,8 @@ from extracted_modules import NAMESPACE, declared_names, split_model
 
 ROOT = Path(__file__).resolve().parents[1]
 VERIFICATION = ROOT / "verification"
-GENERATED = VERIFICATION / "FastSszRust.lean"
-GENERATED_MODULES = VERIFICATION / "FastSszRust"
+GENERATED = VERIFICATION / "NyxSszRust.lean"
+GENERATED_MODULES = VERIFICATION / "NyxSszRust"
 
 
 def run(arguments, *, cwd=ROOT, capture=False):
@@ -136,7 +136,7 @@ def assert_extracted_targets(artifacts, targets):
 
 def extract(pins, targets, destination):
     methods = check_api(targets)
-    llbc = destination / "fast_ssz.llbc"
+    llbc = destination / "nyx_ssz.llbc"
     arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas"]
     for item in pins["extraction"]["transparent_items"]:
         arguments.extend(["--include", item])
@@ -146,15 +146,15 @@ def extract(pins, targets, destination):
         if target["rust"] not in methods:
             arguments.extend(["--start-from", target["rust"]])
     arguments.extend([
-        "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/fast-ssz/Cargo.toml",
+        "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/nyx-ssz/Cargo.toml",
     ])
     run(arguments)
     run([
-        tool_path("aeneas", pins), "-backend", "lean", "-namespace", "FastSszRust",
+        tool_path("aeneas", pins), "-backend", "lean", "-namespace", "NyxSszRust",
         "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",
         "-dest", destination, llbc,
     ])
-    source = (destination / "FastSsz.lean").read_text(encoding="utf-8")
+    source = (destination / "NyxSsz.lean").read_text(encoding="utf-8")
     artifacts = split_model(source)
     assert_extracted_targets(artifacts, targets)
     return {path: content.encode("utf-8") for path, content in artifacts.items()}
@@ -233,10 +233,10 @@ def assert_api_covered(functions, targets):
 def check_api(targets):
     directory = ROOT / "target" / "api-coverage"
     run([
-        "cargo", "rustdoc", "--lib", "--package", "fast-ssz", "--target-dir", directory,
+        "cargo", "rustdoc", "--lib", "--package", "nyx-ssz", "--target-dir", directory,
         "--", "--output-format", "json", "-Z", "unstable-options",
     ])
-    document = json.loads((directory / "doc" / "fast_ssz.json").read_text())
+    document = json.loads((directory / "doc" / "nyx_ssz.json").read_text())
     assert_api_covered(api_functions(document), targets)
     return set(inherent_method_paths(document).values())
 
@@ -248,7 +248,7 @@ def assert_import_closure(directory):
         if not any(part.startswith(".") or part == "extraction" for part in path.relative_to(directory).parts)
     }
     visited = set()
-    pending = ["FastSszVerification.Audit"]
+    pending = ["NyxSszVerification.Audit"]
     while pending:
         module = pending.pop()
         if module in visited or module not in modules:
@@ -262,7 +262,7 @@ def assert_import_closure(directory):
 
 
 def check_proof_targets(targets, directory):
-    lines = ["import FastSszVerification.Audit"]
+    lines = ["import NyxSszVerification.Audit"]
     lines.extend(f"check_refinement {target['lean']} via {target['proof']}" for target in targets)
     file = directory / "CheckTargets.lean"
     file.write_text("\n".join(lines) + "\n")
@@ -272,25 +272,25 @@ def check_proof_targets(targets, directory):
 def check_rejection_guards(directory):
     cases = {
         "ForbiddenAxiom": (
-            "namespace FastSszVerification\naxiom forbidden : False\nend FastSszVerification\n"
-            "audit_fast_ssz\n",
+            "namespace NyxSszVerification\naxiom forbidden : False\nend NyxSszVerification\n"
+            "audit_nyx_ssz\n",
             "forbidden axiom",
         ),
         "NativeEvaluation": (
-            "namespace FastSszVerification\n"
+            "namespace NyxSszVerification\n"
             "theorem nativeResult : (List.range 100).length = 100 := by native_decide\n"
-            "end FastSszVerification\naudit_fast_ssz\n",
+            "end NyxSszVerification\naudit_nyx_ssz\n",
             "forbidden axiom",
         ),
         "UnrelatedTheorem": (
-            "check_refinement FastSszRust.scalar.encode_bool via "
-            "FastSszVerification.decode_bool_refines\n",
+            "check_refinement NyxSszRust.scalar.encode_bool via "
+            "NyxSszVerification.decode_bool_refines\n",
             "does not mention",
         ),
     }
     for label, (source, expected) in cases.items():
         file = directory / f"{label}.lean"
-        file.write_text("import FastSszVerification.Audit\n" + source)
+        file.write_text("import NyxSszVerification.Audit\n" + source)
         result = subprocess.run(
             ["lake", "env", "lean", str(file)], cwd=VERIFICATION,
             text=True, capture_output=True, check=False,
@@ -306,7 +306,7 @@ def check(pins, targets, directory):
     run(["cargo", "test", "--workspace"])
     assert_same_artifact(extract(pins, targets, directory), generated_artifacts())
     assert_import_closure(VERIFICATION)
-    run(["lake", "build", "FastSszVerification"], cwd=VERIFICATION)
+    run(["lake", "build", "NyxSszVerification"], cwd=VERIFICATION)
     validate_dependencies(pins)
     check_proof_targets(targets, directory)
     check_rejection_guards(directory)
@@ -323,7 +323,7 @@ def main():
         bootstrap(pins)
         return
     targets = load_targets()
-    with tempfile.TemporaryDirectory(prefix="fast-ssz-verify-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="nyx-ssz-verify-") as temporary:
         directory = Path(temporary)
         if arguments.command == "extract":
             validate_tools(pins)

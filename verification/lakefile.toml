@@ -1,6 +1,6 @@
-name = "FastSszVerification"
+name = "NyxSszVerification"
 version = "0.1.0"
-defaultTargets = ["FastSszVerification"]
+defaultTargets = ["NyxSszVerification"]
 
 [leanOptions]
 warningAsError = true
@@ -8,11 +8,11 @@ autoImplicit = false
 relaxedAutoImplicit = false
 
 [[lean_lib]]
-name = "FastSszVerification"
-roots = ["FastSszVerification", "FastSszVerification.Audit"]
+name = "NyxSszVerification"
+roots = ["NyxSszVerification", "NyxSszVerification.Audit"]
 
 [[lean_lib]]
-name = "FastSszRust"
+name = "NyxSszRust"
 
 [[require]]
 name = "aeneas"
