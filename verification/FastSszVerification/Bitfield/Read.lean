@@ -13,6 +13,15 @@ theorem byte_bit_equiv (byte : U8) (position : Nat) (inside : position < 8) :
   rw [← UInt8.toBitVec_inj]
   interval_cases position <;> rfl
 
+theorem byte_bit_equiv_nat (byte : U8) (position : Nat) (inside : position < 8) :
+    ((byteToSpec byte >>> UInt8.ofNat position) &&& 1 == 1) =
+      decide ((byte.val >>> position) % 2 = 1) := by
+  rw [byte_bit_equiv _ _ inside]
+  apply Bool.eq_iff_iff.mpr
+  simp only [decide_eq_true_eq, ← BitVec.toNat_inj, BitVec.toNat_and,
+    BitVec.toNat_ushiftRight, UScalar.bv_toNat, BitVec.toNat_ofNat, Nat.reducePow,
+    Nat.reduceMod, Nat.and_one_is_mod]
+
 theorem referenceBit_bv (bytes : List U8) (index : Nat)
     (inside : index / 8 < bytes.length) :
     referenceBit bytes index = decide (((bytes[index / 8]!.bv >>> (index % 8)) &&& 1#8) = 1#8) := by

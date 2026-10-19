@@ -113,5 +113,15 @@
     "rust": "fast_ssz::bitfield::decode_bit_vector",
     "lean": "FastSszRust.bitfield.decode_bit_vector",
     "proof": "FastSszVerification.decode_bit_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::encode_bit_list",
+    "lean": "FastSszRust.bitfield.encode_bit_list",
+    "proof": "FastSszVerification.encode_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::decode_bit_list",
+    "lean": "FastSszRust.bitfield.decode_bit_list",
+    "proof": "FastSszVerification.decode_bit_list_refines"
   }
 ]

@@ -8,9 +8,9 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector and ByteVector/ByteList
+**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist and ByteVector/ByteList
 codecs, SHA-256 node combination and single-branch Merkle verification are implemented.
-`verification/targets.json` links twenty-three operations
+`verification/targets.json` links twenty-five operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -33,7 +33,12 @@ Bitvector codecs cover every `usize` declaration and typed input, including
 zero-length declarations, wrong lengths and noncanonical high padding. Their
 actual Vec loops are proved terminating with decreasing natural measures; byte
 counts, indices, shifts and increments are proved safe. The value view preserves
-Boolean order exactly. Vec allocation uses Aeneas's model; OS/resource failures
+Boolean order exactly. Bitlist proofs cover delimiter insertion, empty values,
+byte-boundary crossings, every final-byte pattern, capacity violations and the
+separate empty-encoding/no-delimiter/trailing-zero error classes. Decoder byte-to-bit
+arithmetic is guarded before multiplication/addition; both guards are proved equivalent
+to the reference's natural-number count check. The all-zero scan has a decreasing
+measure and prefix invariant. Vec allocation uses Aeneas's model; OS/resource failures
 remain outside the guarantee.
 
 `hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`

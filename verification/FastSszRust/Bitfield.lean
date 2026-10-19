@@ -18,16 +18,37 @@ set_option maxRecDepth 2048
 
 namespace FastSszRust
 /-- [fast_ssz::bitfield::BitfieldError]
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 5:0-9:1
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 5:0-13:1
     Visibility: public -/
 @[discriminant isize]
 inductive bitfield.BitfieldError where
 | EmptyVector : bitfield.BitfieldError
 | InvalidLength : bitfield.BitfieldError
 | PaddingBits : bitfield.BitfieldError
+| OverLimit : bitfield.BitfieldError
+| EmptyEncoding : bitfield.BitfieldError
+| NoDelimiter : bitfield.BitfieldError
+| TrailingZeros : bitfield.BitfieldError
+
+/-- [fast_ssz::bitfield::all_zero]: loop body 0:
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 83:4-90:1 -/
+@[rust_loop_body]
+def bitfield.all_zero_loop.body
+  (bytes1 : Slice Std.U8) (index : Std.Usize) :
+  RustM (ControlFlow Std.Usize Bool)
+  := do
+  let i := Slice.len bytes1
+  if index < i
+  then
+    let i1 ← Slice.index_usize bytes1 index
+    if i1 != 0#u8
+    then ok (done false)
+    else let index1 ← index + 1#usize
+         ok (cont index1)
+  else ok (done true)
 
 /-- [fast_ssz::bitfield::bit_at]:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 11:0-17:1 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 15:0-21:1 -/
 def bitfield.bit_at
   (bits : Slice Bool) (index : Std.Usize) : RustM Std.U8 := do
   let i := Slice.len bits
@@ -38,8 +59,47 @@ def bitfield.bit_at
        else ok 0#u8
   else ok 0#u8
 
+/-- [fast_ssz::bitfield::highest_bit]:
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 92:0-110:1 -/
+def bitfield.highest_bit (byte : Std.U8) : RustM Std.Usize := do
+  let i ← byte >>> 7#i32
+  let i1 ← lift (i &&& 1#u8)
+  if i1 = 1#u8
+  then ok 7#usize
+  else
+    let i2 ← byte >>> 6#i32
+    let i3 ← lift (i2 &&& 1#u8)
+    if i3 = 1#u8
+    then ok 6#usize
+    else
+      let i4 ← byte >>> 5#i32
+      let i5 ← lift (i4 &&& 1#u8)
+      if i5 = 1#u8
+      then ok 5#usize
+      else
+        let i6 ← byte >>> 4#i32
+        let i7 ← lift (i6 &&& 1#u8)
+        if i7 = 1#u8
+        then ok 4#usize
+        else
+          let i8 ← byte >>> 3#i32
+          let i9 ← lift (i8 &&& 1#u8)
+          if i9 = 1#u8
+          then ok 3#usize
+          else
+            let i10 ← byte >>> 2#i32
+            let i11 ← lift (i10 &&& 1#u8)
+            if i11 = 1#u8
+            then ok 2#usize
+            else
+              let i12 ← byte >>> 1#i32
+              let i13 ← lift (i12 &&& 1#u8)
+              if i13 = 1#u8
+              then ok 1#usize
+              else ok 0#usize
+
 /-- [fast_ssz::bitfield::unpack_bits]: loop body 0:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 44:4-47:5 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 48:4-51:5 -/
 @[rust_loop_body]
 def bitfield.unpack_bits_loop.body
   (bytes1 : Slice Std.U8) (count : Std.Usize) (output : alloc.vec.Vec Bool)
@@ -58,8 +118,17 @@ def bitfield.unpack_bits_loop.body
     ok (cont (output1, index1))
   else ok (done output)
 
+/-- [fast_ssz::bitfield::all_zero]: loop 0:
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 83:4-90:1 -/
+@[rust_loop]
+def bitfield.all_zero_loop
+  (bytes1 : Slice Std.U8) (index : Std.Usize) : RustM Bool := do
+  loop
+    (fun index1 => bitfield.all_zero_loop.body bytes1 index1)
+    index
+
 /-- [fast_ssz::bitfield::pack_byte]:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 19:0-28:1 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 23:0-32:1 -/
 def bitfield.pack_byte (bits : Slice Bool) : RustM Std.U8 := do
   let i ← bitfield.bit_at bits 0#usize
   let i1 ← bitfield.bit_at bits 1#usize
@@ -85,7 +154,7 @@ def bitfield.pack_byte (bits : Slice Bool) : RustM Std.U8 := do
   ok (i18 ||| i20)
 
 /-- [fast_ssz::bitfield::unpack_bits]: loop 0:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 44:4-47:5 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 48:4-51:5 -/
 @[rust_loop]
 def bitfield.unpack_bits_loop
   (bytes1 : Slice Std.U8) (count : Std.Usize) (output : alloc.vec.Vec Bool)
@@ -97,8 +166,14 @@ def bitfield.unpack_bits_loop
       output1 index1)
     (output, index)
 
+/-- [fast_ssz::bitfield::all_zero]:
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 81:0-90:1 -/
+@[reducible]
+def bitfield.all_zero (bytes1 : Slice Std.U8) : RustM Bool := do
+  bitfield.all_zero_loop bytes1 0#usize
+
 /-- [fast_ssz::bitfield::pack_bits]: loop body 0:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 34:4-37:5 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 38:4-41:5 -/
 @[rust_loop_body]
 def bitfield.pack_bits_loop.body
   (bits : Slice Bool) (count : Std.Usize) (output : alloc.vec.Vec Std.U8)
@@ -120,7 +195,7 @@ def bitfield.pack_bits_loop.body
   else ok (done output)
 
 /-- [fast_ssz::bitfield::unpack_bits]:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 41:0-49:1 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 45:0-53:1 -/
 @[reducible]
 def bitfield.unpack_bits
   (bytes1 : Slice Std.U8) (count : Std.Usize) :
@@ -128,8 +203,45 @@ def bitfield.unpack_bits
   := do
   bitfield.unpack_bits_loop bytes1 count (alloc.vec.Vec.new Bool) 0#usize
 
+/-- [fast_ssz::bitfield::decode_bit_list]:
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 129:0-151:1
+    Visibility: public -/
+def bitfield.decode_bit_list
+  (bytes1 : Slice Std.U8) (limit : Std.Usize) :
+  RustM (core.result.Result (alloc.vec.Vec Bool) bitfield.BitfieldError)
+  := do
+  let b ← core.slice.Slice.is_empty bytes1
+  if b
+  then ok (core.result.Result.Err bitfield.BitfieldError.EmptyEncoding)
+  else
+    let i := Slice.len bytes1
+    let i1 ← i - 1#usize
+    let final_byte ← Slice.index_usize bytes1 i1
+    if final_byte = 0#u8
+    then
+      let b1 ← bitfield.all_zero bytes1
+      if b1
+      then ok (core.result.Result.Err bitfield.BitfieldError.NoDelimiter)
+      else ok (core.result.Result.Err bitfield.BitfieldError.TrailingZeros)
+    else
+      let high ← bitfield.highest_bit final_byte
+      let i2 := Slice.len bytes1
+      let whole ← i2 - 1#usize
+      let i3 ← limit / 8#usize
+      if whole > i3
+      then ok (core.result.Result.Err bitfield.BitfieldError.OverLimit)
+      else
+        let base ← whole * 8#usize
+        let i4 ← limit - base
+        if high > i4
+        then ok (core.result.Result.Err bitfield.BitfieldError.OverLimit)
+        else
+          let i5 ← base + high
+          let v ← bitfield.unpack_bits bytes1 i5
+          ok (core.result.Result.Ok v)
+
 /-- [fast_ssz::bitfield::decode_bit_vector]:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 63:0-75:1
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 67:0-79:1
     Visibility: public -/
 def bitfield.decode_bit_vector
   (bytes1 : Slice Std.U8) (length : Std.Usize) :
@@ -160,7 +272,7 @@ def bitfield.decode_bit_vector
         ok (core.result.Result.Ok v)
 
 /-- [fast_ssz::bitfield::pack_bits]: loop 0:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 34:4-37:5 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 38:4-41:5 -/
 @[rust_loop]
 def bitfield.pack_bits_loop
   (bits : Slice Bool) (count : Std.Usize) (output : alloc.vec.Vec Std.U8)
@@ -173,14 +285,43 @@ def bitfield.pack_bits_loop
     (output, index)
 
 /-- [fast_ssz::bitfield::pack_bits]:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 30:0-39:1 -/
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 34:0-43:1 -/
 def bitfield.pack_bits (bits : Slice Bool) : RustM (alloc.vec.Vec Std.U8) := do
   let i := Slice.len bits
   let count ← core.num.Usize.div_ceil i 8#usize
   bitfield.pack_bits_loop bits count (alloc.vec.Vec.new Std.U8) 0#usize
 
+/-- [fast_ssz::bitfield::encode_bit_list]:
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 113:0-126:1
+    Visibility: public -/
+def bitfield.encode_bit_list
+  (bits : Slice Bool) (limit : Std.Usize) :
+  RustM (core.result.Result (alloc.vec.Vec Std.U8) bitfield.BitfieldError)
+  := do
+  let i := Slice.len bits
+  if i > limit
+  then ok (core.result.Result.Err bitfield.BitfieldError.OverLimit)
+  else
+    let output ← bitfield.pack_bits bits
+    let i1 := Slice.len bits
+    let remainder ← i1 % 8#usize
+    if remainder = 0#usize
+    then
+      let output1 ← alloc.vec.Vec.push output 1#u8
+      ok (core.result.Result.Ok output1)
+    else
+      let i2 := alloc.vec.Vec.len output
+      let last ← i2 - 1#usize
+      let i3 ← 1#u8 <<< remainder
+      let (i4, index_mut_back) ←
+        alloc.vec.Vec.index_mut (core.slice.index.SliceIndexUsizeSlice Std.U8)
+          output last
+      let i5 ← lift (i4 ||| i3)
+      let output1 := index_mut_back i5
+      ok (core.result.Result.Ok output1)
+
 /-- [fast_ssz::bitfield::encode_bit_vector]:
-    Source: 'crates/fast-ssz/src/bitfield.rs', lines 52:0-60:1
+    Source: 'crates/fast-ssz/src/bitfield.rs', lines 56:0-64:1
     Visibility: public -/
 def bitfield.encode_bit_vector
   (bits : Slice Bool) (length : Std.Usize) :

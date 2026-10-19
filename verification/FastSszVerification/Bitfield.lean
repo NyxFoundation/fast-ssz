@@ -13,6 +13,10 @@ def bitFaultAgrees : FastSszRust.bitfield.BitfieldError → Ssz.Err → Prop
   | .EmptyVector, .vectorEmpty => True
   | .InvalidLength, .scope _ _ => True
   | .PaddingBits, .paddingBits => True
+  | .OverLimit, .overLimit _ _ => True
+  | .EmptyEncoding, .emptyEncoding => True
+  | .NoDelimiter, .noDelimiter => True
+  | .TrailingZeros, .trailingZeros => True
   | _, _ => False
 
 def bitEncodingAgrees : core.result.Result (alloc.vec.Vec U8) FastSszRust.bitfield.BitfieldError →

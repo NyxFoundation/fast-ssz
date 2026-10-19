@@ -6,6 +6,10 @@ pub enum BitfieldError {
     EmptyVector,
     InvalidLength,
     PaddingBits,
+    OverLimit,
+    EmptyEncoding,
+    NoDelimiter,
+    TrailingZeros,
 }
 
 fn bit_at(bits: &[bool], index: usize) -> u8 {
@@ -72,4 +76,76 @@ pub fn decode_bit_vector(bytes: &[u8], length: usize) -> Result<Vec<bool>, Bitfi
         return Err(BitfieldError::PaddingBits);
     }
     Ok(unpack_bits(bytes, length))
+}
+
+fn all_zero(bytes: &[u8]) -> bool {
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] != 0 {
+            return false;
+        }
+        index += 1;
+    }
+    true
+}
+
+fn highest_bit(byte: u8) -> usize {
+    if (byte >> 7) & 1 == 1 {
+        7
+    } else if (byte >> 6) & 1 == 1 {
+        6
+    } else if (byte >> 5) & 1 == 1 {
+        5
+    } else if (byte >> 4) & 1 == 1 {
+        4
+    } else if (byte >> 3) & 1 == 1 {
+        3
+    } else if (byte >> 2) & 1 == 1 {
+        2
+    } else if (byte >> 1) & 1 == 1 {
+        1
+    } else {
+        0
+    }
+}
+
+/// Encode a bounded bitlist with its mandatory highest-set-bit delimiter.
+pub fn encode_bit_list(bits: &[bool], limit: usize) -> Result<Vec<u8>, BitfieldError> {
+    if bits.len() > limit {
+        return Err(BitfieldError::OverLimit);
+    }
+    let mut output = pack_bits(bits);
+    let remainder = bits.len() % 8;
+    if remainder == 0 {
+        output.push(1);
+    } else {
+        let last = output.len() - 1;
+        output[last] |= 1u8 << remainder;
+    }
+    Ok(output)
+}
+
+/// Decode a canonical bounded bitlist without overflowing byte-to-bit counts.
+pub fn decode_bit_list(bytes: &[u8], limit: usize) -> Result<Vec<bool>, BitfieldError> {
+    if bytes.is_empty() {
+        return Err(BitfieldError::EmptyEncoding);
+    }
+    let final_byte = bytes[bytes.len() - 1];
+    if final_byte == 0 {
+        return Err(if all_zero(bytes) {
+            BitfieldError::NoDelimiter
+        } else {
+            BitfieldError::TrailingZeros
+        });
+    }
+    let high = highest_bit(final_byte);
+    let whole = bytes.len() - 1;
+    if whole > limit / 8 {
+        return Err(BitfieldError::OverLimit);
+    }
+    let base = whole * 8;
+    if high > limit - base {
+        return Err(BitfieldError::OverLimit);
+    }
+    Ok(unpack_bits(bytes, base + high))
 }
