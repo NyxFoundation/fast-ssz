@@ -1,0 +1,197 @@
+[
+  {
+    "rust": "fast_ssz::scalar::encode_bool",
+    "lean": "FastSszRust.scalar.encode_bool",
+    "proof": "FastSszVerification.encode_bool_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_bool",
+    "lean": "FastSszRust.scalar.decode_bool",
+    "proof": "FastSszVerification.decode_bool_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::encode_byte_vector",
+    "lean": "FastSszRust.bytes.encode_byte_vector",
+    "proof": "FastSszVerification.byte_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::decode_byte_vector",
+    "lean": "FastSszRust.bytes.decode_byte_vector",
+    "proof": "FastSszVerification.byte_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::encode_byte_list",
+    "lean": "FastSszRust.bytes.encode_byte_list",
+    "proof": "FastSszVerification.byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::decode_byte_list",
+    "lean": "FastSszRust.bytes.decode_byte_list",
+    "proof": "FastSszVerification.byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::sha256::hash_pair",
+    "lean": "FastSszRust.sha256.hash_pair",
+    "proof": "FastSszVerification.hash_pair_refines"
+  },
+  {
+    "rust": "fast_ssz::merkle::calculate_merkle_root",
+    "lean": "FastSszRust.merkle.calculate_merkle_root",
+    "proof": "FastSszVerification.calculate_merkle_root_refines"
+  },
+  {
+    "rust": "fast_ssz::merkle::verify_merkle_proof",
+    "lean": "FastSszRust.merkle.verify_merkle_proof",
+    "proof": "FastSszVerification.verify_merkle_proof_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u8",
+    "lean": "FastSszRust.scalar.encode_u8",
+    "proof": "FastSszVerification.encode_u8_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u8",
+    "lean": "FastSszRust.scalar.decode_u8",
+    "proof": "FastSszVerification.decode_u8_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u16",
+    "lean": "FastSszRust.scalar.encode_u16",
+    "proof": "FastSszVerification.encode_u16_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u16",
+    "lean": "FastSszRust.scalar.decode_u16",
+    "proof": "FastSszVerification.decode_u16_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u32",
+    "lean": "FastSszRust.scalar.encode_u32",
+    "proof": "FastSszVerification.encode_u32_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u32",
+    "lean": "FastSszRust.scalar.decode_u32",
+    "proof": "FastSszVerification.decode_u32_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u64",
+    "lean": "FastSszRust.scalar.encode_u64",
+    "proof": "FastSszVerification.encode_u64_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u64",
+    "lean": "FastSszRust.scalar.decode_u64",
+    "proof": "FastSszVerification.decode_u64_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u128",
+    "lean": "FastSszRust.scalar.encode_u128",
+    "proof": "FastSszVerification.encode_u128_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u128",
+    "lean": "FastSszRust.scalar.decode_u128",
+    "proof": "FastSszVerification.decode_u128_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::encode_u256",
+    "lean": "FastSszRust.scalar.encode_u256",
+    "proof": "FastSszVerification.encode_u256_refines"
+  },
+  {
+    "rust": "fast_ssz::scalar::decode_u256",
+    "lean": "FastSszRust.scalar.decode_u256",
+    "proof": "FastSszVerification.decode_u256_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::encode_bit_vector",
+    "lean": "FastSszRust.bitfield.encode_bit_vector",
+    "proof": "FastSszVerification.encode_bit_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::decode_bit_vector",
+    "lean": "FastSszRust.bitfield.decode_bit_vector",
+    "proof": "FastSszVerification.decode_bit_vector_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::encode_bit_list",
+    "lean": "FastSszRust.bitfield.encode_bit_list",
+    "proof": "FastSszVerification.encode_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::decode_bit_list",
+    "lean": "FastSszRust.bitfield.decode_bit_list",
+    "proof": "FastSszVerification.decode_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::encode_progressive_byte_list",
+    "lean": "FastSszRust.bytes.encode_progressive_byte_list",
+    "proof": "FastSszVerification.encode_progressive_byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::decode_progressive_byte_list",
+    "lean": "FastSszRust.bytes.decode_progressive_byte_list",
+    "proof": "FastSszVerification.decode_progressive_byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_bool",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_bool",
+    "proof": "FastSszVerification.hash_tree_root_bool_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u8",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u8",
+    "proof": "FastSszVerification.hash_tree_root_u8_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u16",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u16",
+    "proof": "FastSszVerification.hash_tree_root_u16_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u32",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u32",
+    "proof": "FastSszVerification.hash_tree_root_u32_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u64",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u64",
+    "proof": "FastSszVerification.hash_tree_root_u64_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u128",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u128",
+    "proof": "FastSszVerification.hash_tree_root_u128_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u256",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u256",
+    "proof": "FastSszVerification.hash_tree_root_u256_refines"
+  },
+  {
+    "rust": "fast_ssz::merkle::merkleize",
+    "lean": "FastSszRust.merkle.merkleize",
+    "proof": "FastSszVerification.merkleize_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::encode_progressive_bit_list",
+    "lean": "FastSszRust.bitfield.encode_progressive_bit_list",
+    "proof": "FastSszVerification.encode_progressive_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::decode_progressive_bit_list",
+    "lean": "FastSszRust.bitfield.decode_progressive_bit_list",
+    "proof": "FastSszVerification.decode_progressive_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::BitListView::as_ssz_bytes",
+    "lean": "FastSszRust.bitfield.BitListView.as_ssz_bytes",
+    "proof": "FastSszVerification.bit_list_view_as_ssz_bytes_refines"
+  },
+  {
+    "rust": "fast_ssz::bitfield::BitListView::len_bits",
+    "lean": "FastSszRust.bitfield.BitListView.len_bits",
+    "proof": "FastSszVerification.bit_list_view_len_bits_refines"
+  }
+]

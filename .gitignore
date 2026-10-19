@@ -1,0 +1,6 @@
+/target/
+/.tools/
+/.lake/
+/verification/.lake/
+/verification/extraction/
+__pycache__/
