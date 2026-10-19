@@ -64,19 +64,25 @@ nyx-ssz = { git = "https://github.com/NyxFoundation/nyx-ssz" }
 ## Typed codecs
 
 ```rust
-use nyx_ssz::codec::{decode, encode, hash_tree_root, Ssz};
+use nyx_ssz::codec::{decode, encode, fixed_size, hash_tree_root, is_compatible, validate_type};
 let value = 0x1234u16;
 let bytes = encode(&value).unwrap();
 assert_eq!(bytes, [0x34, 0x12]);
 assert_eq!(decode::<u16>(&bytes), Ok(value));
-assert_eq!(u16::FIXED_SIZE, Ok(Some(2)));
+assert_eq!(fixed_size::<u16>(), Ok(Some(2)));
+assert_eq!(validate_type::<u16>(), Ok(()));
+assert!(!is_compatible::<bool, u8>());
 let root = hash_tree_root(&value).unwrap();
 assert_eq!(&root[..2], bytes.as_slice());
 ```
 
-`FIXED_SIZE` distinguishes fixed widths, variable layouts (`Ok(None)`) and an
-unrepresentable width (`Err(SizeOverflow)`). `IS_BASIC` controls packing before
-collection Merkleization. `CodecError` implements the standard error interfaces.
+`Ssz::TYPE` is an immutable static declaration. `codec::fixed_size` derives fixed
+widths, variable layouts (`Ok(None)`) or unrepresentable widths (`Err(SizeOverflow)`).
+`codec::is_basic` derives packing classification; `codec::validate_type` checks the
+declaration without invoking a value codec. `codec::is_compatible` compares declared
+Merkle layouts but does not imply type validity. These are not independently overridable
+metadata constants. The descriptor currently covers the seven provided basic types;
+composite declarations and their recursive checks are being added with their codecs. `CodecError` implements the standard error interfaces.
 Only the seven basic-type implementations are currently included; storage collections
 below do not implement `Ssz` yet. Borrowed byte/bit codecs remain separate APIs.
 

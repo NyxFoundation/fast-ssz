@@ -326,6 +326,12 @@ def rejection_cases():
             "NyxSszVerification.decode_bool_refines\n",
             "does not mention",
         ),
+        **trait_rejection_cases(),
+    }
+
+
+def trait_rejection_cases():
+    return {
         "UnrelatedTraitTheorem": (
             "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "
             "against NyxSszVerification.CodecLaw via NyxSszVerification.encode_bool_refines\n",
@@ -344,6 +350,17 @@ def rejection_cases():
             "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "
             "against NyxSszVerification.CodecLaw via impossibleDictionary\n",
             "unconditional registered trait contract",
+        ),
+        "MismatchedTypeDeclaration": (
+            "def misleadingBool : NyxSszRust.codec.Ssz Bool Unit := "
+            "{ NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple with "
+            "TYPE := Aeneas.Std.RustM.ok (NyxSszRust.type_info.TypeDescriptor.Uint 1) }\n"
+            "example : NyxSszVerification.CodecLaw misleadingBool Ssz.Desc.bool Ssz.Value.bool := by\n"
+            "  constructor\n  · rfl\n"
+            "  · exact NyxSszVerification.bool_codec_refines.encode\n"
+            "  · exact NyxSszVerification.bool_codec_refines.decode\n"
+            "  · exact NyxSszVerification.bool_codec_refines.root\n",
+            "Tactic `rfl` failed",
         ),
         "WrongTraitDictionary": (
             "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "

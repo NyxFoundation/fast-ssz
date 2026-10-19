@@ -1,7 +1,9 @@
 use nyx_ssz::{
-    codec::{decode, encode, hash_tree_root, Ssz},
+    codec::{decode, encode, fixed_size, hash_tree_root, is_basic, Ssz},
     error::{CodecError, DecodeFailure},
-    scalar, tree_hash, U256,
+    scalar, tree_hash,
+    type_info::TypeDescriptor,
+    U256,
 };
 
 fn assert_codec<T: Ssz<DecodeState = ()> + std::fmt::Debug + PartialEq>(
@@ -10,8 +12,8 @@ fn assert_codec<T: Ssz<DecodeState = ()> + std::fmt::Debug + PartialEq>(
     root: [u8; 32],
 ) {
     assert_eq!(encode(&value), Ok(bytes.to_vec()));
-    assert_eq!(T::FIXED_SIZE, Ok(Some(bytes.len())));
-    assert!(T::IS_BASIC);
+    assert_eq!(fixed_size::<T>(), Ok(Some(bytes.len())));
+    assert!(is_basic::<T>());
     assert_eq!(decode::<T>(bytes), Ok(value));
     let decoded = decode::<T>(bytes).unwrap();
     assert_eq!(hash_tree_root(&decoded), Ok(root));
@@ -81,8 +83,7 @@ impl Drop for ReturnedState {
 // An external dictionary is callable, but is not covered by library instance proofs.
 impl Ssz for Oversized {
     type DecodeState = ReturnedState;
-    const FIXED_SIZE: Result<Option<usize>, CodecError> = Err(CodecError::SizeOverflow);
-    const IS_BASIC: bool = false;
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(1);
 
     fn encode(&self) -> Result<Vec<u8>, CodecError> {
         Err(CodecError::SizeOverflow)
@@ -102,7 +103,7 @@ impl Ssz for Oversized {
 
 #[test]
 fn should_forward_external_codec_errors_without_certifying_the_implementation() {
-    assert_eq!(Oversized::FIXED_SIZE, Err(CodecError::SizeOverflow));
+    assert_eq!(fixed_size::<Oversized>(), Ok(Some(1)));
     assert_eq!(encode(&Oversized), Err(CodecError::SizeOverflow));
     let failure = decode::<Oversized>(&[]).unwrap_err();
     assert_eq!(failure.kind, CodecError::SizeOverflow);

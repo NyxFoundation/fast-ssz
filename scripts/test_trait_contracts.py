@@ -8,7 +8,7 @@ from trait_contracts import load_contracts, validate_traits, assert_extracted_in
 
 CONTRACT = {
     "rust": "nyx_ssz::codec::Ssz", "law": "NyxSszVerification.CodecLaw",
-    "members": {"FIXED_SIZE": "assoc_const", "encode": "function", "DecodeState": "assoc_type"},
+    "members": {"TYPE": "assoc_const", "encode": "function", "DecodeState": "assoc_type"},
     "instances": [{"type": "bool", "lean": "NyxSszRust.Bool.Insts.Ssz",
                    "proof": "NyxSszVerification.bool_law"}],
 }
@@ -18,10 +18,10 @@ def document():
     return {"paths": {"1": {"path": ["nyx_ssz", "codec", "Ssz"]}}, "index": {
         "1": {"crate_id": 0, "visibility": "public", "name": "Ssz",
               "inner": {"trait": {"items": [2, 3, 7], "implementations": [4]}}},
-        "2": {"name": "FIXED_SIZE", "inner": {"assoc_const": {}}},
+        "2": {"name": "TYPE", "inner": {"assoc_const": {}}},
         "3": {"name": "encode", "inner": {"function": {}}},
         "4": {"inner": {"impl": {"for": {"primitive": "bool"}, "items": [5, 6, 8]}}},
-        "5": {"name": "FIXED_SIZE", "inner": {"assoc_const": {}}},
+        "5": {"name": "TYPE", "inner": {"assoc_const": {}}},
         "6": {"name": "encode", "inner": {"function": {}}},
         "7": {"name": "DecodeState", "inner": {"assoc_type": {}}},
         "8": {"name": "DecodeState", "inner": {"assoc_type": {}}},

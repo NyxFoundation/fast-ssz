@@ -5,6 +5,7 @@
 pub enum CodecError {
     InvalidLength,
     InvalidBoolean,
+    InvalidIntegerWidth,
     SizeOverflow,
     OffsetUnordered,
     OffsetPastScope,
@@ -47,6 +48,9 @@ impl std::fmt::Display for CodecError {
         formatter.write_str(match self {
             Self::InvalidLength => "SSZ input has an invalid byte length",
             Self::InvalidBoolean => "SSZ boolean must be encoded as zero or one",
+            Self::InvalidIntegerWidth => {
+                "SSZ unsigned integer width must be 1, 2, 4, 8, 16 or 32 bytes"
+            }
             Self::SizeOverflow => "SSZ size exceeds its supported representation",
             Self::OffsetUnordered => "SSZ offsets must be nondecreasing",
             Self::OffsetPastScope => "SSZ offset exceeds its input scope",
