@@ -5,6 +5,7 @@ import NyxSszVerification.Sequence
 import NyxSszVerification.Sequence.Vector
 import NyxSszVerification.Sequence.List
 import NyxSszVerification.Codec.Basic
+import NyxSszVerification.Codec.Metadata
 import NyxSszVerification.Codec.Elements
 import NyxSszVerification.ProgressiveBytes
 import NyxSszVerification.Sha256

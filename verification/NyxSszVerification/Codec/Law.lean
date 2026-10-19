@@ -1,5 +1,6 @@
 import NyxSszRust.Codec
 import NyxSszVerification.Bytes
+import NyxSszVerification.TypeInfo.Model
 import Ssz.Codec.Root
 
 open Aeneas Aeneas.Std Aeneas.Std.WP
@@ -10,6 +11,7 @@ namespace NyxSszVerification
 def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
   | .InvalidLength, .scope _ _ => True
   | .InvalidBoolean, .notABit _ => True
+  | .InvalidIntegerWidth, .uintWidth _ => True
   | .SizeOverflow, .offsetOverflow _ => True
   | .OffsetUnordered, .offsetUnordered => True
   | .OffsetPastScope, .offsetPastScope => True
@@ -54,6 +56,14 @@ def codecWidthAgrees
   | .Err .SizeOverflow, some expected => Usize.max < expected
   | _, _ => False
 
+def codecValidityAgrees
+    (actual : core.result.Result Unit NyxSszRust.error.CodecError)
+    (expected : Except Ssz.Err Unit) : Prop :=
+  match actual, expected with
+  | .Ok (), .ok () => True
+  | .Err error, .error fault => codecFaultAgrees error fault
+  | _, _ => False
+
 def checkedHashTreeRoot (shape : Ssz.Desc) (value : Ssz.Value) : Except Ssz.Err Ssz.Bytes := do
   shape.wellFormed
   Ssz.hashTreeRoot shape value
@@ -61,8 +71,7 @@ def checkedHashTreeRoot (shape : Ssz.Desc) (value : Ssz.Value) : Except Ssz.Err 
 /-- A caller-supplied dictionary is not presumed lawful. Library instances prove this predicate. -/
 structure CodecLaw {T State : Type} (codecInst : NyxSszRust.codec.Ssz T State)
     (shape : Ssz.Desc) (observe : T → Ssz.Value) : Prop where
-  width : codecInst.FIXED_SIZE ⦃ actual => codecWidthAgrees actual shape.fixedSize ⦄
-  basic : codecInst.IS_BASIC ⦃ actual => actual = shape.isBasic ⦄
+  declaration : codecInst.TYPE ⦃ actual => typeDescriptorToSpec actual = shape ⦄
   encode : ∀ value, codecInst.encode value ⦃ actual =>
     codecEncodingAgrees actual (checkedSerialize shape (observe value)) ⦄
   decode : ∀ bytes, codecInst.decode bytes ⦃ actual =>

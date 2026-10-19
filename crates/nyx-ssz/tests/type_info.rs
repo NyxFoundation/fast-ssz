@@ -1,0 +1,81 @@
+use nyx_ssz::{
+    codec::{fixed_size, is_basic, is_compatible, validate_type, Ssz},
+    error::{CodecError, DecodeFailure},
+    type_info::TypeDescriptor,
+    U256,
+};
+
+fn assert_declaration<T: Ssz>(expected: TypeDescriptor, width: usize) {
+    let declaration: &'static TypeDescriptor = T::TYPE;
+    assert_eq!(*declaration, expected);
+    assert_eq!(fixed_size::<T>(), Ok(Some(width)));
+    assert!(is_basic::<T>());
+    assert_eq!(validate_type::<T>(), Ok(()));
+}
+
+#[test]
+fn should_derive_every_basic_types_metadata_from_its_static_declaration() {
+    assert_declaration::<bool>(TypeDescriptor::Boolean, 1);
+    assert_declaration::<u8>(TypeDescriptor::Uint(1), 1);
+    assert_declaration::<u16>(TypeDescriptor::Uint(2), 2);
+    assert_declaration::<u32>(TypeDescriptor::Uint(4), 4);
+    assert_declaration::<u64>(TypeDescriptor::Uint(8), 8);
+    assert_declaration::<u128>(TypeDescriptor::Uint(16), 16);
+    assert_declaration::<U256>(TypeDescriptor::Uint(32), 32);
+}
+
+struct DeclaredUint<const WIDTH: usize>;
+
+// Metadata inspection must not invoke any value codec, even on an external type.
+impl<const WIDTH: usize> Ssz for DeclaredUint<WIDTH> {
+    type DecodeState = ();
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(WIDTH);
+
+    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+        panic!("metadata inspection must not call encode")
+    }
+    fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
+        panic!("metadata inspection must not call decode")
+    }
+    fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
+        panic!("metadata inspection must not call hash_tree_root")
+    }
+}
+
+fn assert_invalid_width<const WIDTH: usize>() {
+    assert_eq!(
+        validate_type::<DeclaredUint<WIDTH>>(),
+        Err(CodecError::InvalidIntegerWidth)
+    );
+    // Layout metadata and declaration validity are distinct in the reference.
+    assert_eq!(fixed_size::<DeclaredUint<WIDTH>>(), Ok(Some(WIDTH)));
+    assert!(is_basic::<DeclaredUint<WIDTH>>());
+}
+
+#[test]
+fn should_reject_illegal_integer_declarations_without_invoking_value_codecs() {
+    assert_invalid_width::<0>();
+    assert_invalid_width::<3>();
+    assert_invalid_width::<{ usize::MAX }>();
+}
+
+#[test]
+fn should_compare_declarations_without_confusing_equal_widths_with_equal_types() {
+    assert!(is_compatible::<bool, bool>());
+    assert!(is_compatible::<u16, u16>());
+    assert!(is_compatible::<U256, U256>());
+    assert!(!is_compatible::<bool, u8>());
+    assert!(!is_compatible::<u8, bool>());
+    assert!(!is_compatible::<u8, u16>());
+    assert!(!is_compatible::<U256, u128>());
+    assert!(is_compatible::<DeclaredUint<3>, DeclaredUint<3>>());
+    assert!(!is_compatible::<DeclaredUint<3>, u16>());
+}
+
+#[test]
+fn should_explain_invalid_integer_declarations_without_exposing_internals() {
+    assert_eq!(
+        CodecError::InvalidIntegerWidth.to_string(),
+        "SSZ unsigned integer width must be 1, 2, 4, 8, 16 or 32 bytes"
+    );
+}

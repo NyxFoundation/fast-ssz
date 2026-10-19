@@ -8,8 +8,7 @@ namespace NyxSszVerification
 theorem bool_codec_refines :
     CodecLaw NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple .bool Ssz.Value.bool := by
   constructor
-  · simp [NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple.encode
@@ -38,8 +37,7 @@ theorem bool_codec_refines :
 theorem u8_codec_refines :
     CodecLaw NyxSszRust.U8.Insts.Nyx_sszCodecSszTuple (.uint 1) (fun value : U8 => .uint (value.val)) := by
   constructor
-  · simp [NyxSszRust.U8.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.U8.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.U8.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.U8.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.U8.Insts.Nyx_sszCodecSszTuple.encode
@@ -68,8 +66,7 @@ theorem u8_codec_refines :
 theorem u16_codec_refines :
     CodecLaw NyxSszRust.U16.Insts.Nyx_sszCodecSszTuple (.uint 2) (fun value : U16 => .uint (value.val)) := by
   constructor
-  · simp [NyxSszRust.U16.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.U16.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.U16.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.U16.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.U16.Insts.Nyx_sszCodecSszTuple.encode
@@ -98,8 +95,7 @@ theorem u16_codec_refines :
 theorem u32_codec_refines :
     CodecLaw NyxSszRust.U32.Insts.Nyx_sszCodecSszTuple (.uint 4) (fun value : U32 => .uint (value.val)) := by
   constructor
-  · simp [NyxSszRust.U32.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.U32.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.U32.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.U32.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.U32.Insts.Nyx_sszCodecSszTuple.encode
@@ -128,8 +124,7 @@ theorem u32_codec_refines :
 theorem u64_codec_refines :
     CodecLaw NyxSszRust.U64.Insts.Nyx_sszCodecSszTuple (.uint 8) (fun value : U64 => .uint (value.val)) := by
   constructor
-  · simp [NyxSszRust.U64.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.U64.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.U64.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.U64.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.U64.Insts.Nyx_sszCodecSszTuple.encode
@@ -158,8 +153,7 @@ theorem u64_codec_refines :
 theorem u128_codec_refines :
     CodecLaw NyxSszRust.U128.Insts.Nyx_sszCodecSszTuple (.uint 16) (fun value : U128 => .uint (value.val)) := by
   constructor
-  · simp [NyxSszRust.U128.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.U128.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.U128.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.U128.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.U128.Insts.Nyx_sszCodecSszTuple.encode
@@ -188,8 +182,7 @@ theorem u128_codec_refines :
 theorem u256_codec_refines :
     CodecLaw NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple (.uint 32) (fun value : RustU256 => .uint (u256Value value)) := by
   constructor
-  · simp [NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.FIXED_SIZE, codecWidthAgrees, Ssz.Desc.fixedSize]
-  · simp [NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.IS_BASIC, Ssz.Desc.isBasic]
+  · simp [NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.TYPE, typeDescriptorToSpec]
   · intro value
     dsimp only [NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple]
     unfold NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple.encode

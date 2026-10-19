@@ -2,7 +2,9 @@
 
 use crate::{
     error::{CodecError, DecodeFailure},
-    scalar, tree_hash, U256,
+    scalar, tree_hash,
+    type_info::{self, TypeDescriptor},
+    U256,
 };
 
 /// An owned SSZ type with canonical encoding, decoding and tree hashing.
@@ -12,13 +14,31 @@ use crate::{
 pub trait Ssz: Sized {
     /// Owned partial values returned on failure; never discarded inside decode.
     type DecodeState;
-    /// A fixed width, variable layout (`Ok(None)`), or an unrepresentable width.
-    const FIXED_SIZE: Result<Option<usize>, CodecError>;
-    /// Basic values pack together before collection Merkleization.
-    const IS_BASIC: bool;
+    /// Immutable declaration used for type validation and layout metadata.
+    const TYPE: &'static TypeDescriptor;
     fn encode(&self) -> Result<Vec<u8>, CodecError>;
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>>;
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError>;
+}
+
+/// Return a fixed width, variable layout (`Ok(None)`), or size overflow.
+pub fn fixed_size<T: Ssz>() -> Result<Option<usize>, CodecError> {
+    type_info::fixed_size(T::TYPE)
+}
+
+/// Whether declared values pack together before collection Merkleization.
+pub fn is_basic<T: Ssz>() -> bool {
+    type_info::is_basic(T::TYPE)
+}
+
+/// Compare declared Merkle layouts; compatibility does not imply type validity.
+pub fn is_compatible<Left: Ssz, Right: Ssz>() -> bool {
+    type_info::is_compatible(Left::TYPE, Right::TYPE)
+}
+
+/// Check a type declaration without invoking any value codec.
+pub fn validate_type<T: Ssz>() -> Result<(), CodecError> {
+    type_info::validate(T::TYPE)
 }
 
 /// Encode a typed value using its codec.
@@ -104,11 +124,10 @@ fn scalar_error(error: scalar::ScalarError) -> CodecError {
 }
 
 macro_rules! basic_codec {
-    ($type:ty, $size:literal, $encode:ident, $decode:ident, $root:ident) => {
+    ($type:ty, $declaration:expr, $encode:ident, $decode:ident, $root:ident) => {
         impl Ssz for $type {
             type DecodeState = ();
-            const FIXED_SIZE: Result<Option<usize>, CodecError> = Ok(Some($size));
-            const IS_BASIC: bool = true;
+            const TYPE: &'static TypeDescriptor = &$declaration;
 
             fn encode(&self) -> Result<Vec<u8>, CodecError> {
                 Ok(fixed_bytes(scalar::$encode(*self)))
@@ -131,17 +150,52 @@ macro_rules! basic_codec {
     };
 }
 
-basic_codec!(bool, 1, encode_bool, decode_bool, hash_tree_root_bool);
-basic_codec!(u8, 1, encode_u8, decode_u8, hash_tree_root_u8);
-basic_codec!(u16, 2, encode_u16, decode_u16, hash_tree_root_u16);
-basic_codec!(u32, 4, encode_u32, decode_u32, hash_tree_root_u32);
-basic_codec!(u64, 8, encode_u64, decode_u64, hash_tree_root_u64);
-basic_codec!(u128, 16, encode_u128, decode_u128, hash_tree_root_u128);
+basic_codec!(
+    bool,
+    TypeDescriptor::Boolean,
+    encode_bool,
+    decode_bool,
+    hash_tree_root_bool
+);
+basic_codec!(
+    u8,
+    TypeDescriptor::Uint(1),
+    encode_u8,
+    decode_u8,
+    hash_tree_root_u8
+);
+basic_codec!(
+    u16,
+    TypeDescriptor::Uint(2),
+    encode_u16,
+    decode_u16,
+    hash_tree_root_u16
+);
+basic_codec!(
+    u32,
+    TypeDescriptor::Uint(4),
+    encode_u32,
+    decode_u32,
+    hash_tree_root_u32
+);
+basic_codec!(
+    u64,
+    TypeDescriptor::Uint(8),
+    encode_u64,
+    decode_u64,
+    hash_tree_root_u64
+);
+basic_codec!(
+    u128,
+    TypeDescriptor::Uint(16),
+    encode_u128,
+    decode_u128,
+    hash_tree_root_u128
+);
 
 impl Ssz for U256 {
     type DecodeState = ();
-    const FIXED_SIZE: Result<Option<usize>, CodecError> = Ok(Some(32));
-    const IS_BASIC: bool = true;
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(32);
 
     fn encode(&self) -> Result<Vec<u8>, CodecError> {
         Ok(fixed_bytes(scalar::encode_u256(self)))

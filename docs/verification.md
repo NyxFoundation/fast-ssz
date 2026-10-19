@@ -12,11 +12,11 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links fifty-three registered operations to proofs over actual
+`verification/targets.json` links fifty-seven registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 variable-vector/list layout validation, three immutable layout-view projections and typed
-body-range decoding. `verification/traits.json` separately
+body-range decoding, plus four declaration-derived metadata APIs. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
 Collection storage proofs do not imply generic SSZ collection codecs.
@@ -115,9 +115,10 @@ formatting and maximum machine counts for zero-sized elements. These are shape/s
 contracts, not element validity, serialization, tree-root or allocation-cost theorems.
 These storage types do not implement `Ssz` and have no generic collection codecs yet.
 
-`codec::Ssz` has checked fixed-width metadata, basic/composite classification, encoding,
-decoding and tree-root operations. Boolean and uint8/16/32/64/128/256 dictionaries prove
-all five against their reference descriptors and value views. The array-to-Vec copy loop
+`codec::Ssz` has a static immutable `TYPE` declaration and encode/decode/tree-root
+operations. Boolean and uint8/16/32/64/128/256 dictionaries prove that the complete
+declaration maps to their exact reference descriptor, in addition to their value-codec
+laws. Size and classification are no longer independently overridable constants. The array-to-Vec copy loop
 preserves every byte; a decreasing measure proves termination and all indices/increments
 are checked safe. Scalar error conversion preserves exact error classes. Dispatcher proofs
 are conditional on `CodecLaw`: an external handwritten dictionary is callable but is not
@@ -131,6 +132,19 @@ protocol observation. Element-loop ownership is proved separately below; the wir
 alone would not establish it. Error formatting and external implementations are Rust tests,
 not protocol proof targets; a non-Debug state/drop-counter test checks that forwarding
 and formatting do not invoke its destructor or expose it.
+
+`codec::fixed_size`, `is_basic`, `validate_type` and `is_compatible` derive metadata
+from `Ssz::TYPE` without invoking value codecs. The shared implementations refine
+`Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and `Ssz.isCompatible` over every
+represented declaration. The current descriptor represents Boolean and machine-size
+integer widths; all widths, including zero, unsupported widths and `usize::MAX`, are
+covered. Validation rejects illegal widths, while width/classification remain separate
+metadata exactly as in the reference. Compatibility distinguishes Boolean from uint8
+and does not imply declaration validity. The descriptor view preserves the entire
+declaration; a negative fixture rejects a bool dictionary mislabeled uint8 despite their
+equal byte widths. Composite declaration variants and their recursive proofs remain to
+be added with the corresponding codecs. Static storage and no metadata-construction
+allocation are source/compiler properties, not runtime-cost theorems.
 
 `codec::decode_elements` traverses validated body ranges with any explicitly lawful
 child dictionary. The actual Vec loop terminates and preserves element order, with

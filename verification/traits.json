@@ -4,8 +4,7 @@
     "law": "NyxSszVerification.CodecLaw",
     "members": {
       "DecodeState": "assoc_type",
-      "FIXED_SIZE": "assoc_const",
-      "IS_BASIC": "assoc_const",
+      "TYPE": "assoc_const",
       "encode": "function",
       "decode": "function",
       "hash_tree_root": "function"

@@ -2,6 +2,7 @@ use nyx_ssz::{
     codec::{decode_elements, Ssz},
     error::{CodecError, DecodeFailure},
     sequence::variable_vector_view,
+    type_info::TypeDescriptor,
 };
 use std::cell::RefCell;
 
@@ -27,8 +28,7 @@ impl Drop for Cleanup {
 // An external codec exercises ownership; it is not implicitly certified by the library.
 impl Ssz for TracedByte {
     type DecodeState = Cleanup;
-    const FIXED_SIZE: Result<Option<usize>, CodecError> = Ok(Some(1));
-    const IS_BASIC: bool = true;
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(1);
 
     fn encode(&self) -> Result<Vec<u8>, CodecError> {
         Ok(vec![self.0])

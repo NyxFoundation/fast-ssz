@@ -263,5 +263,25 @@
     "rust": "nyx_ssz::codec::decode_elements",
     "lean": "NyxSszRust.codec.decode_elements",
     "proof": "NyxSszVerification.decode_elements_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::fixed_size",
+    "lean": "NyxSszRust.codec.fixed_size",
+    "proof": "NyxSszVerification.codec_fixed_size_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::is_basic",
+    "lean": "NyxSszRust.codec.is_basic",
+    "proof": "NyxSszVerification.codec_is_basic_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::validate_type",
+    "lean": "NyxSszRust.codec.validate_type",
+    "proof": "NyxSszVerification.codec_validate_type_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::is_compatible",
+    "lean": "NyxSszRust.codec.is_compatible",
+    "proof": "NyxSszVerification.codec_is_compatible_refines"
   }
 ]
