@@ -10,5 +10,6 @@ pub mod collections;
 pub mod error;
 pub mod merkle;
 pub mod scalar;
+pub mod sequence;
 pub mod sha256;
 pub mod tree_hash;

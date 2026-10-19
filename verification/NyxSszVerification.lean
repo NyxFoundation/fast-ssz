@@ -1,6 +1,7 @@
 import NyxSszVerification.Boolean
 import NyxSszVerification.Bytes
 import NyxSszVerification.Collections
+import NyxSszVerification.Sequence
 import NyxSszVerification.Codec.Basic
 import NyxSszVerification.ProgressiveBytes
 import NyxSszVerification.Sha256

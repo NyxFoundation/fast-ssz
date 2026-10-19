@@ -11,6 +11,8 @@ def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
   | .InvalidLength, .scope _ _ => True
   | .InvalidBoolean, .notABit _ => True
   | .SizeOverflow, .offsetOverflow _ => True
+  | .OffsetUnordered, .offsetUnordered => True
+  | .OffsetPastScope, .offsetPastScope => True
   | _, _ => False
 
 def codecEncodingAgrees

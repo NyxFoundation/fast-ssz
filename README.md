@@ -28,6 +28,8 @@ The `codec::Ssz` trait provides a uniform interface for Boolean and all six unsi
 widths. Its seven library implementations have proved size metadata, basic/composite
 classification, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
+The shared numeric offset-span validator is also proved, including empty bodies,
+ordering/scope errors and machine-maximum values. This is not a complete offset-table parser.
 
 Generic collection codecs, collection trait implementations, containers, remaining Progressive types,
 CompatibleUnion, derive, composite hash-tree roots, index/path APIs, multiproofs, official vectors
