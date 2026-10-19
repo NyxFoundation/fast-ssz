@@ -8,9 +8,10 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist and ByteVector/ByteList
-codecs, SHA-256 node combination and single-branch Merkle verification are implemented.
-`verification/targets.json` links twenty-five operations
+**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist and borrowed
+ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
+single-branch Merkle verification are implemented.
+`verification/targets.json` links twenty-seven operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -18,6 +19,15 @@ Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
 OverLimit/overLimit; other outcomes are false. Boolean errors classify scope/non-bit
 faults. Bounds cover `usize`, not all naturals. Zero-copy is source/test evidence,
 not a cost theorem. Derived error traits are not protocol proof targets.
+
+ProgressiveByteList is checked against `.progressiveList (.uint 1) limit`, not
+an opaque-byte descriptor. Its injective value view maps every byte to a uint8,
+preserving order and length. The sequence layout and singleton-byte slicing are
+proved to encode/decode exactly the borrowed input. `None` imposes no declared
+capacity; optional capacities cover every `usize`. Both forms enforce the pinned
+reference's sequence size of less than 2^32 bytes. Above that size, serialization
+checks capacity first and deserialization checks offset width first; both error
+precedences are proved, including inputs too large to allocate in unit tests.
 
 Unsigned native codecs reuse Rust's standard little-endian and checked slice/array
 conversions. Their actual models are proved against `Ssz.serialize`/`Ssz.deserialize`

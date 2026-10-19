@@ -123,5 +123,15 @@
     "rust": "fast_ssz::bitfield::decode_bit_list",
     "lean": "FastSszRust.bitfield.decode_bit_list",
     "proof": "FastSszVerification.decode_bit_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::encode_progressive_byte_list",
+    "lean": "FastSszRust.bytes.encode_progressive_byte_list",
+    "proof": "FastSszVerification.encode_progressive_byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::bytes::decode_progressive_byte_list",
+    "lean": "FastSszRust.bytes.decode_progressive_byte_list",
+    "proof": "FastSszVerification.decode_progressive_byte_list_refines"
   }
 ]

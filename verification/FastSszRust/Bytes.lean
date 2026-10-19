@@ -17,16 +17,39 @@ set_option maxRecDepth 2048
 
 namespace FastSszRust
 /-- [fast_ssz::bytes::ByteError]
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 5:0-9:1
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 5:0-10:1
     Visibility: public -/
 @[discriminant isize]
 inductive bytes.ByteError where
 | EmptyVector : bytes.ByteError
 | InvalidLength : bytes.ByteError
 | OverLimit : bytes.ByteError
+| OffsetOverflow : bytes.ByteError
+
+/-- [fast_ssz::bytes::check_progressive_bound]:
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 45:0-52:1 -/
+def bytes.check_progressive_bound
+  (length : Std.Usize) (limit : Option Std.Usize) :
+  RustM (core.result.Result Unit bytes.ByteError)
+  := do
+  match limit with
+  | none => ok (core.result.Result.Ok ())
+  | some capacity =>
+    if length > capacity
+    then ok (core.result.Result.Err bytes.ByteError.OverLimit)
+    else ok (core.result.Result.Ok ())
+
+/-- [fast_ssz::bytes::check_sequence_width]:
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 54:0-59:1 -/
+def bytes.check_sequence_width
+  (length : Std.Usize) : RustM (core.result.Result Unit bytes.ByteError) := do
+  let i ← lift (UScalar.cast .Usize core.num.U32.MAX)
+  if length > i
+  then ok (core.result.Result.Err bytes.ByteError.OffsetOverflow)
+  else ok (core.result.Result.Ok ())
 
 /-- [fast_ssz::bytes::encode_byte_list]:
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 32:0-37:1
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 33:0-38:1
     Visibility: public -/
 def bytes.encode_byte_list
   (bytes1 : Slice Std.U8) (limit : Std.Usize) :
@@ -38,7 +61,7 @@ def bytes.encode_byte_list
   else ok (core.result.Result.Ok bytes1)
 
 /-- [fast_ssz::bytes::encode_byte_vector]:
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 14:0-22:1
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 15:0-23:1
     Visibility: public -/
 def bytes.encode_byte_vector
   (bytes1 : Slice Std.U8) (length : Std.Usize) :
@@ -53,7 +76,7 @@ def bytes.encode_byte_vector
     else ok (core.result.Result.Ok bytes1)
 
 /-- [fast_ssz::bytes::decode_byte_list]:
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 40:0-42:1
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 41:0-43:1
     Visibility: public -/
 def bytes.decode_byte_list
   (bytes1 : Slice Std.U8) (limit : Std.Usize) :
@@ -62,13 +85,63 @@ def bytes.decode_byte_list
   bytes.encode_byte_list bytes1 limit
 
 /-- [fast_ssz::bytes::decode_byte_vector]:
-    Source: 'crates/fast-ssz/src/bytes.rs', lines 25:0-27:1
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 26:0-28:1
     Visibility: public -/
 def bytes.decode_byte_vector
   (bytes1 : Slice Std.U8) (length : Std.Usize) :
   RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
   := do
   bytes.encode_byte_vector bytes1 length
+
+/-- [fast_ssz::bytes::decode_progressive_byte_list]:
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 84:0-91:1
+    Visibility: public -/
+def bytes.decode_progressive_byte_list
+  (bytes1 : Slice Std.U8) (limit : Option Std.Usize) :
+  RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
+  := do
+  let i := Slice.len bytes1
+  let r ← bytes.check_sequence_width i
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue _ =>
+    let i1 := Slice.len bytes1
+    let r1 ← bytes.check_progressive_bound i1 limit
+    let cf1 ← core.result.Result.Insts.CoreOpsTry.branch r1
+    match cf1 with
+    | core.ops.control_flow.ControlFlow.Continue _ =>
+      ok (core.result.Result.Ok bytes1)
+    | core.ops.control_flow.ControlFlow.Break residual =>
+      core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+        (Slice Std.U8) (core.convert.FromSame bytes.ByteError) residual
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (Slice Std.U8) (core.convert.FromSame bytes.ByteError) residual
+
+/-- [fast_ssz::bytes::encode_progressive_byte_list]:
+    Source: 'crates/fast-ssz/src/bytes.rs', lines 72:0-79:1
+    Visibility: public -/
+def bytes.encode_progressive_byte_list
+  (bytes1 : Slice Std.U8) (limit : Option Std.Usize) :
+  RustM (core.result.Result (Slice Std.U8) bytes.ByteError)
+  := do
+  let i := Slice.len bytes1
+  let r ← bytes.check_progressive_bound i limit
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue _ =>
+    let i1 := Slice.len bytes1
+    let r1 ← bytes.check_sequence_width i1
+    let cf1 ← core.result.Result.Insts.CoreOpsTry.branch r1
+    match cf1 with
+    | core.ops.control_flow.ControlFlow.Continue _ =>
+      ok (core.result.Result.Ok bytes1)
+    | core.ops.control_flow.ControlFlow.Break residual =>
+      core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+        (Slice Std.U8) (core.convert.FromSame bytes.ByteError) residual
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (Slice Std.U8) (core.convert.FromSame bytes.ByteError) residual
 
 
 end FastSszRust

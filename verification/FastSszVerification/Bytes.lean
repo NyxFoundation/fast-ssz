@@ -21,6 +21,7 @@ def byteFaultAgrees (actual : FastSszRust.bytes.ByteError) (expected : Ssz.Err) 
   | .EmptyVector, .vectorEmpty => True
   | .InvalidLength, .scope _ _ => True
   | .OverLimit, .overLimit _ _ => True
+  | .OffsetOverflow, .offsetOverflow _ => True
   | _, _ => False
 
 def byteEncodingAgrees (actual : core.result.Result (Slice U8) FastSszRust.bytes.ByteError)
