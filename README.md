@@ -33,6 +33,8 @@ partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `
 The shared offset-span validator and fixed- or inferred-count variable-element layout
 parsers are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
 headers, four-byte size envelope and body ranges. It does not decode element values.
+`codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
+values, fault classes, and retention of both the completed prefix and nested failure state.
 
 Generic collection codecs, collection trait implementations, containers, remaining Progressive types,
 CompatibleUnion, derive, composite hash-tree roots, index/path APIs, multiproofs, official vectors
@@ -107,6 +109,25 @@ rule. No element's value or declared limit is checked by this layout-only API.
 `nyx_ssz::sequence::variable_list_view(&bytes, Some(capacity))` infers the count from
 the first offset and checks that element-count capacity; `None` imposes no declared capacity.
 It validates layout only, not each element's own bounds or containing type declaration.
+
+## Typed element decoding
+
+Decode already-sliced bodies, retaining ownership on the first element failure:
+
+```rust
+use nyx_ssz::{codec::decode_elements, error::CodecError, sequence::variable_vector_view};
+let view = variable_vector_view(&[8, 0, 0, 0, 9, 0, 0, 0, 0, 2], 2).unwrap();
+let failure = decode_elements::<bool>(&view).unwrap_err();
+assert_eq!(failure.kind, CodecError::InvalidBoolean);
+assert_eq!(failure.state.values, [false]);
+assert_eq!(failure.state.child, Some(()));
+```
+
+This lower-level helper does not choose or validate a containing sequence's type/layout;
+the example is not a bool Vector's wire encoding. An empty view invokes no element decoder.
+`SequenceDecodeState` returns every completed element and the failing child's exact state.
+The input/view remains borrowed and reusable; no element bytes are copied by the traversal.
+Generic Vector/List serialization, roots and trait implementations remain unfinished.
 
 ## Typed storage
 

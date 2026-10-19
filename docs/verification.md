@@ -12,10 +12,11 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links fifty-two registered operations to proofs over actual
+`verification/targets.json` links fifty-three registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
-variable-vector/list layout validation and three immutable layout-view projections. `verification/traits.json` separately
+variable-vector/list layout validation, three immutable layout-view projections and typed
+body-range decoding. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
 Collection storage proofs do not imply generic SSZ collection codecs.
@@ -126,10 +127,21 @@ implementation. Decoding returns `DecodeFailure<DecodeState>`, whose kind is rel
 to the reference fault. All seven basic dictionaries have unit state; the unit-state
 lemma proves error state is empty. A separate function-equality theorem proves that
 dispatch forwards the exact result, including arbitrary owned state, not only its
-protocol observation. The wire law alone is not an ownership proof for future generic
-collection decoders. Error formatting and external implementations are Rust tests,
+protocol observation. Element-loop ownership is proved separately below; the wire law
+alone would not establish it. Error formatting and external implementations are Rust tests,
 not protocol proof targets; a non-Debug state/drop-counter test checks that forwarding
 and formatting do not invoke its destructor or expose it.
+
+`codec::decode_elements` traverses validated body ranges with any explicitly lawful
+child dictionary. The actual Vec loop terminates and preserves element order, with
+safe indexing, pushes and increments. Its wire result agrees with per-body checked
+deserialization; for a well-formed child declaration this is the unchanged upstream
+`Ssz.deserializeEach`. A second, exact callback-trace equality retains all actual typed
+values in the successful prefix and the failing child's opaque owned state, not only
+their protocol observations. Empty views invoke no callbacks; the first child failure
+stops traversal. The parent type/layout declaration remains the caller's responsibility.
+This is not a complete Vector/List codec. Non-Copy/drop-counter Rust tests verify that
+the traversal invokes no element/state destructor before returning ownership.
 
 `sequence::offset_spans` refines `Ssz.offsetSpans` for every representable offset
 slice and scope, preserving every span and both exact ordering/scope error categories.
@@ -207,8 +219,15 @@ Pinned Aeneas `filter_marker_traits` removes `core::marker::Destruct`, even when
 Charon receives `--precise-drops`. A runtime counterexample with a panicking destructor
 and the generated model confirmed that this does not verify user destructor execution.
 The axiom audit cannot detect this semantic erasure. Generic constructors return rejected
-storage, and typed decode errors must retain partial ownership rather than silently drop
-arbitrary elements inside the operation. Existing basic decode states are empty; generic
-collection decoder retention still requires its own implementation and proof.
+storage, and typed decode errors retain partial ownership rather than silently drop
+arbitrary elements inside the operation. The element traversal now proves exact retention
+of values and nested state, separately from wire conformance. Before backend translation,
+`llbc_drops.py` checks successful precise, undesugared LLBC and rejects local normal-flow
+Drop statements except closed standard scalar/reference/array/tuple/Vec types without
+user destructors. It resolves interned types, rejects unknown/generic owned types and
+explicit `mem::drop`/`mem::forget` calls, and does not rewrite the artifact. Compiler-generated
+destructor bodies and unwind cleanup are excluded: caller cleanup, arbitrary foreign
+library models and callback internals are not verified by this syntactic check. This
+adds a fail-closed regression guard, not a formal destructor-execution/cost theorem.
 OS faults/resource exhaustion and whole-library/cryptographic security are excluded.
 x86_64 extraction requires the prepared Miri sysroot. Native aarch64 extraction has not been exercised.

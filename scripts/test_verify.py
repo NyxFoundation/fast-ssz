@@ -30,19 +30,23 @@ class VerificationGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory)
             (destination / "NyxSsz.lean").write_text(body)
+            (destination / "nyx_ssz.llbc").write_text('{"translated": {}}')
             with patch.object(verify, "check_api", return_value=set()), \
                  patch.object(verify, "tool_path", side_effect=lambda tool, _: tool), \
                  patch.object(verify, "miri_sysroot", return_value=destination) as sysroot, \
                  patch.object(verify, "prepare_native_macros", create=True) as native, \
                  patch.object(verify, "run") as run, \
+                 patch.object(verify, "assert_safe_drops") as ownership, \
                  patch.object(verify, "split_model", return_value={"Core.lean": body}) as partition:
                 result = verify.extract({"extraction": {"transparent_items": []}}, [], destination, [])
             partition.assert_called_once_with(body)
+            ownership.assert_called_once_with({"translated": {}})
             sysroot.assert_called_once()
             native.assert_called_once_with(destination / "cargo")
             charon = run.call_args_list[0].args[0]
             self.assertEqual(charon[charon.index("--sysroot") + 1], destination)
             self.assertIn("--start-from-attribute=verify::start_from", charon)
+            self.assertIn("--precise-drops", charon)
             self.assertEqual(charon[charon.index("--features") + 1], "verification")
             self.assertEqual(charon[charon.index("--target-dir") + 1], destination / "cargo")
             self.assertEqual(result, {"Core.lean": body.encode("utf-8")})
