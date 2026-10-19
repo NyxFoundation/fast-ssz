@@ -100,7 +100,11 @@ pinned source integrity. Generated declarations are partitioned into dependency-
 modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction
 order changes invalidating cached proofs. Registry source-location comments use
-portable package-relative paths; executable declaration bodies are unchanged.
+portable package-relative paths. Executable declaration bodies are unchanged except
+`usize::div_ceil`: without Miri, Charon emits `Usize.div`, `Usize.rem` and wrapping addition,
+names absent from pinned Aeneas. Extraction rewrites that one body to the checked `/`, `%`
+and `+` operators. Those operators already reject a zero divisor. A nonzero remainder implies
+the quotient plus one cannot wrap, so wrapping addition agrees with checked addition.
 `sources.lock` explicitly names transparent foreign items; opaque foreign axioms
 are refused rather than treated as library contracts. The complete module inventory
 is checked against fresh extraction. Public inherent methods are discovered from
@@ -121,4 +125,4 @@ Trust includes Lean's kernel, Charon/Aeneas/models, Rust's compiler/runtime and
 downloaded tools/caches. Pins do not prove binary integrity; English/formal-model
 alignment remains upstream.
 OS faults/resource exhaustion and whole-library/cryptographic security are excluded.
-x86_64 extraction passed; native aarch64 and GitHub CI have not been exercised.
+x86_64 extraction is reproducible with or without Miri. Native aarch64 extraction has not been exercised.

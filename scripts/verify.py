@@ -154,10 +154,43 @@ def extract(pins, targets, destination):
         "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",
         "-dest", destination, llbc,
     ])
-    source = (destination / "NyxSsz.lean").read_text(encoding="utf-8")
+    source = normalize_usize_division((destination / "NyxSsz.lean").read_text(encoding="utf-8"))
     artifacts = split_model(source)
     assert_extracted_targets(artifacts, targets)
     return {path: content.encode("utf-8") for path, content in artifacts.items()}
+
+
+UNSTABLE_USIZE_DIVISION = (
+    "  massert (\u00ac (rhs = 0#usize))\n"
+    "  let d \u2190 Usize.div self rhs\n"
+    "  let r \u2190 Usize.rem self rhs\n"
+    "  if r > 0#usize\n"
+    "  then ok (Std.Usize.wrapping_add d 1#usize)\n"
+    "  else ok d\n"
+)
+STABLE_USIZE_DIVISION = (
+    "  let d \u2190 self / rhs\n"
+    "  let r \u2190 self % rhs\n"
+    "  if r > 0#usize\n"
+    "  then d + 1#usize\n"
+    "  else ok d\n"
+)
+
+
+def normalize_usize_division(source):
+    """Use the checked operators supported by pinned Aeneas.
+
+    Without Miri, Charon names division `Usize.div`/`Usize.rem` and uses wrapping
+    addition. Those names are absent here. The operators reject a zero divisor, and
+    a nonzero remainder implies the quotient plus one cannot wrap.
+    """
+    count = source.count(UNSTABLE_USIZE_DIVISION)
+    if count > 1:
+        raise ValueError("ambiguous usize division extraction")
+    normalized = source.replace(UNSTABLE_USIZE_DIVISION, STABLE_USIZE_DIVISION, 1)
+    if any(token in normalized for token in ("Usize.div ", "Usize.rem ", "Std.Usize.wrapping_add")):
+        raise ValueError("unexpected usize division extraction")
+    return normalized
 
 
 def generated_artifacts():
