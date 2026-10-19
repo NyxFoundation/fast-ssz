@@ -133,5 +133,40 @@
     "rust": "fast_ssz::bytes::decode_progressive_byte_list",
     "lean": "FastSszRust.bytes.decode_progressive_byte_list",
     "proof": "FastSszVerification.decode_progressive_byte_list_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_bool",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_bool",
+    "proof": "FastSszVerification.hash_tree_root_bool_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u8",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u8",
+    "proof": "FastSszVerification.hash_tree_root_u8_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u16",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u16",
+    "proof": "FastSszVerification.hash_tree_root_u16_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u32",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u32",
+    "proof": "FastSszVerification.hash_tree_root_u32_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u64",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u64",
+    "proof": "FastSszVerification.hash_tree_root_u64_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u128",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u128",
+    "proof": "FastSszVerification.hash_tree_root_u128_refines"
+  },
+  {
+    "rust": "fast_ssz::tree_hash::hash_tree_root_u256",
+    "lean": "FastSszRust.tree_hash.hash_tree_root_u256",
+    "proof": "FastSszVerification.hash_tree_root_u256_refines"
   }
 ]

@@ -6,3 +6,4 @@ import FastSszRust.Bitfield
 import FastSszRust.Merkle
 import FastSszRust.Ruint
 import FastSszRust.Scalar
+import FastSszRust.TreeHash

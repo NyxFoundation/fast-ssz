@@ -8,3 +8,4 @@ pub mod bytes;
 pub mod merkle;
 pub mod scalar;
 pub mod sha256;
+pub mod tree_hash;

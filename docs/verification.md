@@ -10,8 +10,8 @@ tags:
 
 **Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
-single-branch Merkle verification are implemented.
-`verification/targets.json` links twenty-seven operations
+single-branch Merkle verification and all basic-type roots are implemented.
+`verification/targets.json` links thirty-four operations
 to proofs over actual Aeneas output.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -50,6 +50,14 @@ arithmetic is guarded before multiplication/addition; both guards are proved equ
 to the reference's natural-number count check. The all-zero scan has a decreasing
 measure and prefix invariant. Vec allocation uses Aeneas's model; OS/resource failures
 remain outside the guarantee.
+
+Basic `hash_tree_root` operations cover Boolean and all six unsigned widths, for
+every typed value. They refine the unchanged `Ssz.hashTreeRoot`, through its actual
+layout, packing, bounded merkleization and depth-zero tree rules. The extracted
+array-prefix mutation and standard `copy_from_slice` call are proved safe and
+preserve every encoded byte, with zero padding to 32 bytes. A uint256 fills the
+node exactly. Basic roots do not SHA-256 hash their single leaf; composite roots
+remain unfinished.
 
 `hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`
 for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing path,

@@ -7,3 +7,4 @@ import FastSszVerification.Unsigned
 import FastSszVerification.Unsigned.U256
 import FastSszVerification.Bitfield
 import FastSszVerification.Bitlist
+import FastSszVerification.TreeHash
