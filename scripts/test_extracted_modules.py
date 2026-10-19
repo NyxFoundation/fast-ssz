@@ -53,10 +53,31 @@ class ExtractedModuleTests(unittest.TestCase):
         model = split_model(source(constructor, kind))["NyxSszRust/Merkle.lean"]
         self.assertLess(model.index("inductive merkle.Z"), model.index("def merkle.a"))
 
+    def test_should_partition_trait_declarations_and_implementations_by_source_module(self):
+        error = declaration("error", "inductive error.Kind where | bad")
+        interface = ("/-- Trait declaration: [nyx_ssz::codec::Ssz] -/\n"
+                     "structure codec.Ssz (T : Type) where\n  encode : T → Nat\n")
+        method = ("/-- [nyx_ssz::codec::{impl Ssz for bool}::encode] -/\n"
+                  "def Bool.Insts.Ssz.encode := 1\n")
+        instance = ("/-- Trait implementation: [nyx_ssz::codec::{impl Ssz for bool}] -/\n"
+                    "def Bool.Insts.Ssz : codec.Ssz Bool := ⟨fun _ => Bool.Insts.Ssz.encode⟩\n")
+        result = split_model(source(error, interface, method, instance))
+        self.assertIn(interface, result["NyxSszRust/Codec.lean"])
+        self.assertIn(method, result["NyxSszRust/Codec.lean"])
+        self.assertIn(instance, result["NyxSszRust/Codec.lean"])
+        self.assertNotIn(interface, result["NyxSszRust/Error.lean"])
+
     def test_should_reject_duplicate_generated_names(self):
         unit = declaration("scalar", "def scalar.item := 0")
         with self.assertRaisesRegex(ValueError, "duplicate"):
             split_model(source(unit, unit))
+
+    def test_should_reject_duplicate_lean_names_across_rust_modules(self):
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            split_model(source(
+                declaration("first", "def Bool.Insts.item := 1"),
+                declaration("second", "def Bool.Insts.item := 2"),
+            ))
 
     def test_should_partition_transparent_foreign_crates(self):
         foreign = "/-- [ruint::Uint] -/\nstructure ruint.Uint where\n  value : Nat\n"

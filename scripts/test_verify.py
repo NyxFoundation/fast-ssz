@@ -36,7 +36,7 @@ class VerificationGateTests(unittest.TestCase):
                  patch.object(verify, "prepare_native_macros", create=True) as native, \
                  patch.object(verify, "run") as run, \
                  patch.object(verify, "split_model", return_value={"Core.lean": body}) as partition:
-                result = verify.extract({"extraction": {"transparent_items": []}}, [], destination)
+                result = verify.extract({"extraction": {"transparent_items": []}}, [], destination, [])
             partition.assert_called_once_with(body)
             sysroot.assert_called_once()
             native.assert_called_once_with(destination / "cargo")

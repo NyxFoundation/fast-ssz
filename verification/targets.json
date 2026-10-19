@@ -213,5 +213,20 @@
     "rust": "nyx_ssz::collections::List::as_slice",
     "lean": "NyxSszRust.collections.List.as_slice",
     "proof": "NyxSszVerification.list_as_slice_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::encode",
+    "lean": "NyxSszRust.codec.encode",
+    "proof": "NyxSszVerification.codec_encode_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::decode",
+    "lean": "NyxSszRust.codec.decode",
+    "proof": "NyxSszVerification.codec_decode_refines"
+  },
+  {
+    "rust": "nyx_ssz::codec::hash_tree_root",
+    "lean": "NyxSszRust.codec.hash_tree_root",
+    "proof": "NyxSszVerification.codec_hash_tree_root_refines"
   }
 ]

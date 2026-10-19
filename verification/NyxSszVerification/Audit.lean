@@ -27,3 +27,22 @@ elab "check_refinement " target:ident " via " claim:ident : command => do
   | _ => throwError "{claim.getId} is not a theorem"
   unless claimInfo.type.getUsedConstants.contains targetName do
     throwError "{claim.getId} does not mention {targetName} in its statement"
+
+/-- A trait instance must prove the registered law for that exact dictionary. -/
+elab "check_trait_contract " target:ident " against " contract:ident " via " claim:ident : command => do
+  unless contract.getId == ``NyxSszVerification.CodecLaw do
+    throwError "unsupported trait correctness law"
+  let targetName := target.getId
+  match ← getConstInfo targetName with
+  | .defnInfo _ => pure ()
+  | _ => throwError "trait dictionary must be concretely extracted"
+  let claimInfo ← getConstInfo claim.getId
+  match claimInfo with
+  | .thmInfo _ => pure ()
+  | _ => throwError "trait contract claim is not a theorem"
+  let conclusion := claimInfo.type
+  unless conclusion.getAppFn.isConstOf contract.getId do
+    throwError "theorem does not establish an unconditional registered trait contract"
+  let arguments := conclusion.getAppArgs
+  unless arguments.size > 1 && arguments[1]!.getAppFn.isConstOf targetName do
+    throwError "trait contract theorem certifies the wrong dictionary"

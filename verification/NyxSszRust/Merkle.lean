@@ -182,7 +182,7 @@ def merkle.verify_merkle_proof
     let b ←
       core.array.equality.PartialEqArray.eq core.cmp.PartialEqU8 actual root
     ok (core.result.Result.Ok b)
-  | core.result.Result.Err error => ok (core.result.Result.Err error)
+  | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
 
 
 end NyxSszRust

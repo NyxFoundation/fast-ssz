@@ -12,9 +12,12 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links forty-three public operations to proofs over actual
-Aeneas output: the thirty-nine existing codec/hash/view operations and four new owned
-collection storage operations. Collection storage proofs do not imply generic SSZ codecs.
+`verification/targets.json` links forty-six registered operations to proofs over actual
+Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
+storage operations and three generic codec dispatchers. `verification/traits.json` separately
+registers every public `Ssz` declaration member and its seven concrete library dictionaries.
+Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
+Collection storage proofs do not imply generic SSZ collection codecs.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
 Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
@@ -108,7 +111,16 @@ those markers so formatting is not proportional to the declared bound. Rust test
 check allocation identity, no in-constructor element drops, nested non-Copy elements,
 formatting and maximum machine counts for zero-sized elements. These are shape/storage
 contracts, not element validity, serialization, tree-root or allocation-cost theorems.
-No `Ssz` trait or generic collection codec is provided in this slice yet.
+These storage types do not implement `Ssz` and have no generic collection codecs yet.
+
+`codec::Ssz` has checked fixed-width metadata, basic/composite classification, encoding,
+decoding and tree-root operations. Boolean and uint8/16/32/64/128/256 dictionaries prove
+all five against their reference descriptors and value views. The array-to-Vec copy loop
+preserves every byte; a decreasing measure proves termination and all indices/increments
+are checked safe. Scalar error conversion preserves exact error classes. Dispatcher proofs
+are conditional on `CodecLaw`: an external handwritten dictionary is callable but is not
+presumed lawful. Only supported, explicitly registered library instances are certified.
+Error formatting and external implementations are Rust tests, not protocol proof targets.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered
@@ -132,8 +144,13 @@ is checked against fresh extraction. Public inherent methods are discovered from
 Rustdoc's implementation/type paths, and unknown or ambiguous paths are refused.
 Pinned Charon cannot start at inherent methods: they must be reached through registered
 call graphs, and every registered operation must have a concrete extracted definition.
-Opaque declarations cannot satisfy that check. Public traits still fail pending
-coverage support. Statement adequacy requires review. Negative fixtures reject custom/native axioms
+Opaque declarations cannot satisfy that check. Unregistered public traits fail. For `Ssz`,
+Rustdoc declaration/implementation inventories and concretely extracted dictionaries must
+match the registry exactly. Lean checks that each theorem establishes the supported
+unconditional `CodecLaw` for that precise dictionary; unrelated theorems, impossible
+premises, reflexive/vacuous predicates and another dictionary's proof are refused. Trait declarations and implementations are
+partitioned by their Rust source module while preserving native-type Lean namespaces.
+Statement adequacy still requires review. Negative fixtures reject custom/native axioms
 and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.
 
 Pinned Cryspen Aeneas uses Lean 4.31.0; upstream SSZ pins 4.33.1.

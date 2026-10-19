@@ -11,6 +11,7 @@ import sys
 import tempfile
 import tomllib
 from extracted_modules import NAMESPACE, declared_names, split_model
+from trait_contracts import load_contracts, validate_traits, assert_extracted_instances
 
 ROOT = Path(__file__).resolve().parents[1]
 VERIFICATION = ROOT / "verification"
@@ -135,8 +136,8 @@ def assert_extracted_targets(artifacts, targets):
         raise ValueError(f"registered operations were not extracted: {missing}")
 
 
-def extract(pins, targets, destination):
-    methods = check_api(targets)
+def extract(pins, targets, destination, contracts):
+    methods = check_api(targets, contracts)
     llbc = destination / "nyx_ssz.llbc"
     arguments = [tool_path("charon", pins), "cargo", "--preset=aeneas",
                  "--sysroot", miri_sysroot(pins)]
@@ -147,6 +148,8 @@ def extract(pins, targets, destination):
     for target in targets:
         if target["rust"] not in methods:
             arguments.extend(["--start-from", target["rust"]])
+    for contract in contracts:
+        arguments.extend(["--start-from", contract["rust"].rsplit("::", 1)[0]])
     arguments.extend([
         "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/nyx-ssz/Cargo.toml",
         "--target-dir", destination / "cargo",
@@ -161,6 +164,7 @@ def extract(pins, targets, destination):
     source = (destination / "NyxSsz.lean").read_text(encoding="utf-8")
     artifacts = split_model(source)
     assert_extracted_targets(artifacts, targets)
+    assert_extracted_instances(artifacts, contracts)
     return {path: content.encode("utf-8") for path, content in artifacts.items()}
 
 
@@ -236,19 +240,19 @@ def inherent_method_paths(document):
     return methods
 
 
-def api_functions(document):
+def api_functions(document, contracts=()):
+    reserved = validate_traits(document, contracts)
     methods = inherent_method_paths(document)
     for identifier, item in document.get("index", {}).items():
         if item["crate_id"] != 0 or item["visibility"] != "public":
             continue
-        if "trait" in item["inner"]:
-            raise ValueError("public traits need proof coverage support")
-        if "function" in item["inner"] and identifier not in document["paths"] and identifier not in methods:
+        if ("function" in item["inner"] and identifier not in document["paths"]
+                and identifier not in methods and identifier not in reserved):
             raise ValueError("public associated function has no discoverable type path")
     return {
         "::".join(item["path"])
-        for item in document["paths"].values()
-        if item["crate_id"] == 0 and item["kind"] == "function"
+        for identifier, item in document["paths"].items()
+        if item["crate_id"] == 0 and item["kind"] == "function" and identifier not in reserved
     } | set(methods.values())
 
 
@@ -260,14 +264,14 @@ def assert_api_covered(functions, targets):
         raise ValueError(f"API/extraction coverage differs; missing={missing}, stale={stale}")
 
 
-def check_api(targets):
+def check_api(targets, contracts):
     directory = ROOT / "target" / "api-coverage"
     run([
         "cargo", "rustdoc", "--lib", "--package", "nyx-ssz", "--target-dir", directory,
         "--", "--output-format", "json", "-Z", "unstable-options",
     ])
     document = json.loads((directory / "doc" / "nyx_ssz.json").read_text())
-    assert_api_covered(api_functions(document), targets)
+    assert_api_covered(api_functions(document, contracts), targets)
     return set(inherent_method_paths(document).values())
 
 
@@ -291,16 +295,18 @@ def assert_import_closure(directory):
         raise ValueError(f"Lean files outside the audited import closure: {sorted(set(modules) - visited)}")
 
 
-def check_proof_targets(targets, directory):
+def check_proof_targets(targets, contracts, directory):
     lines = ["import NyxSszVerification.Audit"]
     lines.extend(f"check_refinement {target['lean']} via {target['proof']}" for target in targets)
+    lines.extend(f"check_trait_contract {instance['lean']} against {contract['law']} via {instance['proof']}"
+                 for contract in contracts for instance in contract["instances"])
     file = directory / "CheckTargets.lean"
     file.write_text("\n".join(lines) + "\n")
     run(["lake", "env", "lean", file], cwd=VERIFICATION)
 
 
-def check_rejection_guards(directory):
-    cases = {
+def rejection_cases():
+    return {
         "ForbiddenAxiom": (
             "namespace NyxSszVerification\naxiom forbidden : False\nend NyxSszVerification\n"
             "audit_nyx_ssz\n",
@@ -317,8 +323,35 @@ def check_rejection_guards(directory):
             "NyxSszVerification.decode_bool_refines\n",
             "does not mention",
         ),
+        "UnrelatedTraitTheorem": (
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "against NyxSszVerification.CodecLaw via NyxSszVerification.encode_bool_refines\n",
+            "registered trait contract",
+        ),
+        "VacuousTraitLaw": (
+            "theorem reflexiveDictionary : NyxSszRust.Bool.Insts.Nyx_sszCodecSsz = "
+            "NyxSszRust.Bool.Insts.Nyx_sszCodecSsz := rfl\n"
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "against Eq via reflexiveDictionary\n",
+            "unsupported trait correctness law",
+        ),
+        "ConditionalTraitTheorem": (
+            "theorem impossibleDictionary (h : False) : NyxSszVerification.CodecLaw "
+            "NyxSszRust.Bool.Insts.Nyx_sszCodecSsz Ssz.Desc.bool Ssz.Value.bool := False.elim h\n"
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "against NyxSszVerification.CodecLaw via impossibleDictionary\n",
+            "unconditional registered trait contract",
+        ),
+        "WrongTraitDictionary": (
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "against NyxSszVerification.CodecLaw via NyxSszVerification.u8_codec_refines\n",
+            "wrong dictionary",
+        ),
     }
-    for label, (source, expected) in cases.items():
+
+
+def check_rejection_guards(directory):
+    for label, (source, expected) in rejection_cases().items():
         file = directory / f"{label}.lean"
         file.write_text("import NyxSszVerification.Audit\n" + source)
         result = subprocess.run(
@@ -329,18 +362,20 @@ def check_rejection_guards(directory):
             raise ValueError(f"proof guard failed for {label}")
 
 
-def check(pins, targets, directory):
+def check(pins, targets, contracts, directory):
     validate_tools(pins)
     run(["cargo", "fmt", "--all", "--", "--check"])
     run(["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"])
     run(["cargo", "test", "--workspace"])
-    assert_same_artifact(extract(pins, targets, directory), generated_artifacts())
+    assert_same_artifact(extract(pins, targets, directory, contracts), generated_artifacts())
     assert_import_closure(VERIFICATION)
     run(["lake", "build", "NyxSszVerification"], cwd=VERIFICATION)
     validate_dependencies(pins)
-    check_proof_targets(targets, directory)
+    check_proof_targets(targets, contracts, directory)
     check_rejection_guards(directory)
-    print(f"Verified implemented slice: {len(targets)} public operations. This is NOT full SSZ conformance.")
+    instances = sum(len(contract["instances"]) for contract in contracts)
+    print(f"Verified slice: {len(targets)} registered operations and {instances} trait implementations. "
+          "This is NOT full SSZ conformance.")
 
 
 def main():
@@ -353,13 +388,14 @@ def main():
         bootstrap(pins)
         return
     targets = load_targets()
+    contracts = load_contracts(VERIFICATION / "traits.json")
     with tempfile.TemporaryDirectory(prefix="nyx-ssz-verify-") as temporary:
         directory = Path(temporary)
         if arguments.command == "extract":
             validate_tools(pins)
-            write_artifacts(extract(pins, targets, directory))
+            write_artifacts(extract(pins, targets, directory, contracts))
         else:
-            check(pins, targets, directory)
+            check(pins, targets, contracts, directory)
 
 
 if __name__ == "__main__":
