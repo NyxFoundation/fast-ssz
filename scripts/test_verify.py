@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 import verify
 
-ENTRY = {"rust": "fast_ssz::encode", "lean": "Rust.encode", "proof": "Proof.encode"}
+ENTRY = {"rust": "nyx_ssz::encode", "lean": "Rust.encode", "proof": "Proof.encode"}
 
 
 class VerificationGateTests(unittest.TestCase):
@@ -26,14 +26,14 @@ class VerificationGateTests(unittest.TestCase):
 
     def test_should_discover_only_local_functions(self):
         items = [(0, "function"), (1, "function"), (0, "enum")]
-        paths = {str(i): {"crate_id": c, "kind": k, "path": ["fast_ssz", "encode"]}
+        paths = {str(i): {"crate_id": c, "kind": k, "path": ["nyx_ssz", "encode"]}
                  for i, (c, k) in enumerate(items)}
-        self.assertEqual(verify.api_functions({"paths": paths}), {"fast_ssz::encode"})
+        self.assertEqual(verify.api_functions({"paths": paths}), {"nyx_ssz::encode"})
 
     def test_should_discover_public_inherent_methods_using_their_type_paths(self):
         document = {
             "paths": {"10": {"crate_id": 0, "kind": "struct",
-                               "path": ["fast_ssz", "bitfield", "BitListView"]}},
+                               "path": ["nyx_ssz", "bitfield", "BitListView"]}},
             "index": {
                 "20": {"crate_id": 0, "visibility": "default", "inner": {"impl": {
                     "trait": None, "for": {"resolved_path": {"id": 10}}, "items": [30, 31]}}},
@@ -43,7 +43,7 @@ class VerificationGateTests(unittest.TestCase):
                        "inner": {"function": {}}},
             },
         }
-        methods = {"fast_ssz::bitfield::BitListView::len_bits"}
+        methods = {"nyx_ssz::bitfield::BitListView::len_bits"}
         self.assertEqual(verify.api_functions(document), methods)
         with self.assertRaisesRegex(ValueError, "missing"):
             verify.assert_api_covered(verify.api_functions(document), [ENTRY])
@@ -63,7 +63,7 @@ class VerificationGateTests(unittest.TestCase):
 
     def test_should_reject_ambiguous_inherent_method_paths(self):
         document = {
-            "paths": {"10": {"crate_id": 0, "kind": "struct", "path": ["fast_ssz", "View"]}},
+            "paths": {"10": {"crate_id": 0, "kind": "struct", "path": ["nyx_ssz", "View"]}},
             "index": {
                 "20": {"crate_id": 0, "visibility": "default", "inner": {"impl": {
                     "trait": None, "for": {"resolved_path": {"id": 10}}, "items": [30, 31]}}},
@@ -83,8 +83,8 @@ class VerificationGateTests(unittest.TestCase):
                 verify.api_functions({"paths": {}, "index": {"0": item}})
 
     def test_should_require_concrete_extraction_of_every_registered_method(self):
-        method = {"rust": "fast_ssz::bitfield::BitListView::len_bits",
-                  "lean": "FastSszRust.bitfield.BitListView.len_bits",
+        method = {"rust": "nyx_ssz::bitfield::BitListView::len_bits",
+                  "lean": "NyxSszRust.bitfield.BitListView.len_bits",
                   "proof": "Proof.len_bits"}
         artifacts = {"Bitfield.lean": "def bitfield.BitListView.len_bits := value\n"}
         verify.assert_extracted_targets(artifacts, [method])
@@ -108,22 +108,22 @@ class VerificationGateTests(unittest.TestCase):
     def test_should_create_and_compare_the_complete_generated_module_inventory(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            with patch.multiple(verify, VERIFICATION=root, GENERATED=root / "FastSszRust.lean",
-                                GENERATED_MODULES=root / "FastSszRust"):
-                artifacts = {"FastSszRust.lean": b"import FastSszRust.One\n",
-                             "FastSszRust/One.lean": b"generated declarations\n"}
+            with patch.multiple(verify, VERIFICATION=root, GENERATED=root / "NyxSszRust.lean",
+                                GENERATED_MODULES=root / "NyxSszRust"):
+                artifacts = {"NyxSszRust.lean": b"import NyxSszRust.One\n",
+                             "NyxSszRust/One.lean": b"generated declarations\n"}
                 verify.write_artifacts(artifacts)
                 self.assertEqual(verify.generated_artifacts(), artifacts)
                 with self.assertRaisesRegex(ValueError, "obsolete"):
-                    verify.write_artifacts({"FastSszRust.lean": b"changed"})
+                    verify.write_artifacts({"NyxSszRust.lean": b"changed"})
                 self.assertEqual(verify.generated_artifacts(), artifacts)
 
     def test_should_require_every_lean_file_in_the_audit_closure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "FastSszVerification").mkdir()
-            (root / "FastSszVerification/Audit.lean").write_text("import FastSszRust\n")
-            (root / "FastSszRust.lean").write_text("import Aeneas\n")
+            (root / "NyxSszVerification").mkdir()
+            (root / "NyxSszVerification/Audit.lean").write_text("import NyxSszRust\n")
+            (root / "NyxSszRust.lean").write_text("import Aeneas\n")
             (root / ".lake").mkdir()
             (root / ".lake/Ignored.lean").write_text("import Other\n")
             verify.assert_import_closure(root)

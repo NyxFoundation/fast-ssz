@@ -2,8 +2,8 @@
 import re
 from graphlib import CycleError, TopologicalSorter
 
-NAMESPACE = "FastSszRust"
-DOC = re.compile(r"^/-- \[(?:fast_ssz::)?([a-z][a-z0-9_]*)::", re.MULTILINE)
+NAMESPACE = "NyxSszRust"
+DOC = re.compile(r"^/-- \[(?:nyx_ssz::)?([a-z][a-z0-9_]*)::", re.MULTILINE)
 
 
 def declaration_units(body):
