@@ -253,5 +253,10 @@
     "rust": "nyx_ssz::sequence::SequenceView::get",
     "lean": "NyxSszRust.sequence.SequenceView.get",
     "proof": "NyxSszVerification.sequence_view_get_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::variable_list_view",
+    "lean": "NyxSszRust.sequence.variable_list_view",
+    "proof": "NyxSszVerification.variable_list_view_refines"
   }
 ]

@@ -28,8 +28,8 @@ The `codec::Ssz` trait provides a uniform interface for Boolean and all six unsi
 widths. Its seven library implementations have proved size metadata, basic/composite
 classification, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
-The shared offset-span validator and fixed-count variable-element layout parser are
-also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
+The shared offset-span validator and fixed- or inferred-count variable-element layout
+parsers are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
 headers, four-byte size envelope and body ranges. It does not decode element values.
 
 Generic collection codecs, collection trait implementations, containers, remaining Progressive types,
@@ -90,6 +90,9 @@ assert_eq!(view.get(2), None);
 This is an internal-layout API, not a complete typed Vector codec. Its caller
 validates the type declaration; count zero follows the reference's internal slicing
 rule. No element's value or declared limit is checked by this layout-only API.
+`nyx_ssz::sequence::variable_list_view(&bytes, Some(capacity))` infers the count from
+the first offset and checks that element-count capacity; `None` imposes no declared capacity.
+It validates layout only, not each element's own bounds or containing type declaration.
 
 ## Typed storage
 

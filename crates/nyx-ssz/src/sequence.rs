@@ -109,6 +109,48 @@ pub fn variable_vector_view(input: &[u8], count: usize) -> Result<SequenceView<'
     })
 }
 
+/// Infer a variable-element count from its offset table and borrow the bodies.
+///
+/// None imposes no declared capacity. Type declarations and element values are
+/// validated by the caller, as with the fixed-count layout view.
+pub fn variable_list_view(
+    input: &[u8],
+    limit: Option<usize>,
+) -> Result<SequenceView<'_>, CodecError> {
+    if input.len() as u128 >= 4_294_967_296 {
+        return Err(CodecError::SizeOverflow);
+    }
+    if input.is_empty() {
+        return Ok(SequenceView {
+            input,
+            ranges: Vec::new(),
+        });
+    }
+    if input.len() < 4 {
+        return Err(CodecError::ScopeTooSmall);
+    }
+    let first = match crate::scalar::decode_u32(&input[..4]) {
+        Ok(first) => first as usize,
+        Err(_) => return Err(CodecError::InvalidLength),
+    };
+    if first < 4 {
+        return Err(CodecError::OffsetBelowTable);
+    }
+    if !first.is_multiple_of(4) {
+        return Err(CodecError::OffsetUnaligned);
+    }
+    if first > input.len() {
+        return Err(CodecError::OffsetPastScope);
+    }
+    let count = first / 4;
+    if let Some(capacity) = limit {
+        if count > capacity {
+            return Err(CodecError::OverLimit);
+        }
+    }
+    variable_vector_view(input, count)
+}
+
 fn read_offsets(input: &[u8], count: usize) -> Result<Vec<usize>, CodecError> {
     let mut offsets = Vec::new();
     let mut index = 0;
