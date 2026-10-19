@@ -1,20 +1,33 @@
 use nyx_ssz::{
     codec::{decode, encode, hash_tree_root, Ssz},
-    error::CodecError,
+    error::{CodecError, DecodeFailure},
     scalar, tree_hash, U256,
 };
 
-fn assert_codec<T: Ssz + std::fmt::Debug + PartialEq>(value: T, bytes: &[u8], root: [u8; 32]) {
+fn assert_codec<T: Ssz<DecodeState = ()> + std::fmt::Debug + PartialEq>(
+    value: T,
+    bytes: &[u8],
+    root: [u8; 32],
+) {
     assert_eq!(encode(&value), Ok(bytes.to_vec()));
     assert_eq!(T::FIXED_SIZE, Ok(Some(bytes.len())));
     assert!(T::IS_BASIC);
     assert_eq!(decode::<T>(bytes), Ok(value));
     let decoded = decode::<T>(bytes).unwrap();
     assert_eq!(hash_tree_root(&decoded), Ok(root));
-    assert_eq!(T::decode(&[]), Err(CodecError::InvalidLength));
+    assert_eq!(
+        T::decode(&[]),
+        Err(DecodeFailure {
+            kind: CodecError::InvalidLength,
+            state: ()
+        })
+    );
     assert_eq!(
         T::decode(&vec![0; bytes.len() + 1]),
-        Err(CodecError::InvalidLength)
+        Err(DecodeFailure {
+            kind: CodecError::InvalidLength,
+            state: ()
+        })
     );
 }
 
@@ -57,8 +70,17 @@ fn should_encode_decode_and_hash_every_basic_type_through_the_same_trait() {
 #[derive(Debug, PartialEq)]
 struct Oversized;
 
+static RETURNED_DROPS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+struct ReturnedState;
+impl Drop for ReturnedState {
+    fn drop(&mut self) {
+        RETURNED_DROPS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
 // An external dictionary is callable, but is not covered by library instance proofs.
 impl Ssz for Oversized {
+    type DecodeState = ReturnedState;
     const FIXED_SIZE: Result<Option<usize>, CodecError> = Err(CodecError::SizeOverflow);
     const IS_BASIC: bool = false;
 
@@ -66,8 +88,11 @@ impl Ssz for Oversized {
         Err(CodecError::SizeOverflow)
     }
 
-    fn decode(_bytes: &[u8]) -> Result<Self, CodecError> {
-        Err(CodecError::SizeOverflow)
+    fn decode(_bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {
+        Err(DecodeFailure {
+            kind: CodecError::SizeOverflow,
+            state: ReturnedState,
+        })
     }
 
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
@@ -79,7 +104,22 @@ impl Ssz for Oversized {
 fn should_forward_external_codec_errors_without_certifying_the_implementation() {
     assert_eq!(Oversized::FIXED_SIZE, Err(CodecError::SizeOverflow));
     assert_eq!(encode(&Oversized), Err(CodecError::SizeOverflow));
-    assert_eq!(decode::<Oversized>(&[]), Err(CodecError::SizeOverflow));
+    let failure = decode::<Oversized>(&[]).unwrap_err();
+    assert_eq!(failure.kind, CodecError::SizeOverflow);
+    assert_eq!(RETURNED_DROPS.load(std::sync::atomic::Ordering::SeqCst), 0);
+    let boxed: Box<dyn std::error::Error> = Box::new(failure);
+    assert_eq!(
+        boxed.to_string(),
+        "SSZ size exceeds its supported representation"
+    );
+    assert_eq!(
+        format!("{boxed:?}"),
+        "DecodeFailure { kind: SizeOverflow, .. }"
+    );
+    assert!(boxed.source().is_none());
+    assert_eq!(RETURNED_DROPS.load(std::sync::atomic::Ordering::SeqCst), 0);
+    drop(boxed);
+    assert_eq!(RETURNED_DROPS.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert_eq!(hash_tree_root(&Oversized), Err(CodecError::SizeOverflow));
 }
 
@@ -109,6 +149,12 @@ fn should_expose_protocol_errors_through_standard_error_interfaces() {
 #[test]
 fn should_reject_noncanonical_booleans_through_the_trait() {
     for byte in 2..=255 {
-        assert_eq!(decode::<bool>(&[byte]), Err(CodecError::InvalidBoolean));
+        assert_eq!(
+            decode::<bool>(&[byte]),
+            Err(DecodeFailure {
+                kind: CodecError::InvalidBoolean,
+                state: (),
+            })
+        );
     }
 }

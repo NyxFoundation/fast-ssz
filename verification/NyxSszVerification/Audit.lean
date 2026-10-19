@@ -44,5 +44,5 @@ elab "check_trait_contract " target:ident " against " contract:ident " via " cla
   unless conclusion.getAppFn.isConstOf contract.getId do
     throwError "theorem does not establish an unconditional registered trait contract"
   let arguments := conclusion.getAppArgs
-  unless arguments.size > 1 && arguments[1]!.getAppFn.isConstOf targetName do
+  unless arguments.size == 5 && arguments[2]!.getAppFn.isConstOf targetName do
     throwError "trait contract theorem certifies the wrong dictionary"

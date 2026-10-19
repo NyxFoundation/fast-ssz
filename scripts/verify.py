@@ -325,26 +325,26 @@ def rejection_cases():
             "does not mention",
         ),
         "UnrelatedTraitTheorem": (
-            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "
             "against NyxSszVerification.CodecLaw via NyxSszVerification.encode_bool_refines\n",
             "registered trait contract",
         ),
         "VacuousTraitLaw": (
-            "theorem reflexiveDictionary : NyxSszRust.Bool.Insts.Nyx_sszCodecSsz = "
-            "NyxSszRust.Bool.Insts.Nyx_sszCodecSsz := rfl\n"
-            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "theorem reflexiveDictionary : NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple = "
+            "NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple := rfl\n"
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "
             "against Eq via reflexiveDictionary\n",
             "unsupported trait correctness law",
         ),
         "ConditionalTraitTheorem": (
             "theorem impossibleDictionary (h : False) : NyxSszVerification.CodecLaw "
-            "NyxSszRust.Bool.Insts.Nyx_sszCodecSsz Ssz.Desc.bool Ssz.Value.bool := False.elim h\n"
-            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple Ssz.Desc.bool Ssz.Value.bool := False.elim h\n"
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "
             "against NyxSszVerification.CodecLaw via impossibleDictionary\n",
             "unconditional registered trait contract",
         ),
         "WrongTraitDictionary": (
-            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSsz "
+            "check_trait_contract NyxSszRust.Bool.Insts.Nyx_sszCodecSszTuple "
             "against NyxSszVerification.CodecLaw via NyxSszVerification.u8_codec_refines\n",
             "wrong dictionary",
         ),
