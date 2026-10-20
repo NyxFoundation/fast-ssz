@@ -12,6 +12,7 @@ def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
   | .InvalidLength, .scope _ _ => True
   | .InvalidBoolean, .notABit _ => True
   | .InvalidIntegerWidth, .uintWidth _ => True
+  | .EmptyVector, .vectorEmpty => True
   | .SizeOverflow, .offsetOverflow _ => True
   | .OffsetUnordered, .offsetUnordered => True
   | .OffsetPastScope, .offsetPastScope => True

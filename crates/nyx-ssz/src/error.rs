@@ -6,6 +6,7 @@ pub enum CodecError {
     InvalidLength,
     InvalidBoolean,
     InvalidIntegerWidth,
+    EmptyVector,
     SizeOverflow,
     OffsetUnordered,
     OffsetPastScope,
@@ -53,6 +54,7 @@ impl std::fmt::Display for CodecError {
             Self::InvalidIntegerWidth => {
                 "SSZ unsigned integer width must be 1, 2, 4, 8, 16 or 32 bytes"
             }
+            Self::EmptyVector => "SSZ vector declarations must contain at least one element",
             Self::SizeOverflow => "SSZ size exceeds its supported representation",
             Self::OffsetUnordered => "SSZ offsets must be nondecreasing",
             Self::OffsetPastScope => "SSZ offset exceeds its input scope",

@@ -18,15 +18,21 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::type_info::TypeDescriptor]
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 10:0-13:1
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 10:0-16:1
     Visibility: public -/
 @[discriminant isize]
 inductive type_info.TypeDescriptor where
 | Boolean : type_info.TypeDescriptor
 | Uint : Std.Usize → type_info.TypeDescriptor
+| Vector : type_info.TypeDescriptor → Std.Usize → type_info.TypeDescriptor
+| List : type_info.TypeDescriptor → Std.Usize → type_info.TypeDescriptor
+| ProgressiveList :
+  type_info.TypeDescriptor →
+  Option Std.Usize →
+  type_info.TypeDescriptor
 
 /-- [nyx_ssz::type_info::fixed_size]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 15:0-20:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 18:0-39:1 -/
 def type_info.fixed_size
   (declaration : type_info.TypeDescriptor) :
   RustM (core.result.Result (Option Std.Usize) error.CodecError)
@@ -36,17 +42,39 @@ def type_info.fixed_size
     ok (core.result.Result.Ok (some 1#usize))
   | type_info.TypeDescriptor.Uint width =>
     ok (core.result.Result.Ok (some width))
+  | type_info.TypeDescriptor.Vector element count =>
+    let r ← type_info.fixed_size element
+    match r with
+    | core.result.Result.Ok o =>
+      match o with
+      | none => ok r
+      | some width =>
+        let o1 ← lift (Usize.checked_mul width count)
+        match o1 with
+        | none => ok (core.result.Result.Err error.CodecError.SizeOverflow)
+        | some _ => ok (core.result.Result.Ok o1)
+    | core.result.Result.Err _ =>
+      if count = 0#usize
+      then ok (core.result.Result.Ok (some 0#usize))
+      else ok r
+  | type_info.TypeDescriptor.List _ _ => ok (core.result.Result.Ok none)
+  | type_info.TypeDescriptor.ProgressiveList _ _ =>
+    ok (core.result.Result.Ok none)
+partial_fixpoint
 
 /-- [nyx_ssz::type_info::is_basic]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 22:0-26:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 41:0-46:1 -/
 def type_info.is_basic
   (declaration : type_info.TypeDescriptor) : RustM Bool := do
   match declaration with
   | type_info.TypeDescriptor.Boolean => ok true
   | type_info.TypeDescriptor.Uint _ => ok true
+  | type_info.TypeDescriptor.Vector _ _ => ok false
+  | type_info.TypeDescriptor.List _ _ => ok false
+  | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
 
 /-- [nyx_ssz::type_info::is_compatible]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 28:0-39:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 48:0-74:1 -/
 def type_info.is_compatible
   (left : type_info.TypeDescriptor) (right : type_info.TypeDescriptor) :
   RustM Bool
@@ -56,14 +84,49 @@ def type_info.is_compatible
     match right with
     | type_info.TypeDescriptor.Boolean => ok true
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.Vector _ _ => ok false
+    | type_info.TypeDescriptor.List _ _ => ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
   | type_info.TypeDescriptor.Uint left_width =>
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
     | type_info.TypeDescriptor.Uint right_width =>
       ok (left_width = right_width)
+    | type_info.TypeDescriptor.Vector _ _ => ok false
+    | type_info.TypeDescriptor.List _ _ => ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+  | type_info.TypeDescriptor.Vector left_element left_count =>
+    match right with
+    | type_info.TypeDescriptor.Boolean => ok false
+    | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.Vector right_element right_count =>
+      if left_count = right_count
+      then type_info.is_compatible left_element right_element
+      else ok false
+    | type_info.TypeDescriptor.List _ _ => ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+  | type_info.TypeDescriptor.List left_element left_limit =>
+    match right with
+    | type_info.TypeDescriptor.Boolean => ok false
+    | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.Vector _ _ => ok false
+    | type_info.TypeDescriptor.List right_element right_limit =>
+      if left_limit = right_limit
+      then type_info.is_compatible left_element right_element
+      else ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+  | type_info.TypeDescriptor.ProgressiveList left_element _ =>
+    match right with
+    | type_info.TypeDescriptor.Boolean => ok false
+    | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.Vector _ _ => ok false
+    | type_info.TypeDescriptor.List _ _ => ok false
+    | type_info.TypeDescriptor.ProgressiveList right_element _ =>
+      type_info.is_compatible left_element right_element
+partial_fixpoint
 
 /-- [nyx_ssz::type_info::validate]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 41:0-49:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 76:0-93:1 -/
 def type_info.validate
   (declaration : type_info.TypeDescriptor) :
   RustM (core.result.Result Unit error.CodecError)
@@ -79,6 +142,14 @@ def type_info.validate
     | 16 => ok (core.result.Result.Ok ())
     | 32 => ok (core.result.Result.Ok ())
     | _ => ok (core.result.Result.Err error.CodecError.InvalidIntegerWidth)
+  | type_info.TypeDescriptor.Vector element count =>
+    if count = 0#usize
+    then ok (core.result.Result.Err error.CodecError.EmptyVector)
+    else type_info.validate element
+  | type_info.TypeDescriptor.List element _ => type_info.validate element
+  | type_info.TypeDescriptor.ProgressiveList element _ =>
+    type_info.validate element
+partial_fixpoint
 
 
 end NyxSszRust
