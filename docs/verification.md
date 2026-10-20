@@ -12,10 +12,10 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links fifty-seven registered operations to proofs over actual
+`verification/targets.json` links fifty-nine registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
-variable-vector/list layout validation, three immutable layout-view projections and typed
+fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
 body-range decoding, plus four declaration-derived metadata APIs. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
@@ -185,6 +185,17 @@ and within the byte scope. It determines the element count before checking capac
 capacity errors precede later offset-order errors. The inferred count and all error
 precedences match the reference. Bounded and unbounded forms reuse the proved
 fixed-count layout validator and its view invariant, without adding a format limit.
+
+`sequence::fixed_vector_view` and `fixed_list_view` refine the fixed-width branches
+of the same `Ssz.vectorSlices` and `Ssz.listSlices`, for every representable width,
+count, input and optional capacity. Vector byte-budget multiplication is checked;
+unrepresentable or mismatched budgets return the reference scope error class.
+The range loop terminates and proves every multiplication, increment, push and slice
+safe. Empty lists return no bodies even at zero width; nonempty lists reject zero
+width and incomplete elements before capacity. Envelope checks precede all these
+checks. Zero-width/count internal slicing does not certify a legal type declaration.
+Both paths establish the existing immutable view invariant, so typed element traversal
+and getters need no new assumptions. Element validity and collection codecs remain separate.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
 pinned source integrity. Generated declarations are partitioned into dependency-ordered

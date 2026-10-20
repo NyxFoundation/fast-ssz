@@ -30,8 +30,8 @@ classification, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
 partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `CodecError`.
-The shared offset-span validator and fixed- or inferred-count variable-element layout
-parsers are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
+The shared offset-span validator and fixed- or inferred-count layout parsers for
+both fixed- and variable-width elements are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
 headers, four-byte size envelope and body ranges. It does not decode element values.
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
@@ -116,21 +116,28 @@ rule. No element's value or declared limit is checked by this layout-only API.
 the first offset and checks that element-count capacity; `None` imposes no declared capacity.
 It validates layout only, not each element's own bounds or containing type declaration.
 
+For fixed-width bodies, use `fixed_vector_view(&bytes, width, count)` or
+`fixed_list_view(&bytes, width, optional_capacity)`. Both enforce the same composite
+size envelope. Vectors require the exact byte budget, including checked multiplication;
+lists infer their count and reject widthless nonempty input or incomplete elements
+before checking capacity. An empty fixed list has zero elements, even at zero width.
+These are layout helpers, not complete typed collection codecs.
+
 ## Typed element decoding
 
 Decode already-sliced bodies, retaining ownership on the first element failure:
 
 ```rust
-use nyx_ssz::{codec::decode_elements, error::CodecError, sequence::variable_vector_view};
-let view = variable_vector_view(&[8, 0, 0, 0, 9, 0, 0, 0, 0, 2], 2).unwrap();
+use nyx_ssz::{codec::decode_elements, error::CodecError, sequence::fixed_vector_view};
+let view = fixed_vector_view(&[0, 2], 1, 2).unwrap();
 let failure = decode_elements::<bool>(&view).unwrap_err();
 assert_eq!(failure.kind, CodecError::InvalidBoolean);
 assert_eq!(failure.state.values, [false]);
 assert_eq!(failure.state.child, Some(()));
 ```
 
-This lower-level helper does not choose or validate a containing sequence's type/layout;
-the example is not a bool Vector's wire encoding. An empty view invokes no element decoder.
+This lower-level helper does not choose or validate a containing sequence's type declaration;
+the caller selects its layout before decoding elements. An empty view invokes no element decoder.
 `SequenceDecodeState` returns every completed element and the failing child's exact state.
 The input/view remains borrowed and reusable; no element bytes are copied by the traversal.
 Generic Vector/List serialization, roots and trait implementations remain unfinished.

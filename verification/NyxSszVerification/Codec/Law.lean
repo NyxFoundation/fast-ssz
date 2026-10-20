@@ -16,6 +16,8 @@ def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
   | .OffsetUnordered, .offsetUnordered => True
   | .OffsetPastScope, .offsetPastScope => True
   | .ScopeTooSmall, .scopeTooSmall _ _ => True
+  | .ScopeWidthless, .scopeWidthless => True
+  | .ScopeUndivided, .scopeUndivided _ _ => True
   | .FirstOffset, .firstOffset _ _ => True
   | .OffsetBelowTable, .offsetBelowTable => True
   | .OffsetUnaligned, .offsetUnaligned => True
