@@ -1,0 +1,19 @@
+[package]
+name = "nyx-ssz-official-vectors"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+nyx-ssz = { path = "../../crates/nyx-ssz" }
+yaml_serde = "=0.10.7"
+snap = "=1.1.2"
+hex = "=0.4.3"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

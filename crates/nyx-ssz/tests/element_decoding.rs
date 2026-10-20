@@ -1,5 +1,6 @@
 use nyx_ssz::{
-    codec::{decode_elements, Ssz},
+    codec::{decode, decode_elements, Ssz},
+    collections::{List, Vector},
     error::{CodecError, DecodeFailure},
     sequence::variable_vector_view,
     type_info::TypeDescriptor,
@@ -38,7 +39,8 @@ impl Ssz for TracedByte {
     }
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Cleanup>> {
         CALLS.with(|count| *count.borrow_mut() += 1);
-        if bytes.len() != 1 {
+        // Deliberate refusal tests arbitrary external callback failure ownership.
+        if bytes.len() != 1 || bytes[0] == 255 {
             return Err(DecodeFailure {
                 kind: CodecError::InvalidLength,
                 state: Cleanup(200),
@@ -118,6 +120,54 @@ fn should_not_invoke_element_decoders_when_the_view_is_empty() {
     let view = variable_vector_view(&[], 0).unwrap();
     let values = decode_elements::<TracedByte>(&view).unwrap();
     assert!(values.is_empty());
+    assert_eq!(calls(), 0);
+    assert!(drops().is_empty());
+}
+
+#[test]
+fn should_preserve_owned_prefix_and_child_state_in_typed_vector_failures() {
+    reset();
+    let Err(failure) = decode::<Vector<TracedByte, 2>>(&[7, 255]) else {
+        panic!("expected refusal")
+    };
+    assert_eq!(failure.kind, CodecError::InvalidLength);
+    assert_eq!(failure.state.values.len(), 1);
+    assert_eq!(failure.state.values[0].0, 7);
+    assert_eq!(failure.state.child.as_ref().map(|state| state.0), Some(200));
+    assert_eq!(calls(), 2);
+    assert!(drops().is_empty());
+    drop(failure);
+    assert_eq!(drops(), [7, 200]);
+}
+
+#[test]
+fn should_preserve_every_nested_owner_when_a_typed_list_child_fails() {
+    reset();
+    let bytes = [8, 0, 0, 0, 9, 0, 0, 0, 7, 8, 255];
+    let Err(failure) = decode::<List<List<TracedByte, 2>, 2>>(&bytes) else {
+        panic!("expected refusal")
+    };
+    assert_eq!(failure.state.values[0].as_slice()[0].0, 7);
+    let child = failure.state.child.as_ref().unwrap();
+    assert_eq!(child.values[0].0, 8);
+    assert_eq!(child.child.as_ref().map(|state| state.0), Some(200));
+    assert_eq!(calls(), 3);
+    assert!(drops().is_empty());
+    drop(failure);
+    let mut actual = drops();
+    actual.sort();
+    assert_eq!(actual, [7, 8, 200]);
+}
+
+#[test]
+fn should_return_empty_state_without_callbacks_when_typed_layout_is_invalid() {
+    reset();
+    let Err(failure) = decode::<Vector<TracedByte, 2>>(&[7]) else {
+        panic!("expected refusal")
+    };
+    assert_eq!(failure.kind, CodecError::InvalidLength);
+    assert!(failure.state.values.is_empty());
+    assert!(failure.state.child.is_none());
     assert_eq!(calls(), 0);
     assert!(drops().is_empty());
 }

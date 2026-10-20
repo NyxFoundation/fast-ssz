@@ -1,0 +1,104 @@
+use nyx_ssz::{codec::Ssz, U256};
+use yaml_serde::Value;
+
+use crate::{
+    fixture::{decode_snappy, Case, Outcome},
+    types::{validate_families, FromFixture, Schema},
+};
+
+#[test]
+fn should_accept_the_exact_supported_vector_lengths_when_the_name_is_canonical() {
+    for count in [0, 1, 2, 3, 4, 5, 8, 16, 31, 512, 513] {
+        assert!(Schema::parse("basic_vector", &format!("vec_uint64_{count}_zero")).is_ok());
+    }
+}
+
+#[test]
+fn should_reject_unknown_schemas_instead_of_skipping_them() {
+    assert!(Schema::parse("containers", "SmallTestStruct_zero").is_err());
+    assert!(Schema::parse("uints", "uint_512_max").is_err());
+    assert!(Schema::parse("basic_vector", "vec_bool_511_zero").is_err());
+    assert!(Schema::parse("basic_vector", "vec_uint9_1_zero").is_err());
+}
+
+#[test]
+fn should_validate_family_arguments_before_accessing_the_filesystem() {
+    assert!(validate_families(&[]).is_err());
+    assert!(validate_families(&["../outside".into()]).is_err());
+    assert!(validate_families(&["boolean".into(), "boolean".into()]).is_err());
+    assert!(validate_families(&["boolean".into(), "uints".into()]).is_ok());
+}
+
+#[test]
+fn should_parse_full_width_unsigned_values_without_truncation() {
+    let value = Value::String(u128::MAX.to_string());
+    assert_eq!(u128::from_fixture(&value).unwrap(), u128::MAX);
+    let value = Value::String(U256::MAX.to_string());
+    assert_eq!(U256::from_fixture(&value).unwrap(), U256::MAX);
+    assert!(u64::from_fixture(&Value::String(u128::MAX.to_string())).is_err());
+}
+
+#[test]
+fn should_reject_negative_or_mistyped_yaml_values() {
+    assert!(u8::from_fixture(&Value::from(-1)).is_err());
+    assert!(u8::from_fixture(&Value::Bool(true)).is_err());
+    assert!(bool::from_fixture(&Value::String("true".into())).is_err());
+}
+
+#[test]
+fn should_reject_malformed_or_oversized_snappy_before_allocating_output() {
+    assert!(decode_snappy(&[255, 255, 255, 255, 255]).is_err());
+    assert!(decode_snappy(&[128, 128, 128, 128, 1]).is_err());
+}
+
+#[test]
+fn should_check_the_expected_value_not_only_a_round_trip() {
+    let case = Case {
+        outcome: Outcome::Valid,
+        bytes: vec![1],
+        value: Some(Value::Bool(false)),
+        root: Some(true.hash_tree_root().unwrap()),
+    };
+    assert!(Schema::parse("boolean", "true")
+        .unwrap()
+        .verify(&case)
+        .is_err());
+}
+
+#[test]
+fn should_check_the_expected_root_independently() {
+    let case = Case {
+        outcome: Outcome::Valid,
+        bytes: vec![1],
+        value: Some(Value::Bool(true)),
+        root: Some([0; 32]),
+    };
+    assert!(Schema::parse("boolean", "true")
+        .unwrap()
+        .verify(&case)
+        .is_err());
+}
+
+#[test]
+fn should_require_rejection_for_invalid_vectors() {
+    let case = Case {
+        outcome: Outcome::Invalid,
+        bytes: vec![1],
+        value: None,
+        root: None,
+    };
+    assert!(Schema::parse("boolean", "byte_0x01")
+        .unwrap()
+        .verify(&case)
+        .is_err());
+    let case = Case {
+        outcome: Outcome::Invalid,
+        bytes: vec![128],
+        value: None,
+        root: None,
+    };
+    assert!(Schema::parse("boolean", "byte_0x80")
+        .unwrap()
+        .verify(&case)
+        .is_ok());
+}

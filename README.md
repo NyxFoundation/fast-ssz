@@ -27,11 +27,12 @@ See [verification scope and trust](docs/verification.md).
 Owned `collections::Vector<T, N>` and `collections::List<T, MAX>` now enforce
 exact/nonzero vector lengths and list capacities. Constructors and immutable projections
 are proved for arbitrary element types; rejected inputs return their original storage.
-This is a storage contract, not a generic element-codec or wire-layout proof.
+Their `Ssz` implementations additionally compose encoding, decoding and roots with
+any explicitly lawful child codec, including nested fixed- and variable-width collections.
 
-The `codec::Ssz` trait provides a uniform interface for Boolean and all six unsigned
-widths. Its seven library implementations have proved size metadata, basic/composite
-classification, encoding, decoding and roots. External implementations are not
+The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
+widths, generic Vector and List. Its nine library implementations have proved declaration
+metadata, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
 partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `CodecError`.
@@ -41,9 +42,9 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Generic collection codecs, collection trait implementations, containers, remaining Progressive types,
-CompatibleUnion, derive, composite hash-tree roots, typed index/path APIs, multiproofs, official vectors
-and benchmarks remain unfinished. The agreed release condition is not met.
+Containers, remaining Progressive value codecs, CompatibleUnion, derive, borrowed byte/bit
+roots, typed index/path APIs, multiproofs, the complete official corpus and benchmarks
+remain unfinished. The agreed release condition is not met.
 
 ## Example
 
@@ -89,9 +90,9 @@ Merkle layouts but does not imply type validity. These are not independently ove
 metadata constants. The descriptor covers Boolean, unsigned integers, and recursively
 nested Vector/List/ProgressiveList declarations. Vector widths use checked multiplication;
 an outer zero count cancels even an unrepresentable fixed child width, whereas a variable
-child stays variable. Declaration support is not a collection value codec. `CodecError` implements the standard error interfaces.
-Only the seven basic-type implementations are currently included; storage collections
-below do not implement `Ssz` yet. Borrowed byte/bit codecs remain separate APIs.
+child stays variable. ProgressiveList declaration support is not yet a value codec.
+`CodecError` implements the standard error interfaces. The seven basic implementations
+and generic Vector/List implementations are certified; borrowed byte/bit codecs remain separate APIs.
 
 ```rust
 use nyx_ssz::{codec::decode, error::CodecError};
@@ -147,7 +148,8 @@ This lower-level helper does not choose or validate a containing sequence's type
 the caller selects its layout before decoding elements. An empty view invokes no element decoder.
 `SequenceDecodeState` returns every completed element and the failing child's exact state.
 The input/view remains borrowed and reusable; no element bytes are copied by the traversal.
-Generic Vector/List serialization, roots and trait implementations remain unfinished.
+Typed Vector/List decoding selects and validates the containing layout before reusing this
+traversal; separate parent theorems preserve its exact typed prefix and child state.
 
 ## Typed storage
 
@@ -161,9 +163,37 @@ assert_eq!(rejected.values, vec![7]);
 ```
 
 Fields are private and projections are immutable, so safe callers cannot resize the
-collections. Arbitrary nested/non-`Copy` elements are supported, but collection
-`Ssz` implementations and generic collection serializers are not provided yet. Allocation identity and absence of
-element drops inside constructors are checked by Rust tests, not runtime-cost theorems.
+collections. Arbitrary nested/non-`Copy` elements are supported. When `T: Ssz`, both collections
+also implement `Ssz`; their formal codec guarantees require the actual child's `CodecLaw`.
+Serialization writes fixed values inline or checks and writes four-byte offset tables. Roots pack
+basic children or Merkleize composite child roots; lists mix in the actual element count.
+Decode failures return completed values and nested child state without dropping them inside the operation.
+Allocation identity and absence of element drops are also checked by Rust tests, not runtime-cost theorems.
+
+```rust
+use nyx_ssz::{codec::{decode, encode, hash_tree_root}, collections::{list, vector, List, Vector}};
+let value = vector::<_, 2>(vec![list::<_, 4>(vec![1u8, 2]).unwrap(), list(vec![3]).unwrap()]).unwrap();
+let bytes = encode(&value).unwrap();
+let decoded = decode::<Vector<List<u8, 4>, 2>>(&bytes).unwrap();
+assert_eq!(decoded.as_slice()[0].as_slice(), &[1, 2]);
+assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
+```
+
+## Official test vectors
+
+The immutable `ethereum/consensus-spec-tests` commit in `sources.lock` is fetched into
+an external cache, not vendored. Cache checks verify Git provenance, the complete file
+inventory and each fixture's actual Git blob hash, rather than trusting Git status alone.
+
+```sh
+python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector
+```
+
+This checks all 1,229 selected cases: exact YAML values, encoded bytes, roots and invalid-input
+rejection. It is a three-family slice, not full conformance; six other families remain.
+Omitting `--family` requests the entire corpus; unsupported families fail instead of being ignored.
+The Rust CI matrix runs this explicit slice on x86_64 and aarch64. See
+[runner details](tools/official-vectors/README.md).
 
 ## Reproduce
 

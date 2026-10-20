@@ -1,4 +1,5 @@
 /target/
+/tools/official-vectors/target/
 /.tools/
 /.lake/
 /verification/.lake/

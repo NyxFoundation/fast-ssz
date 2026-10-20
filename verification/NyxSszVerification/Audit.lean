@@ -1,6 +1,7 @@
 import Lean
 import NyxSszRust
 import NyxSszVerification
+import NyxSszVerification.ContractAudit
 
 open Lean Elab Command
 /-- Audit transitive axioms. -/
@@ -40,9 +41,5 @@ elab "check_trait_contract " target:ident " against " contract:ident " via " cla
   match claimInfo with
   | .thmInfo _ => pure ()
   | _ => throwError "trait contract claim is not a theorem"
-  let conclusion := claimInfo.type
-  unless conclusion.getAppFn.isConstOf contract.getId do
-    throwError "theorem does not establish an unconditional registered trait contract"
-  let arguments := conclusion.getAppArgs
-  unless arguments.size == 5 && arguments[2]!.getAppFn.isConstOf targetName do
-    throwError "trait contract theorem certifies the wrong dictionary"
+  liftTermElabM do
+    NyxSszContractAudit.checkContractType targetName contract.getId claimInfo.type

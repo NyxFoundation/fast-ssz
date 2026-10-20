@@ -1,6 +1,6 @@
 ---
 title: Verification scope and trust boundary
-last_updated: 2026-10-20
+last_updated: 2026-10-21
 tags:
   - ssz
   - aeneas
@@ -17,9 +17,10 @@ Aeneas output: the thirty-nine existing codec/hash/view operations, four owned c
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
 body-range decoding, plus four declaration-derived metadata APIs and eleven generalized-index operations. `verification/traits.json` separately
-registers every public `Ssz` declaration member and its seven concrete library dictionaries.
-Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
-Collection storage proofs do not imply generic SSZ collection codecs.
+registers every public `Ssz` declaration member and its nine library dictionaries: seven basic
+instances and the two generic Vector/List constructors. Each proves the full `CodecLaw`;
+methods are not silently excluded. The two generic laws compose with the law of their actual
+child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
 Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
@@ -73,8 +74,8 @@ every typed value. They refine the unchanged `Ssz.hashTreeRoot`, through its act
 layout, packing, bounded merkleization and depth-zero tree rules. The extracted
 array-prefix mutation and standard `copy_from_slice` call are proved safe and
 preserve every encoded byte, with zero padding to 32 bytes. A uint256 fills the
-node exactly. Basic roots do not SHA-256 hash their single leaf; composite roots
-remain unfinished.
+node exactly. Basic roots do not SHA-256 hash their single leaf. Generic Vector/List roots
+are separately proved below; borrowed byte/bit and other family roots remain unfinished.
 
 `hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`
 for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing path,
@@ -99,7 +100,7 @@ index and incorrect branch lengths return the corresponding error category;
 a well-formed nonmatching proof returns false. Proofs cover index guards, sibling
 order, recursive termination, SHA-256 composition and bytewise root comparison.
 Error relations classify reasons, not the reference error's numeric diagnostics.
-Generic collection codecs, paths, multiproofs and full-library conformance are not yet proved.
+Typed paths, multiproofs and full-library conformance are not yet proved.
 
 `gindex` implements raw numeric tree operations, not typed path resolution. Depth and
 branch length refine `Ssz.gindexDepth`/`gindexLength`, distinguishing zero, root and
@@ -127,7 +128,16 @@ those markers so formatting is not proportional to the declared bound. Rust test
 check allocation identity, no in-constructor element drops, nested non-Copy elements,
 formatting and maximum machine counts for zero-sized elements. These are shape/storage
 contracts, not element validity, serialization, tree-root or allocation-cost theorems.
-These storage types do not implement `Ssz` and have no generic collection codecs yet.
+Separate compositional proofs now establish their generic `Ssz` implementations. Parent
+observations preserve the full ordered sequence of child observations. Fixed and variable
+serialization, offset arithmetic, exact decoded values and packed/composite roots refine the
+unchanged checked reference operations. No extra well-formedness or bound restrictions are
+assumed: zero vector counts, invalid child declarations, empty/zero-capacity lists and
+unrepresentable fixed widths follow the reference error precedence. List roots mix in the
+actual element count, not capacity. Every byte and node survives packing; capacity arithmetic
+is widened and bounded before narrowing. Declaration/layout failures carry empty owned state;
+callback failures forward the exact typed completed prefix and exact nested child state.
+These ownership equalities are proved separately from the protocol error observation.
 
 `codec::Ssz` has a static immutable `TYPE` declaration and encode/decode/tree-root
 operations. Boolean and uint8/16/32/64/128/256 dictionaries prove that the complete
@@ -174,8 +184,9 @@ deserialization; for a well-formed child declaration this is the unchanged upstr
 values in the successful prefix and the failing child's opaque owned state, not only
 their protocol observations. Empty views invoke no callbacks; the first child failure
 stops traversal. The parent type/layout declaration remains the caller's responsibility.
-This is not a complete Vector/List codec. Non-Copy/drop-counter Rust tests verify that
-the traversal invokes no element/state destructor before returning ownership.
+This lower-level helper does not itself select a Vector/List type; the new parent dictionaries
+perform those checks. Non-Copy/drop-counter Rust tests exercise both the traversal and typed
+nested parent failures, verifying no element/state destructor runs before returning ownership.
 
 `sequence::offset_spans` refines `Ssz.offsetSpans` for every representable offset
 slice and scope, preserving every span and both exact ordering/scope error categories.
@@ -230,6 +241,11 @@ The repair retains loans for expanded static shared references, consistently era
 runtime lifetime annotations and preserves the type comparison; invariant checks are
 now enabled for every SDK extraction. Rust and Lean regressions cover nested static
 declarations. Existing 57-operation extraction was byte-identical with the repair.
+The second minimal backport visits nested constant operands during effect analysis, including
+aggregates, repeats and call arguments. Trait-associated constant reads must not be classified
+as pure while their generated bodies use monadic binds. Native regressions and three regenerated
+Lean fixtures pass; all committed extraction artifacts for the existing 70-operation baseline are
+byte-identical with this fix. Neither patch changes the standard Lean models or proves the compiler correct.
 The standalone Nix target avoids rebuilding Charon's unrelated Rust executable and
 keeps a GC-rooted output link. Bootstrap requires Nix; source or build failures stop
 verification, with no prebuilt/default-extractor fallback. This changes a trusted
@@ -257,8 +273,11 @@ selects the annotated methods, while exact Rustdoc registration and concrete-bod
 checks remain mandatory; opaque declarations cannot satisfy coverage. Unregistered public traits fail. For `Ssz`,
 Rustdoc declaration/implementation inventories, including associated types, and
 concretely extracted dictionaries must match the registry exactly. Lean checks that each theorem establishes the supported
-unconditional `CodecLaw` for that precise dictionary; unrelated theorems, impossible
-premises, reflexive/vacuous predicates and another dictionary's proof are refused. Trait declarations and implementations are
+`CodecLaw` for that precise dictionary: either an unconditional concrete law or a universal
+constructor law requiring only laws for its exact child dictionaries. Constructor arguments must
+be distinct universal type/dictionary/usize parameters, with independent child shapes and observations.
+Specialized bounds, extra data domains (including `Fin 0`), assumed parent laws, unrelated theorems,
+impossible premises, reflexive/vacuous predicates and another dictionary's proof are refused. Trait declarations and implementations are
 partitioned by their Rust source module while preserving native-type Lean namespaces.
 Statement adequacy still requires review. Negative fixtures reject custom/native axioms
 and unrelated proofs. Only propext, Classical.choice and Quot.sound are allowed.
@@ -280,11 +299,19 @@ storage, and typed decode errors retain partial ownership rather than silently d
 arbitrary elements inside the operation. The element traversal now proves exact retention
 of values and nested state, separately from wire conformance. Before backend translation,
 `llbc_drops.py` checks successful precise, undesugared LLBC and rejects local normal-flow
-Drop statements except closed standard scalar/reference/array/tuple/Vec types without
-user destructors. It resolves interned types, rejects unknown/generic owned types and
+Drop statements except closed standard scalar/reference/array/tuple/Vec types and transparent
+local non-generic records with recursively safe fields and no user destructor. Real freshly emitted
+LLBC fixtures accept closed bookkeeping and node arrays while rejecting an actual user `Drop`.
+It resolves interned types, rejects unknown/generic owned types and
 explicit `mem::drop`/`mem::forget` calls, and does not rewrite the artifact. Compiler-generated
 destructor bodies and unwind cleanup are excluded: caller cleanup, arbitrary foreign
 library models and callback internals are not verified by this syntactic check. This
 adds a fail-closed regression guard, not a formal destructor-execution/cost theorem.
+The official-vector runner pins `ethereum/consensus-spec-tests` independently of the formal model.
+Its external cache is checked against the pinned source, exact file inventory and actual blob contents;
+local modifications, symlinks and extra fixtures are refused. The current explicit CI selection covers
+all 1,229 Boolean/unsigned/basic-Vector cases, comparing decoded YAML values, re-encoding, roots and
+invalid-input rejection. Six other corpus families remain. This test slice is neither a universal proof
+nor full official-corpus coverage. Unsupported selected schemas fail rather than being skipped.
 OS faults/resource exhaustion and whole-library/cryptographic security are excluded.
 x86_64 extraction requires the prepared Miri sysroot. Native aarch64 extraction has not been exercised.

@@ -2,6 +2,7 @@
   {
     "rust": "nyx_ssz::codec::Ssz",
     "law": "NyxSszVerification.CodecLaw",
+    "modules": ["nyx_ssz::codec", "nyx_ssz::collection_codec"],
     "members": {
       "DecodeState": "assoc_type",
       "TYPE": "assoc_const",
@@ -44,6 +45,16 @@
         "type": "crate::U256",
         "lean": "NyxSszRust.ruint.Uint2564.Insts.Nyx_sszCodecSszTuple",
         "proof": "NyxSszVerification.u256_codec_refines"
+      },
+      {
+        "type": "crate::collections::Vector<T,N>",
+        "lean": "NyxSszRust.collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState",
+        "proof": "NyxSszVerification.vector_codec_refines"
+      },
+      {
+        "type": "crate::collections::List<T,MAX>",
+        "lean": "NyxSszRust.collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState",
+        "proof": "NyxSszVerification.list_codec_refines"
       }
     ]
   }

@@ -20,6 +20,8 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - name: Check pinned official boolean, uint and basic-vector cases
+        run: python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector
       - run: rustup component add llvm-tools --toolchain nightly-2026-08-18
       - run: cargo install cargo-llvm-cov --version 0.8.7 --locked
       - run: cargo llvm-cov --workspace --fail-under-lines 80

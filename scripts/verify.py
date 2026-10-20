@@ -12,6 +12,7 @@ import tempfile
 import tomllib
 from extracted_modules import NAMESPACE, declared_names, split_model
 from llbc_drops import assert_safe_drops
+from generic_contract_fixtures import generic_contract_success, generic_rejection_cases
 from trait_contracts import load_contracts, validate_traits, assert_extracted_instances
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -184,8 +185,8 @@ def extract(pins, targets, destination, contracts):
     for target in targets:
         if target["rust"] not in methods:
             arguments.extend(["--start-from", target["rust"]])
-    for contract in contracts:
-        arguments.extend(["--start-from", contract["rust"].rsplit("::", 1)[0]])
+    for module in sorted({module for contract in contracts for module in contract["modules"]}):
+        arguments.extend(["--start-from", module])
     arguments.extend([
         "--dest-file", llbc, "--", "--lib", "--manifest-path", "crates/nyx-ssz/Cargo.toml",
         "--features", "verification", "--target-dir", destination / "cargo",
@@ -361,6 +362,7 @@ def rejection_cases():
             "does not mention",
         ),
         **trait_rejection_cases(),
+        **generic_rejection_cases(),
     }
 
 
@@ -404,6 +406,12 @@ def trait_rejection_cases():
     }
 
 
+def check_generic_contract_success(directory):
+    file = directory / "GenericContractSuccess.lean"
+    file.write_text("import NyxSszVerification.Audit\n" + generic_contract_success())
+    run(["lake", "env", "lean", file], cwd=VERIFICATION)
+
+
 def check_rejection_guards(directory):
     for label, (source, expected) in rejection_cases().items():
         file = directory / f"{label}.lean"
@@ -416,16 +424,39 @@ def check_rejection_guards(directory):
             raise ValueError(f"proof guard failed for {label}")
 
 
+def check_ownership_examples(pins, directory):
+    source = VERIFICATION / "fixtures" / "drop_bookkeeping.rs"
+    cases = (("discard_bookkeeping", True), ("discard_nodes", True), ("discard_user_value", False))
+    for function, accepted in cases:
+        artifact = directory / f"{function}.llbc"
+        run([tool_path("charon", pins), "rustc", "--preset=aeneas", "--precise-drops",
+             "--sysroot", miri_sysroot(pins), "--start-from", f"nyx_drop_ownership::{function}",
+             "--dest-file", artifact, "--", source, "--crate-name", "nyx_drop_ownership",
+             "--crate-type", "lib"])
+        try:
+            assert_safe_drops(json.loads(artifact.read_text()))
+        except ValueError as error:
+            if accepted or "unmodeled normal-flow drop" not in str(error):
+                raise
+        else:
+            if not accepted:
+                raise ValueError("ownership guard accepted a user destructor")
+
+
 def check(pins, targets, contracts, directory):
     validate_tools(pins)
+    check_ownership_examples(pins, directory)
     run(["cargo", "fmt", "--all", "--", "--check"])
     run(["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"])
     run(["cargo", "test", "--workspace"])
+    run([sys.executable, ROOT / "scripts" / "official_vectors.py", "check",
+         "--family", "boolean", "--family", "uints", "--family", "basic_vector"])
     assert_same_artifact(extract(pins, targets, directory, contracts), generated_artifacts())
     assert_import_closure(VERIFICATION)
     run(["lake", "build", "NyxSszVerification"], cwd=VERIFICATION)
     validate_dependencies(pins)
     check_proof_targets(targets, contracts, directory)
+    check_generic_contract_success(directory)
     check_rejection_guards(directory)
     instances = sum(len(contract["instances"]) for contract in contracts)
     print(f"Verified slice: {len(targets)} registered operations and {instances} trait implementations. "
