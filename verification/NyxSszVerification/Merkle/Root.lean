@@ -1,4 +1,5 @@
 import NyxSszVerification.Merkle.Climb
+import NyxSszVerification.Merkle.Errors
 
 open Aeneas Aeneas.Std Aeneas.Std.WP
 
@@ -6,12 +7,6 @@ set_option maxRecDepth 4096
 set_option maxHeartbeats 2000000
 
 namespace NyxSszVerification
-
-def proofFaultAgrees : NyxSszRust.merkle.ProofError → Ssz.Err → Prop
-  | .InvalidIndex, .notAGindex _ => True
-  | .RootHasNoBranch, .rootHasNoBranch => True
-  | .InvalidBranchLength, .branchLength _ _ => True
-  | _, _ => False
 
 def rootResultAgrees : core.result.Result RustNode NyxSszRust.merkle.ProofError →
     Except Ssz.Err Ssz.Bytes → Prop

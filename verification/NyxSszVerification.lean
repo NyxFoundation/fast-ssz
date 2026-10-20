@@ -11,6 +11,7 @@ import NyxSszVerification.Codec.Elements
 import NyxSszVerification.ProgressiveBytes
 import NyxSszVerification.Sha256
 import NyxSszVerification.Merkle
+import NyxSszVerification.Gindex
 import NyxSszVerification.Merkleize
 import NyxSszVerification.Unsigned
 import NyxSszVerification.Unsigned.U256

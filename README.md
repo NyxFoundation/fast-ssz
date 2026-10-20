@@ -14,6 +14,11 @@ SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
 32-byte nodes. Generic node Merkleization supports optional capacities and zero padding
 without allocating a padded tree. Single-branch root reconstruction and verification are implemented
 and proved across the full `u128` index domain, including malformed requests.
+The `gindex` module also provides proved raw tree arithmetic, depth/branch lengths,
+path concatenation/rebasing and bottom-up path/sibling indices over the full `u128`
+domain. Unrepresentable natural-number results return `ProofError::IndexOverflow`;
+bit queries and truncation explicitly handle positions beyond the word width.
+These numeric helpers do not yet resolve typed field/element paths.
 RustCrypto `sha2` is a test oracle only, not a runtime dependency.
 `U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
 and proved, not assumed correct. Other `ruint` operations are outside these proofs.
@@ -37,7 +42,7 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
 Generic collection codecs, collection trait implementations, containers, remaining Progressive types,
-CompatibleUnion, derive, composite hash-tree roots, index/path APIs, multiproofs, official vectors
+CompatibleUnion, derive, composite hash-tree roots, typed index/path APIs, multiproofs, official vectors
 and benchmarks remain unfinished. The agreed release condition is not met.
 
 ## Example

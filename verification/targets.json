@@ -293,5 +293,60 @@
     "rust": "nyx_ssz::sequence::fixed_list_view",
     "lean": "NyxSszRust.sequence.fixed_list_view",
     "proof": "NyxSszVerification.fixed_list_view_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::depth",
+    "lean": "NyxSszRust.gindex.depth",
+    "proof": "NyxSszVerification.gindex_depth_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::length",
+    "lean": "NyxSszRust.gindex.length",
+    "proof": "NyxSszVerification.gindex_length_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::bit",
+    "lean": "NyxSszRust.gindex.bit",
+    "proof": "NyxSszVerification.gindex_bit_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::below",
+    "lean": "NyxSszRust.gindex.below",
+    "proof": "NyxSszVerification.gindex_below_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::sibling",
+    "lean": "NyxSszRust.gindex.sibling",
+    "proof": "NyxSszVerification.gindex_sibling_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::child",
+    "lean": "NyxSszRust.gindex.child",
+    "proof": "NyxSszVerification.gindex_child_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::parent",
+    "lean": "NyxSszRust.gindex.parent",
+    "proof": "NyxSszVerification.gindex_parent_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::concat",
+    "lean": "NyxSszRust.gindex.concat",
+    "proof": "NyxSszVerification.gindex_concat_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::rebase",
+    "lean": "NyxSszRust.gindex.rebase",
+    "proof": "NyxSszVerification.gindex_rebase_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::path_indices",
+    "lean": "NyxSszRust.gindex.path_indices",
+    "proof": "NyxSszVerification.gindex_path_indices_refines"
+  },
+  {
+    "rust": "nyx_ssz::gindex::branch_indices",
+    "lean": "NyxSszRust.gindex.branch_indices",
+    "proof": "NyxSszVerification.gindex_branch_indices_refines"
   }
 ]

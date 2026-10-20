@@ -12,6 +12,7 @@ pub enum ProofError {
     InvalidIndex,
     RootHasNoBranch,
     InvalidBranchLength,
+    IndexOverflow,
 }
 
 /// A Merkle tree capacity cannot contain all supplied nodes.
