@@ -22,9 +22,11 @@ MAX_FILE_BYTES = 64 * 1024 * 1024
 def source_reference(pins):
     source = pins["test_vectors"]
     repository, revision, path = (source.get(key) for key in ("repository", "revision", "path"))
+    manifest = source.get("manifest_sha256")
     if (repository != OFFICIAL or path != SUBTREE or not isinstance(revision, str)
-            or not re.fullmatch(r"[0-9a-f]{40}", revision)):
-        raise ValueError("official vectors require the canonical repository, subtree and immutable revision")
+            or not re.fullmatch(r"[0-9a-f]{40}", revision) or not isinstance(manifest, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", manifest)):
+        raise ValueError("official vectors require canonical sources and immutable revision/manifest pins")
     return repository, revision, path
 
 
@@ -37,8 +39,10 @@ def cache_directory(pins):
 
 
 def git_output(directory, *arguments):
-    return subprocess.run(["git", "-C", str(directory), *arguments], check=True, text=True,
-                          stdout=subprocess.PIPE).stdout
+    # Inspect raw objects without running cache-local hooks or fsmonitor.
+    return subprocess.run(["git", "--no-replace-objects", "-c", "core.fsmonitor=false",
+                           "-c", f"core.hooksPath={os.devnull}", "-C", str(directory), *arguments],
+                          check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
 
 
 def tree_entries(relative, entries):
@@ -58,6 +62,13 @@ def tree_entries(relative, entries):
             raise ValueError("duplicate official vector path")
         result[name] = fields[2]
     return result
+
+
+def manifest_digest(relative, entries):
+    """Authenticate the inventory independently of mutable local Git object storage."""
+    expected = tree_entries(relative, entries)
+    records = (f"100644 blob {expected[name]}\t{name}\0".encode("ascii") for name in sorted(expected))
+    return hashlib.sha256(b"".join(records)).hexdigest()
 
 
 def verify_tree(directory, relative, entries):
@@ -99,12 +110,22 @@ def verify_checkout(pins, directory):
     repository, revision, relative = source_reference(pins)
     head = git_output(directory, "rev-parse", "HEAD").strip()
     origin = git_output(directory, "remote", "get-url", "origin").strip()
-    dirty = git_output(directory, "status", "--porcelain", "--untracked-files=all").strip()
-    if (head, origin) != (revision, repository) or dirty:
+    # Worktree commands such as status can execute cache-local clean filters.
+    # Actual file inventory and raw blob checks below supersede index cleanliness.
+    if (head, origin) != (revision, repository):
         raise ValueError("official vector cache is modified or at the wrong source revision")
     entries = git_output(directory, "ls-tree", "-r", "-z", revision, "--", relative)
+    if manifest_digest(relative, entries) != pins["test_vectors"]["manifest_sha256"]:
+        raise ValueError("official vector manifest differs from the independently pinned inventory")
     verify_tree(directory, relative, entries)
     return directory / relative
+
+
+def prepare_raw_checkout(directory):
+    """Materialize pinned blobs, never host-specific filters or text conversions."""
+    attributes = directory / ".git" / "info" / "attributes"
+    attributes.parent.mkdir(parents=True, exist_ok=True)
+    attributes.write_text("* -filter -text -ident -working-tree-encoding\n", encoding="ascii")
 
 
 def ensure_checkout(pins):
@@ -117,6 +138,7 @@ def ensure_checkout(pins):
         checkout = Path(temporary) / "checkout"
         subprocess.run(["git", "clone", "--filter=blob:none", "--no-checkout", "--depth", "1",
                         repository, str(checkout)], check=True)
+        prepare_raw_checkout(checkout)
         git_output(checkout, "sparse-checkout", "set", "--cone", relative)
         git_output(checkout, "fetch", "--depth", "1", "origin", revision)
         git_output(checkout, "checkout", "--detach", revision)

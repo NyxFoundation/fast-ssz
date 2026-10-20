@@ -14,6 +14,7 @@ SOURCE = {
     "repository": "https://github.com/ethereum/consensus-spec-tests",
     "revision": REVISION,
     "path": "tests/general/phase0/ssz_generic",
+    "manifest_sha256": "0" * 64,
 }
 
 
@@ -24,9 +25,10 @@ def tree_entry(path, data):
 
 class OfficialVectorTests(unittest.TestCase):
     def test_should_accept_only_the_official_immutable_source(self):
-        self.assertEqual(source_reference({"test_vectors": SOURCE}), tuple(SOURCE.values()))
+        self.assertEqual(source_reference({"test_vectors": SOURCE}),
+                         tuple(SOURCE[key] for key in ("repository", "revision", "path")))
         for key, value in (("revision", "main"), ("repository", "https://example.com/vectors"),
-                           ("path", "../outside")):
+                           ("path", "../outside"), ("manifest_sha256", "main")):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 source_reference({"test_vectors": {**SOURCE, key: value}})
 

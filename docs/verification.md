@@ -308,8 +308,16 @@ destructor bodies and unwind cleanup are excluded: caller cleanup, arbitrary for
 library models and callback internals are not verified by this syntactic check. This
 adds a fail-closed regression guard, not a formal destructor-execution/cost theorem.
 The official-vector runner pins `ethereum/consensus-spec-tests` independently of the formal model.
-Its external cache is checked against the pinned source, exact file inventory and actual blob contents;
-local modifications, symlinks and extra fixtures are refused. The current explicit CI selection covers
+Its external cache is checked against the pinned source, an independently pinned SHA-256 inventory
+and actual blob contents. The inventory pin was cross-checked against the authoritative upstream Git tree
+API, so locally corrupted nested Git objects cannot redefine the expected fixtures;
+local modifications, symlinks and extra fixtures are refused. Git replacement objects are ignored
+and cache-local hooks/fsmonitor are disabled. Verification avoids filter-capable worktree commands,
+checking files directly instead of consulting index cleanliness. Real repository regressions exercise
+replacement refs, fsmonitor and clean-filter execution, corrupt nested objects, and modifications hidden
+by index flags. Fresh checkout attributes force raw blobs without filters or text/encoding conversions;
+this also avoids host Git LFS settings falsely reporting upstream YAML files as modified.
+The current explicit CI selection covers
 all 1,229 Boolean/unsigned/basic-Vector cases, comparing decoded YAML values, re-encoding, roots and
 invalid-input rejection. Six other corpus families remain. This test slice is neither a universal proof
 nor full official-corpus coverage. Unsupported selected schemas fail rather than being skipped.

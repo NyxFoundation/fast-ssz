@@ -12,11 +12,12 @@ from unittest.mock import patch
 import official_vectors as vectors
 
 REVISION = "bc5c1a7fb2a8871aaffd4b16ee4dd9c72bb81908"
-PINS = {"test_vectors": {"repository": vectors.OFFICIAL, "revision": REVISION, "path": vectors.SUBTREE}}
 RELATIVE = f"{vectors.SUBTREE}/boolean/valid/true/value.yaml"
 DATA = b"true\n"
 DIGEST = hashlib.sha1(b"blob 5\0" + DATA).hexdigest()
 ENTRY = f"100644 blob {DIGEST}\t{RELATIVE}\0"
+PINS = {"test_vectors": {"repository": vectors.OFFICIAL, "revision": REVISION, "path": vectors.SUBTREE,
+                         "manifest_sha256": vectors.manifest_digest(vectors.SUBTREE, ENTRY)}}
 
 
 def seed(directory):
@@ -36,14 +37,13 @@ def clone(arguments, **_kwargs):
 
 
 class VectorCacheFlowTests(unittest.TestCase):
-    def test_should_validate_revision_origin_and_clean_state_before_reusing_a_cache(self):
+    def test_should_validate_source_revision_and_origin_before_reusing_a_cache(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             seed(directory)
             with patch.object(vectors, "git_output", side_effect=replies):
                 self.assertEqual(vectors.verify_checkout(PINS, directory), directory / vectors.SUBTREE)
-            for command, wrong in (("rev-parse", "0" * 40), ("remote", "https://example.com"),
-                                   ("status", " M tracked-file")):
+            for command, wrong in (("rev-parse", "0" * 40), ("remote", "https://example.com")):
                 def response(path, *arguments):
                     return wrong if arguments[0] == command else replies(path, *arguments)
                 with self.subTest(command=command), patch.object(vectors, "git_output", side_effect=response):

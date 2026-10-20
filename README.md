@@ -183,7 +183,8 @@ assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
 
 The immutable `ethereum/consensus-spec-tests` commit in `sources.lock` is fetched into
 an external cache, not vendored. Cache checks verify Git provenance, the complete file
-inventory and each fixture's actual Git blob hash, rather than trusting Git status alone.
+inventory's independently pinned SHA-256 and each fixture's actual Git blob hash, rather than
+trusting cached Git object storage or status alone.
 
 ```sh
 python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector
