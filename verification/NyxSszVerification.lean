@@ -1,6 +1,7 @@
 import NyxSszVerification.Boolean
 import NyxSszVerification.Bytes
 import NyxSszVerification.Collections
+import NyxSszVerification.Collection.Law
 import NyxSszVerification.Sequence
 import NyxSszVerification.Sequence.Vector
 import NyxSszVerification.Sequence.List
