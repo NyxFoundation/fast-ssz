@@ -47,6 +47,7 @@ class VerificationGateTests(unittest.TestCase):
             self.assertEqual(charon[charon.index("--sysroot") + 1], destination)
             self.assertIn("--start-from-attribute=verify::start_from", charon)
             self.assertIn("--precise-drops", charon)
+            self.assertIn("-checks", run.call_args_list[1].args[0])
             self.assertEqual(charon[charon.index("--features") + 1], "verification")
             self.assertEqual(charon[charon.index("--target-dir") + 1], destination / "cargo")
             self.assertEqual(result, {"Core.lean": body.encode("utf-8")})
