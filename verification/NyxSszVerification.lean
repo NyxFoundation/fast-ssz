@@ -4,6 +4,7 @@ import NyxSszVerification.Collections
 import NyxSszVerification.Sequence
 import NyxSszVerification.Sequence.Vector
 import NyxSszVerification.Sequence.List
+import NyxSszVerification.Sequence.FixedList
 import NyxSszVerification.Codec.Basic
 import NyxSszVerification.Codec.Metadata
 import NyxSszVerification.Codec.Elements

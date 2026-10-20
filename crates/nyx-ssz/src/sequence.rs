@@ -70,6 +70,64 @@ pub fn offset_spans(offsets: &[usize], scope: usize) -> Result<Vec<usize>, Codec
     Ok(spans)
 }
 
+/// Borrow fixed-width elements after checking the exact byte budget.
+///
+/// This is an internal-layout helper: zero width/count follow reference slicing
+/// rules. Type declaration and element validation remain the caller's job.
+pub fn fixed_vector_view(
+    input: &[u8],
+    width: usize,
+    count: usize,
+) -> Result<SequenceView<'_>, CodecError> {
+    if input.len() as u128 >= 4_294_967_296 {
+        return Err(CodecError::SizeOverflow);
+    }
+    let expected = match width.checked_mul(count) {
+        Some(expected) => expected,
+        None => return Err(CodecError::InvalidLength),
+    };
+    if input.len() != expected {
+        return Err(CodecError::InvalidLength);
+    }
+    Ok(SequenceView {
+        input,
+        ranges: fixed_ranges(width, count),
+    })
+}
+
+/// Infer fixed-width element counts without choosing a containing SSZ type.
+///
+/// Empty input has no elements even at zero width; nonempty widthless input or
+/// an incomplete final element is rejected before checking the optional limit.
+pub fn fixed_list_view(
+    input: &[u8],
+    width: usize,
+    limit: Option<usize>,
+) -> Result<SequenceView<'_>, CodecError> {
+    if input.len() as u128 >= 4_294_967_296 {
+        return Err(CodecError::SizeOverflow);
+    }
+    if input.is_empty() {
+        return Ok(SequenceView {
+            input,
+            ranges: Vec::new(),
+        });
+    }
+    if width == 0 {
+        return Err(CodecError::ScopeWidthless);
+    }
+    if !input.len().is_multiple_of(width) {
+        return Err(CodecError::ScopeUndivided);
+    }
+    let count = input.len() / width;
+    if let Some(capacity) = limit {
+        if count > capacity {
+            return Err(CodecError::OverLimit);
+        }
+    }
+    fixed_vector_view(input, width, count)
+}
+
 /// Validate a fixed-count offset table and borrow its variable-element bodies.
 ///
 /// This validates the composite size envelope, header and all body ranges. The
@@ -149,6 +207,18 @@ pub fn variable_list_view(
         }
     }
     variable_vector_view(input, count)
+}
+
+fn fixed_ranges(width: usize, count: usize) -> Vec<BodyRange> {
+    let mut ranges = Vec::new();
+    let mut index = 0;
+    while index < count {
+        let start = index * width;
+        let end = start + width;
+        ranges.push(BodyRange { start, end });
+        index += 1;
+    }
+    ranges
 }
 
 fn read_offsets(input: &[u8], count: usize) -> Result<Vec<usize>, CodecError> {

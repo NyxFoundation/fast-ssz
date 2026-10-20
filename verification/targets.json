@@ -283,5 +283,15 @@
     "rust": "nyx_ssz::codec::is_compatible",
     "lean": "NyxSszRust.codec.is_compatible",
     "proof": "NyxSszVerification.codec_is_compatible_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::fixed_vector_view",
+    "lean": "NyxSszRust.sequence.fixed_vector_view",
+    "proof": "NyxSszVerification.fixed_vector_view_refines"
+  },
+  {
+    "rust": "nyx_ssz::sequence::fixed_list_view",
+    "lean": "NyxSszRust.sequence.fixed_list_view",
+    "proof": "NyxSszVerification.fixed_list_view_refines"
   }
 ]

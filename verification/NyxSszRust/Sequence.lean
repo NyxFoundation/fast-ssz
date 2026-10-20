@@ -59,7 +59,7 @@ def sequence.offset_spans_loop.body
   else ok (done (core.result.Result.Ok spans))
 
 /-- [nyx_ssz::sequence::read_offsets]: loop body 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 157:4-168:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 227:4-238:1 -/
 @[rust_loop_body]
 def sequence.read_offsets_loop.body
   (input : Slice Std.U8) (count : Std.Usize)
@@ -93,7 +93,7 @@ structure sequence.SequenceView where
   ranges : alloc.vec.Vec sequence.BodyRange
 
 /-- [nyx_ssz::sequence::body_ranges]: loop body 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 173:4-178:5 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 243:4-248:5 -/
 @[rust_loop_body]
 def sequence.body_ranges_loop.body
   (offsets : Slice Std.Usize) (spans : Slice Std.Usize)
@@ -107,6 +107,25 @@ def sequence.body_ranges_loop.body
     let start ← Slice.index_usize offsets index
     let i1 ← Slice.index_usize spans index
     let «end» ← start + i1
+    let ranges1 ←
+      alloc.vec.Vec.push ranges ({ start, «end» } : sequence.BodyRange)
+    let index1 ← index + 1#usize
+    ok (cont (ranges1, index1))
+  else ok (done ranges)
+
+/-- [nyx_ssz::sequence::fixed_ranges]: loop body 0:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 215:4-220:5 -/
+@[rust_loop_body]
+def sequence.fixed_ranges_loop.body
+  (width : Std.Usize) (count : Std.Usize)
+  (ranges : alloc.vec.Vec sequence.BodyRange) (index : Std.Usize) :
+  RustM (ControlFlow ((alloc.vec.Vec sequence.BodyRange) × Std.Usize)
+    (alloc.vec.Vec sequence.BodyRange))
+  := do
+  if index < count
+  then
+    let start ← index * width
+    let «end» ← start + width
     let ranges1 ←
       alloc.vec.Vec.push ranges ({ start, «end» } : sequence.BodyRange)
     let index1 ← index + 1#usize
@@ -128,7 +147,7 @@ def sequence.offset_spans_loop
     (spans, index)
 
 /-- [nyx_ssz::sequence::read_offsets]: loop 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 157:4-168:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 227:4-238:1 -/
 @[rust_loop]
 def sequence.read_offsets_loop
   (input : Slice Std.U8) (count : Std.Usize)
@@ -167,7 +186,7 @@ def sequence.SequenceView.len
   ok (alloc.vec.Vec.len self.ranges)
 
 /-- [nyx_ssz::sequence::body_ranges]: loop 0:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 173:4-178:5 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 243:4-248:5 -/
 @[rust_loop]
 def sequence.body_ranges_loop
   (offsets : Slice Std.Usize) (spans : Slice Std.Usize)
@@ -176,6 +195,19 @@ def sequence.body_ranges_loop
   := do
   loop
     (fun (ranges1, index1) => sequence.body_ranges_loop.body offsets spans
+      ranges1 index1)
+    (ranges, index)
+
+/-- [nyx_ssz::sequence::fixed_ranges]: loop 0:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 215:4-220:5 -/
+@[rust_loop]
+def sequence.fixed_ranges_loop
+  (width : Std.Usize) (count : Std.Usize)
+  (ranges : alloc.vec.Vec sequence.BodyRange) (index : Std.Usize) :
+  RustM (alloc.vec.Vec sequence.BodyRange)
+  := do
+  loop
+    (fun (ranges1, index1) => sequence.fixed_ranges_loop.body width count
       ranges1 index1)
     (ranges, index)
 
@@ -191,7 +223,7 @@ def sequence.offset_spans
     0#usize
 
 /-- [nyx_ssz::sequence::read_offsets]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 154:0-168:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 224:0-238:1 -/
 @[reducible]
 def sequence.read_offsets
   (input : Slice Std.U8) (count : Std.Usize) :
@@ -208,7 +240,7 @@ def sequence.SequenceView.is_empty
   ok (i = 0#usize)
 
 /-- [nyx_ssz::sequence::body_ranges]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 170:0-180:1 -/
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 240:0-250:1 -/
 @[reducible]
 def sequence.body_ranges
   (offsets : Slice Std.Usize) (spans : Slice Std.Usize) :
@@ -217,8 +249,41 @@ def sequence.body_ranges
   sequence.body_ranges_loop offsets spans (alloc.vec.Vec.new
     sequence.BodyRange) 0#usize
 
+/-- [nyx_ssz::sequence::fixed_ranges]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 212:0-222:1 -/
+@[reducible]
+def sequence.fixed_ranges
+  (width : Std.Usize) (count : Std.Usize) :
+  RustM (alloc.vec.Vec sequence.BodyRange)
+  := do
+  sequence.fixed_ranges_loop width count (alloc.vec.Vec.new sequence.BodyRange)
+    0#usize
+
+/-- [nyx_ssz::sequence::fixed_vector_view]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 77:0-96:1
+    Visibility: public -/
+def sequence.fixed_vector_view
+  (input : Slice Std.U8) (width : Std.Usize) (count : Std.Usize) :
+  RustM (core.result.Result sequence.SequenceView error.CodecError)
+  := do
+  let i := Slice.len input
+  let i1 ← lift (UScalar.cast .U128 i)
+  if i1 >= 4294967296#u128
+  then ok (core.result.Result.Err error.CodecError.SizeOverflow)
+  else
+    let o ← lift (Usize.checked_mul width count)
+    match o with
+    | none => ok (core.result.Result.Err error.CodecError.InvalidLength)
+    | some expected =>
+      let i2 := Slice.len input
+      if i2 != expected
+      then ok (core.result.Result.Err error.CodecError.InvalidLength)
+      else
+        let v ← sequence.fixed_ranges width count
+        ok (core.result.Result.Ok { input, ranges := v })
+
 /-- [nyx_ssz::sequence::variable_vector_view]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 82:0-110:1
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 140:0-168:1
     Visibility: public -/
 def sequence.variable_vector_view
   (input : Slice Std.U8) (count : Std.Usize) :
@@ -262,8 +327,43 @@ def sequence.variable_vector_view
               ok (core.result.Result.Err error1)
         | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
 
+/-- [nyx_ssz::sequence::fixed_list_view]:
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 102:0-129:1
+    Visibility: public -/
+def sequence.fixed_list_view
+  (input : Slice Std.U8) (width : Std.Usize) (limit : Option Std.Usize) :
+  RustM (core.result.Result sequence.SequenceView error.CodecError)
+  := do
+  let i := Slice.len input
+  let i1 ← lift (UScalar.cast .U128 i)
+  if i1 >= 4294967296#u128
+  then ok (core.result.Result.Err error.CodecError.SizeOverflow)
+  else
+    let b ← core.slice.Slice.is_empty input
+    if b
+    then
+      ok (core.result.Result.Ok
+        { input, ranges := (alloc.vec.Vec.new sequence.BodyRange) })
+    else
+      if width = 0#usize
+      then ok (core.result.Result.Err error.CodecError.ScopeWidthless)
+      else
+        let i2 := Slice.len input
+        let b1 ← core.num.Usize.is_multiple_of i2 width
+        if b1
+        then
+          let i3 := Slice.len input
+          let count ← i3 / width
+          match limit with
+          | none => sequence.fixed_vector_view input width count
+          | some capacity =>
+            if count > capacity
+            then ok (core.result.Result.Err error.CodecError.OverLimit)
+            else sequence.fixed_vector_view input width count
+        else ok (core.result.Result.Err error.CodecError.ScopeUndivided)
+
 /-- [nyx_ssz::sequence::variable_list_view]:
-    Source: 'crates/nyx-ssz/src/sequence.rs', lines 116:0-152:1
+    Source: 'crates/nyx-ssz/src/sequence.rs', lines 174:0-210:1
     Visibility: public -/
 def sequence.variable_list_view
   (input : Slice Std.U8) (limit : Option Std.Usize) :
