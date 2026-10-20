@@ -81,8 +81,10 @@ widths, variable layouts (`Ok(None)`) or unrepresentable widths (`Err(SizeOverfl
 `codec::is_basic` derives packing classification; `codec::validate_type` checks the
 declaration without invoking a value codec. `codec::is_compatible` compares declared
 Merkle layouts but does not imply type validity. These are not independently overridable
-metadata constants. The descriptor currently covers the seven provided basic types;
-composite declarations and their recursive checks are being added with their codecs. `CodecError` implements the standard error interfaces.
+metadata constants. The descriptor covers Boolean, unsigned integers, and recursively
+nested Vector/List/ProgressiveList declarations. Vector widths use checked multiplication;
+an outer zero count cancels even an unrepresentable fixed child width, whereas a variable
+child stays variable. Declaration support is not a collection value codec. `CodecError` implements the standard error interfaces.
 Only the seven basic-type implementations are currently included; storage collections
 below do not implement `Ssz` yet. Borrowed byte/bit codecs remain separate APIs.
 

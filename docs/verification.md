@@ -136,15 +136,21 @@ and formatting do not invoke its destructor or expose it.
 `codec::fixed_size`, `is_basic`, `validate_type` and `is_compatible` derive metadata
 from `Ssz::TYPE` without invoking value codecs. The shared implementations refine
 `Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and `Ssz.isCompatible` over every
-represented declaration. The current descriptor represents Boolean and machine-size
-integer widths; all widths, including zero, unsupported widths and `usize::MAX`, are
-covered. Validation rejects illegal widths, while width/classification remain separate
+represented finite declaration. The descriptor represents Boolean, machine-size integer
+widths and recursively nested Vector/List/ProgressiveList declarations. All represented
+counts, bounds and widths, including zero, unsupported widths and `usize::MAX`, are covered. Validation rejects illegal widths, while width/classification remain separate
 metadata exactly as in the reference. Compatibility distinguishes Boolean from uint8
 and does not imply declaration validity. The descriptor view preserves the entire
 declaration; a negative fixture rejects a bool dictionary mislabeled uint8 despite their
-equal byte widths. Composite declaration variants and their recursive proofs remain to
-be added with the corresponding codecs. Static storage and no metadata-construction
-allocation are source/compiler properties, not runtime-cost theorems.
+equal byte widths. Declaration variants for the other SSZ families remain to be added.
+Vector width arithmetic reports unrepresentable products without changing the natural-number
+specification. A zero outer count cancels an overflowing fixed child width; it does not
+make a variable child fixed. Zero vector counts fail validation before child faults;
+zero list capacities still validate the child. Progressive-list compatibility ignores
+capacities but recursively checks the child layout. These are metadata proofs, not
+collection value codecs. External declarations must satisfy the declaration law; cyclic
+static graphs have no finite descriptor view and are not certified. Static storage and
+no metadata-construction allocation are source/compiler properties, not runtime-cost theorems.
 
 `codec::decode_elements` traverses validated body ranges with any explicitly lawful
 child dictionary. The actual Vec loop terminates and preserves element order, with
