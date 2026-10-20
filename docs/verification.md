@@ -12,11 +12,11 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots are implemented.
-`verification/targets.json` links fifty-nine registered operations to proofs over actual
+`verification/targets.json` links seventy registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
-body-range decoding, plus four declaration-derived metadata APIs. `verification/traits.json` separately
+body-range decoding, plus four declaration-derived metadata APIs and eleven generalized-index operations. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its seven concrete library dictionaries.
 Each dictionary proves the full `CodecLaw`; methods are not silently excluded from coverage.
 Collection storage proofs do not imply generic SSZ collection codecs.
@@ -100,6 +100,20 @@ a well-formed nonmatching proof returns false. Proofs cover index guards, siblin
 order, recursive termination, SHA-256 composition and bytewise root comparison.
 Error relations classify reasons, not the reference error's numeric diagnostics.
 Generic collection codecs, paths, multiproofs and full-library conformance are not yet proved.
+
+`gindex` implements raw numeric tree operations, not typed path resolution. Depth and
+branch length refine `Ssz.gindexDepth`/`gindexLength`, distinguishing zero, root and
+ordinary indices. Bit queries, truncation, sibling and parent preserve the reference's
+raw zero/root semantics and zero extension beyond the word width. Child construction,
+concatenation and rebasing return the exact reference natural number when representable;
+`IndexOverflow` is permitted only when that number exceeds `u128::MAX`, never on a
+representable result. Concatenation splices the inner path rather than multiplying indices.
+Bottom-up path and sibling lists refine `getPathIndices` and `getBranchIndices`, preserving
+all nodes and their order. Their real Vec loops terminate with bounded shifts, increments
+and pushes. Positions/depths use `u32`; indices use every `u128` value. The leading-zero
+primitive is the pinned Aeneas standard model, with its exact log2 arithmetic proved here.
+Native overflow checks and error precedence are part of these proofs. Typed field/element
+paths, progressive chunk positions and multiproof helper-set construction remain separate.
 
 `collections::Vector<T, N>` and `collections::List<T, MAX>` own a private `Vec<T>`.
 Their generic constructors are proved for every element type and machine-size bound:

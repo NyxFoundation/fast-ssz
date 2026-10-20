@@ -10,6 +10,7 @@ pub mod bytes;
 pub mod codec;
 pub mod collections;
 pub mod error;
+pub mod gindex;
 pub mod merkle;
 pub mod scalar;
 pub mod sequence;

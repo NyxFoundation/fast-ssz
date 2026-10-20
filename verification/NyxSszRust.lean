@@ -8,6 +8,7 @@ import NyxSszRust.Bitfield
 import NyxSszRust.Merkle
 import NyxSszRust.Ruint
 import NyxSszRust.TypeInfo
+import NyxSszRust.Gindex
 import NyxSszRust.Scalar
 import NyxSszRust.Sequence
 import NyxSszRust.TreeHash
