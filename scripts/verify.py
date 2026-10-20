@@ -53,9 +53,16 @@ def load_targets(path=VERIFICATION / "targets.json"):
     return targets
 
 
-def tool_path(tool, pins):
+def tool_directory(tool, pins):
+    version = pins["tools"][f"{tool}_version"]
+    if not isinstance(version, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", version):
+        raise ValueError("invalid tool version")
     cache = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-    binary = cache / "hax" / "tools" / tool / pins["tools"][f"{tool}_version"] / tool
+    return cache / "hax" / "tools" / tool / version
+
+
+def tool_path(tool, pins):
+    binary = tool_directory(tool, pins) / tool
     if not binary.is_file():
         raise ValueError(f"{tool} unavailable; run verify.py bootstrap")
     return binary
@@ -116,12 +123,39 @@ def validate_dependencies(pins):
         raise ValueError("the specification or Aeneas dependency is missing")
 
 
+def aeneas_source_reference(pins):
+    tools = pins["tools"]
+    url, revision = tools["aeneas_repository"], tools["aeneas_revision"]
+    if not isinstance(url, str) or not isinstance(revision, str):
+        raise ValueError("Aeneas requires an immutable pinned GitHub source")
+    repository = re.fullmatch(r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)", url)
+    if repository is None or not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise ValueError("Aeneas requires an immutable pinned GitHub source")
+    return f"github:{repository[1]}/{revision}#aeneas-standalone"
+
+
+def bootstrap_aeneas(pins):
+    directory = tool_directory("aeneas", pins)
+    directory.mkdir(parents=True, exist_ok=True)
+    binary = directory / "aeneas"
+    link = Path("package/bin/aeneas")
+    if ((binary.is_symlink() and binary.readlink() != link)
+            or (binary.exists() and not binary.is_symlink())):
+        raise ValueError("Aeneas cache entry conflicts with the pinned source build")
+    run(["nix", "--extra-experimental-features", "nix-command flakes", "build",
+         aeneas_source_reference(pins), "--out-link", directory / "package"])
+    if not (directory / link).is_file():
+        raise ValueError("Nix did not produce the pinned Aeneas executable")
+    if not binary.is_symlink():
+        binary.symlink_to(link)
+
+
 def bootstrap(pins):
     version = run(["cargo", "hax", "--version"], capture=True).splitlines()
     if f"version={pins['tools']['cargo_hax_version']}" not in version:
         raise ValueError("install cargo-hax from sources.lock")
-    for tool in ("charon", "aeneas"):
-        run(["cargo", "hax", "tools", "install", f"{tool}@{pins['tools'][f'{tool}_version']}"])
+    run(["cargo", "hax", "tools", "install", f"charon@{pins['tools']['charon_version']}"])
+    bootstrap_aeneas(pins)
     validate_tools(pins)
     miri_sysroot(pins)
     run(["lake", "exe", "cache", "get"], cwd=VERIFICATION)
@@ -161,7 +195,7 @@ def extract(pins, targets, destination, contracts):
     assert_safe_drops(json.loads(llbc.read_text(encoding="utf-8")))
     run([
         tool_path("aeneas", pins), "-backend", "lean", "-namespace", "NyxSszRust",
-        "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",
+        "-checks", "-abort-on-error", "-warnings-as-errors", "-no-progress-bar",
         "-dest", destination, llbc,
     ])
     source = (destination / "NyxSsz.lean").read_text(encoding="utf-8")

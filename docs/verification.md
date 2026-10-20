@@ -1,6 +1,6 @@
 ---
 title: Verification scope and trust boundary
-last_updated: 2026-10-19
+last_updated: 2026-10-20
 tags:
   - ssz
   - aeneas
@@ -192,6 +192,18 @@ modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction
 order changes invalidating cached proofs. Registry source-location comments use
 portable package-relative paths; executable declaration bodies are unchanged.
+Aeneas is source-built through the immutable Nix reference in `sources.lock`, using
+NyxFoundation's backport of the nested-static-reference repair to the existing pinned
+baseline. Charon, Rust, Lean and the Lean standard-library definitions are unchanged.
+The repair retains loans for expanded static shared references, consistently erases
+runtime lifetime annotations and preserves the type comparison; invariant checks are
+now enabled for every SDK extraction. Rust and Lean regressions cover nested static
+declarations. Existing 57-operation extraction was byte-identical with the repair.
+The standalone Nix target avoids rebuilding Charon's unrelated Rust executable and
+keeps a GC-rooted output link. Bootstrap requires Nix; source or build failures stop
+verification, with no prebuilt/default-extractor fallback. This changes a trusted
+translation component, not a proved compiler-correctness theorem.
+
 Extraction requires the pinned Rust toolchain's Miri and rust-src components. It prepares
 the standard-library MIR with `cargo +nightly-2026-08-18 miri setup --print-sysroot`
 and passes that sysroot explicitly to Charon. Preparation failures stop extraction;

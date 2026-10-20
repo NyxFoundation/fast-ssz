@@ -153,7 +153,9 @@ element drops inside constructors are checked by Rust tests, not runtime-cost th
 
 ## Reproduce
 
-Requires Linux x86_64, Git, Python 3.11+, Rustup/Cargo, Elan and network access.
+Requires Linux x86_64, Git, Python 3.11+, Rustup/Cargo, Elan, Nix and network access.
+Bootstrap builds Aeneas from the exact public source revision in `sources.lock`;
+Charon remains pinned independently. The Nix output link retains the built extractor.
 The pinned Rust toolchain includes Miri and rust-src. Extraction requires their prepared
 standard-library MIR and fails if it is unavailable; generated function bodies are not rewritten.
 Proof dependencies are large.

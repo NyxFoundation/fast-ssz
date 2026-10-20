@@ -16,8 +16,8 @@ name = "NyxSszRust"
 
 [[require]]
 name = "aeneas"
-git = "https://github.com/cryspen/aeneas"
-rev = "6852e6474ec508930acba4df79977b3483a10d10"
+git = "https://github.com/NyxFoundation/aeneas"
+rev = "a11469524b7169278dbac472fe593abde5b0ac3e"
 subDir = "backends/lean"
 
 [[require]]
