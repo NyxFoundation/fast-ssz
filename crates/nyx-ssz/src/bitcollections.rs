@@ -167,6 +167,35 @@ mod tests {
     use crate::{codec::Ssz, tree_hash};
 
     #[test]
+    fn should_preserve_type_and_count_faults_when_symbolic_storage_violates_its_declaration() {
+        let empty = BitVector::<0> {
+            encoded: vec![],
+            _bound: [],
+        };
+        assert_eq!(empty.encode(), Err(CodecError::EmptyVector));
+        assert_eq!(empty.hash_tree_root(), Err(CodecError::EmptyVector));
+        let wrong = BitVector::<9> {
+            encoded: vec![],
+            _bound: [(); 9],
+        };
+        assert_eq!(wrong.encode(), Err(CodecError::InvalidLength));
+        assert_eq!(wrong.hash_tree_root(), Err(CodecError::InvalidLength));
+        assert_eq!(wrong.get(0), None);
+        let excessive = BitList::<7> {
+            encoded: vec![255, 1],
+            _bound: [(); 7],
+        };
+        assert_eq!(excessive.encode(), Err(CodecError::OverLimit));
+        assert_eq!(excessive.hash_tree_root(), Err(CodecError::OverLimit));
+        let unbounded = ProgressiveBitList { encoded: vec![] };
+        assert_eq!(unbounded.encode(), Ok(vec![1]));
+        assert_eq!(
+            unbounded.hash_tree_root(),
+            tree_hash::hash_tree_root_progressive_bit_list(&[], None)
+        );
+    }
+
+    #[test]
     fn should_encode_logical_values_when_symbolic_private_storage_is_not_canonical() {
         let vector = BitVector::<3> {
             encoded: vec![255],

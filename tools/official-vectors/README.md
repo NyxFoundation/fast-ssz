@@ -9,7 +9,9 @@ python3 scripts/official_vectors.py check --family boolean --family uints --fami
 ```
 
 The wrapper checks formatting, lints, unit tests and all 3,412 selected source cases. It compares
-exact decoded YAML values, encoded bytes, 32-byte roots and rejection of invalid encodings. Unknown
+exact decoded YAML values, encoded bytes, 32-byte roots and rejection of invalid encodings. Bit-family
+cases exercise both borrowed operations and actual owned BitVector/BitList/ProgressiveBitList Ssz
+dictionaries, including each logical bit/getter and out-of-range access. Unknown
 schemas or selected families fail; no fixture is silently skipped. The malformed bitlist cases whose
 upstream names omit a capacity are checked at both zero and machine-maximum capacity rather than
 inventing one declaration. Two other corpus families remain unsupported, so this is not full SSZ

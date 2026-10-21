@@ -146,6 +146,25 @@ fn should_parse_all_bit_family_schema_forms_without_guessing_missing_limits() {
 }
 
 #[test]
+fn should_check_owned_bit_observations_and_roots_against_independent_yaml_values() {
+    use nyx_ssz::bitcollections::ProgressiveBitList;
+    let value = ProgressiveBitList::from_bits(&[true, false, true]).unwrap();
+    let mut case = Case {
+        outcome: Outcome::Valid,
+        bytes: vec![13],
+        value: Some(Value::String("0x0d".into())),
+        root: Some(value.hash_tree_root().unwrap()),
+    };
+    assert!(crate::owned_bits::verify_progressive(&case).is_ok());
+    case.value = Some(Value::String("0x0b".into()));
+    assert!(crate::owned_bits::verify_progressive(&case).is_err());
+    case.value = Some(Value::String("0x0d".into()));
+    case.root = Some([0; 32]);
+    assert!(crate::owned_bits::verify_progressive(&case).is_err());
+    assert!(crate::owned_bits::verify_bounded(&case, 510, true).is_err());
+}
+
+#[test]
 fn should_read_yaml_bit_order_independently_of_the_library_decoder() {
     let data = Value::String("0x05".into());
     assert_eq!(
