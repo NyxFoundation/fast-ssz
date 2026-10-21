@@ -9,6 +9,7 @@ mod bit_codec;
 mod bit_storage;
 pub mod bitcollections;
 pub mod bitfield;
+pub mod bytecollections;
 pub mod bytes;
 pub mod codec;
 mod collection_codec;

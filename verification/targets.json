@@ -468,5 +468,25 @@
     "rust": "nyx_ssz::bitcollections::ProgressiveBitList::get",
     "lean": "NyxSszRust.bitcollections.ProgressiveBitList.get",
     "proof": "NyxSszVerification.owned_progressive_bit_list_get_refines"
+  },
+  {
+    "rust": "nyx_ssz::bytecollections::ByteVector::from_bytes",
+    "lean": "NyxSszRust.bytecollections.ByteVector.from_bytes",
+    "proof": "NyxSszVerification.byte_vector_from_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bytecollections::ByteVector::as_bytes",
+    "lean": "NyxSszRust.bytecollections.ByteVector.as_bytes",
+    "proof": "NyxSszVerification.byte_vector_as_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bytecollections::ByteList::from_bytes",
+    "lean": "NyxSszRust.bytecollections.ByteList.from_bytes",
+    "proof": "NyxSszVerification.byte_list_from_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bytecollections::ByteList::as_bytes",
+    "lean": "NyxSszRust.bytecollections.ByteList.as_bytes",
+    "proof": "NyxSszVerification.byte_list_as_bytes_refines"
   }
 ]

@@ -169,6 +169,34 @@ class VerificationGateTests(unittest.TestCase):
             with self.subTest(source=source), self.assertRaisesRegex(ValueError, "not extracted"):
                 verify.assert_extracted_targets({"Bitfield.lean": source}, [method])
 
+    def test_should_register_all_owned_byte_methods_and_real_extracted_dictionaries(self):
+        targets = verify.load_targets()
+        contracts = verify.load_contracts(verify.VERIFICATION / "traits.json")
+        artifacts = {path: data.decode("utf-8")
+                     for path, data in verify.generated_artifacts().items()}
+        byte_targets = [target for target in targets
+                        if target["rust"].startswith("nyx_ssz::bytecollections::")]
+        self.assertEqual({target["rust"] for target in byte_targets}, {
+            f"nyx_ssz::bytecollections::{kind}::{method}"
+            for kind in ("ByteVector", "ByteList")
+            for method in ("from_bytes", "as_bytes")
+        })
+        verify.assert_extracted_targets(artifacts, targets)
+        verify.assert_extracted_instances(artifacts, contracts)
+        path = "NyxSszRust/Bytecollections.lean"
+        body = artifacts[path]
+        for target in byte_targets:
+            name = target["lean"].removeprefix("NyxSszRust.")
+            with self.subTest(method=name), self.assertRaisesRegex(ValueError, "not extracted"):
+                verify.assert_extracted_targets(
+                    {**artifacts, path: body.replace(f"def {name}\n", f"axiom {name}\n")}, targets)
+        for kind in ("ByteVector", "ByteList"):
+            name = f"bytecollections.{kind}.Insts.Nyx_sszCodecSszTuple"
+            self.assertIn(f"def {name} (", body)
+            with self.subTest(dictionary=name), self.assertRaisesRegex(ValueError, "inventory|ambiguous"):
+                verify.assert_extracted_instances(
+                    {**artifacts, path: body.replace(f"def {name} (", f"axiom {name} (")}, contracts)
+
     def test_should_require_exact_api_coverage(self):
         verify.assert_api_covered({ENTRY["rust"]}, [ENTRY])
         for functions, message in ((set(), "stale"), ({"new"}, "missing")):

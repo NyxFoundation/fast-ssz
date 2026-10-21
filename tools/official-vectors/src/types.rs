@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use nyx_ssz::{
+    bytecollections::{ByteList, ByteVector},
     codec::Ssz,
     collections::{progressive_list, vector, ProgressiveList, Vector},
     U256,
@@ -84,6 +85,37 @@ macro_rules! unsigned_fixture {
 }
 unsigned_fixture!(u8, u16, u32, u64, u128, U256);
 
+fn byte_sequence(value: &Value) -> TestResult<Vec<u8>> {
+    value
+        .as_sequence()
+        .ok_or("expected YAML byte sequence")?
+        .iter()
+        .map(u8::from_fixture)
+        .collect()
+}
+
+impl<const N: usize> FromFixture for ByteVector<N> {
+    fn from_fixture(value: &Value) -> TestResult<Self> {
+        Self::from_bytes(byte_sequence(value)?)
+            .map_err(|_| "YAML bytes violate byte vector length".into())
+    }
+
+    fn equivalent(&self, expected: &Self) -> bool {
+        self.as_bytes() == expected.as_bytes()
+    }
+}
+
+impl<const MAX: usize> FromFixture for ByteList<MAX> {
+    fn from_fixture(value: &Value) -> TestResult<Self> {
+        Self::from_bytes(byte_sequence(value)?)
+            .map_err(|_| "YAML bytes exceed byte list limit".into())
+    }
+
+    fn equivalent(&self, expected: &Self) -> bool {
+        self.as_bytes() == expected.as_bytes()
+    }
+}
+
 impl<T: FromFixture, const N: usize> FromFixture for Vector<T, N> {
     fn from_fixture(value: &Value) -> TestResult<Self> {
         let values = value.as_sequence().ok_or("expected YAML sequence")?;
@@ -126,7 +158,7 @@ impl<T: FromFixture> FromFixture for ProgressiveList<T> {
     }
 }
 
-fn verify<T: Ssz + FromFixture>(case: &Case) -> TestResult {
+pub(crate) fn verify<T: Ssz + FromFixture>(case: &Case) -> TestResult {
     let actual = T::decode(&case.bytes);
     if case.outcome == Outcome::Invalid {
         return if actual.is_err() {
@@ -209,7 +241,10 @@ impl Primitive {
     fn vector<const N: usize>(self, case: &Case) -> TestResult {
         match self {
             Self::Bool => verify::<Vector<bool, N>>(case),
-            Self::U8 => verify::<Vector<u8, N>>(case),
+            Self::U8 => {
+                verify::<Vector<u8, N>>(case)?;
+                verify::<ByteVector<N>>(case)
+            }
             Self::U16 => verify::<Vector<u16, N>>(case),
             Self::U32 => verify::<Vector<u32, N>>(case),
             Self::U64 => verify::<Vector<u64, N>>(case),

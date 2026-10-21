@@ -19,12 +19,14 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::type_info::TypeDescriptor]
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 10:0-19:1
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 10:0-21:1
     Visibility: public -/
 @[discriminant isize]
 inductive type_info.TypeDescriptor where
 | Boolean : type_info.TypeDescriptor
 | Uint : Std.Usize → type_info.TypeDescriptor
+| ByteVector : Std.Usize → type_info.TypeDescriptor
+| ByteList : Std.Usize → type_info.TypeDescriptor
 | BitVector : Std.Usize → type_info.TypeDescriptor
 | BitList : Std.Usize → type_info.TypeDescriptor
 | ProgressiveBitList : Option Std.Usize → type_info.TypeDescriptor
@@ -36,7 +38,7 @@ inductive type_info.TypeDescriptor where
   type_info.TypeDescriptor
 
 /-- [nyx_ssz::type_info::fixed_size]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 21:0-46:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 23:0-49:1 -/
 def type_info.fixed_size
   (declaration : type_info.TypeDescriptor) :
   RustM (core.result.Result (Option Std.Usize) error.CodecError)
@@ -46,6 +48,9 @@ def type_info.fixed_size
     ok (core.result.Result.Ok (some 1#usize))
   | type_info.TypeDescriptor.Uint width =>
     ok (core.result.Result.Ok (some width))
+  | type_info.TypeDescriptor.ByteVector width =>
+    ok (core.result.Result.Ok (some width))
+  | type_info.TypeDescriptor.ByteList _ => ok (core.result.Result.Ok none)
   | type_info.TypeDescriptor.BitVector count =>
     let i ← core.num.Usize.div_ceil count 8#usize
     ok (core.result.Result.Ok (some i))
@@ -73,12 +78,14 @@ def type_info.fixed_size
 partial_fixpoint
 
 /-- [nyx_ssz::type_info::is_basic]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 48:0-53:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 51:0-56:1 -/
 def type_info.is_basic
   (declaration : type_info.TypeDescriptor) : RustM Bool := do
   match declaration with
   | type_info.TypeDescriptor.Boolean => ok true
   | type_info.TypeDescriptor.Uint _ => ok true
+  | type_info.TypeDescriptor.ByteVector _ => ok false
+  | type_info.TypeDescriptor.ByteList _ => ok false
   | type_info.TypeDescriptor.BitVector _ => ok false
   | type_info.TypeDescriptor.BitList _ => ok false
   | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
@@ -87,7 +94,7 @@ def type_info.is_basic
   | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
 
 /-- [nyx_ssz::type_info::is_compatible]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 55:0-92:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 58:0-101:1 -/
 def type_info.is_compatible
   (left : type_info.TypeDescriptor) (right : type_info.TypeDescriptor) :
   RustM Bool
@@ -97,41 +104,104 @@ def type_info.is_compatible
     match right with
     | type_info.TypeDescriptor.Boolean => ok true
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
     | type_info.TypeDescriptor.BitList _ => ok false
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
     | type_info.TypeDescriptor.Vector _ _ => ok false
     | type_info.TypeDescriptor.List _ _ => ok false
     | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
-  | type_info.TypeDescriptor.Uint left_width =>
+  | type_info.TypeDescriptor.Uint width =>
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
-    | type_info.TypeDescriptor.Uint right_width =>
-      ok (left_width = right_width)
+    | type_info.TypeDescriptor.Uint other => ok (width = other)
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
     | type_info.TypeDescriptor.BitList _ => ok false
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
     | type_info.TypeDescriptor.Vector _ _ => ok false
     | type_info.TypeDescriptor.List _ _ => ok false
     | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
-  | type_info.TypeDescriptor.BitVector left_count =>
-    match right with
-    | type_info.TypeDescriptor.Boolean => ok false
-    | type_info.TypeDescriptor.Uint _ => ok false
-    | type_info.TypeDescriptor.BitVector right_count =>
-      ok (left_count = right_count)
-    | type_info.TypeDescriptor.BitList _ => ok false
-    | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
-    | type_info.TypeDescriptor.Vector _ _ => ok false
-    | type_info.TypeDescriptor.List _ _ => ok false
-    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
-  | type_info.TypeDescriptor.BitList left_limit =>
+  | type_info.TypeDescriptor.ByteVector count =>
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector other => ok (count = other)
+    | type_info.TypeDescriptor.ByteList _ => ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
-    | type_info.TypeDescriptor.BitList right_limit =>
-      ok (left_limit = right_limit)
+    | type_info.TypeDescriptor.BitList _ => ok false
+    | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+    | type_info.TypeDescriptor.Vector child other =>
+      if count = other
+      then
+        match child with
+        | type_info.TypeDescriptor.Boolean => ok false
+        | type_info.TypeDescriptor.Uint i =>
+          match i.val with
+          | 1 => ok true
+          | _ => ok false
+        | type_info.TypeDescriptor.ByteVector _ => ok false
+        | type_info.TypeDescriptor.ByteList _ => ok false
+        | type_info.TypeDescriptor.BitVector _ => ok false
+        | type_info.TypeDescriptor.BitList _ => ok false
+        | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+        | type_info.TypeDescriptor.Vector _ _ => ok false
+        | type_info.TypeDescriptor.List _ _ => ok false
+        | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+      else ok false
+    | type_info.TypeDescriptor.List _ _ => ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+  | type_info.TypeDescriptor.ByteList limit =>
+    match right with
+    | type_info.TypeDescriptor.Boolean => ok false
+    | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList other => ok (limit = other)
+    | type_info.TypeDescriptor.BitVector _ => ok false
+    | type_info.TypeDescriptor.BitList _ => ok false
+    | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+    | type_info.TypeDescriptor.Vector _ _ => ok false
+    | type_info.TypeDescriptor.List child other =>
+      if limit = other
+      then
+        match child with
+        | type_info.TypeDescriptor.Boolean => ok false
+        | type_info.TypeDescriptor.Uint i =>
+          match i.val with
+          | 1 => ok true
+          | _ => ok false
+        | type_info.TypeDescriptor.ByteVector _ => ok false
+        | type_info.TypeDescriptor.ByteList _ => ok false
+        | type_info.TypeDescriptor.BitVector _ => ok false
+        | type_info.TypeDescriptor.BitList _ => ok false
+        | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+        | type_info.TypeDescriptor.Vector _ _ => ok false
+        | type_info.TypeDescriptor.List _ _ => ok false
+        | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+      else ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+  | type_info.TypeDescriptor.BitVector count =>
+    match right with
+    | type_info.TypeDescriptor.Boolean => ok false
+    | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
+    | type_info.TypeDescriptor.BitVector other => ok (count = other)
+    | type_info.TypeDescriptor.BitList _ => ok false
+    | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+    | type_info.TypeDescriptor.Vector _ _ => ok false
+    | type_info.TypeDescriptor.List _ _ => ok false
+    | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+  | type_info.TypeDescriptor.BitList limit =>
+    match right with
+    | type_info.TypeDescriptor.Boolean => ok false
+    | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
+    | type_info.TypeDescriptor.BitVector _ => ok false
+    | type_info.TypeDescriptor.BitList other => ok (limit = other)
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
     | type_info.TypeDescriptor.Vector _ _ => ok false
     | type_info.TypeDescriptor.List _ _ => ok false
@@ -140,53 +210,95 @@ def type_info.is_compatible
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
     | type_info.TypeDescriptor.BitList _ => ok false
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok true
     | type_info.TypeDescriptor.Vector _ _ => ok false
     | type_info.TypeDescriptor.List _ _ => ok false
     | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
-  | type_info.TypeDescriptor.Vector left_element left_count =>
+  | type_info.TypeDescriptor.Vector child count =>
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector other =>
+      if count = other
+      then
+        match child with
+        | type_info.TypeDescriptor.Boolean => ok false
+        | type_info.TypeDescriptor.Uint i =>
+          match i.val with
+          | 1 => ok true
+          | _ => ok false
+        | type_info.TypeDescriptor.ByteVector _ => ok false
+        | type_info.TypeDescriptor.ByteList _ => ok false
+        | type_info.TypeDescriptor.BitVector _ => ok false
+        | type_info.TypeDescriptor.BitList _ => ok false
+        | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+        | type_info.TypeDescriptor.Vector _ _ => ok false
+        | type_info.TypeDescriptor.List _ _ => ok false
+        | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+      else ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
     | type_info.TypeDescriptor.BitList _ => ok false
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
-    | type_info.TypeDescriptor.Vector right_element right_count =>
-      if left_count = right_count
-      then type_info.is_compatible left_element right_element
+    | type_info.TypeDescriptor.Vector other size =>
+      if count = size
+      then type_info.is_compatible child other
       else ok false
     | type_info.TypeDescriptor.List _ _ => ok false
     | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
-  | type_info.TypeDescriptor.List left_element left_limit =>
+  | type_info.TypeDescriptor.List child limit =>
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList other =>
+      if limit = other
+      then
+        match child with
+        | type_info.TypeDescriptor.Boolean => ok false
+        | type_info.TypeDescriptor.Uint i =>
+          match i.val with
+          | 1 => ok true
+          | _ => ok false
+        | type_info.TypeDescriptor.ByteVector _ => ok false
+        | type_info.TypeDescriptor.ByteList _ => ok false
+        | type_info.TypeDescriptor.BitVector _ => ok false
+        | type_info.TypeDescriptor.BitList _ => ok false
+        | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
+        | type_info.TypeDescriptor.Vector _ _ => ok false
+        | type_info.TypeDescriptor.List _ _ => ok false
+        | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
+      else ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
     | type_info.TypeDescriptor.BitList _ => ok false
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
     | type_info.TypeDescriptor.Vector _ _ => ok false
-    | type_info.TypeDescriptor.List right_element right_limit =>
-      if left_limit = right_limit
-      then type_info.is_compatible left_element right_element
+    | type_info.TypeDescriptor.List other size =>
+      if limit = size
+      then type_info.is_compatible child other
       else ok false
     | type_info.TypeDescriptor.ProgressiveList _ _ => ok false
-  | type_info.TypeDescriptor.ProgressiveList left_element _ =>
+  | type_info.TypeDescriptor.ProgressiveList child _ =>
     match right with
     | type_info.TypeDescriptor.Boolean => ok false
     | type_info.TypeDescriptor.Uint _ => ok false
+    | type_info.TypeDescriptor.ByteVector _ => ok false
+    | type_info.TypeDescriptor.ByteList _ => ok false
     | type_info.TypeDescriptor.BitVector _ => ok false
     | type_info.TypeDescriptor.BitList _ => ok false
     | type_info.TypeDescriptor.ProgressiveBitList _ => ok false
     | type_info.TypeDescriptor.Vector _ _ => ok false
     | type_info.TypeDescriptor.List _ _ => ok false
-    | type_info.TypeDescriptor.ProgressiveList right_element _ =>
-      type_info.is_compatible left_element right_element
+    | type_info.TypeDescriptor.ProgressiveList other _ =>
+      type_info.is_compatible child other
 partial_fixpoint
 
 /-- [nyx_ssz::type_info::validate]:
-    Source: 'crates/nyx-ssz/src/type_info.rs', lines 94:0-119:1 -/
+    Source: 'crates/nyx-ssz/src/type_info.rs', lines 103:0-135:1 -/
 def type_info.validate
   (declaration : type_info.TypeDescriptor) :
   RustM (core.result.Result Unit error.CodecError)
@@ -202,6 +314,11 @@ def type_info.validate
     | 16 => ok (core.result.Result.Ok ())
     | 32 => ok (core.result.Result.Ok ())
     | _ => ok (core.result.Result.Err error.CodecError.InvalidIntegerWidth)
+  | type_info.TypeDescriptor.ByteVector count =>
+    if count = 0#usize
+    then ok (core.result.Result.Err error.CodecError.EmptyVector)
+    else ok (core.result.Result.Ok ())
+  | type_info.TypeDescriptor.ByteList _ => ok (core.result.Result.Ok ())
   | type_info.TypeDescriptor.BitVector count =>
     if count = 0#usize
     then ok (core.result.Result.Err error.CodecError.EmptyVector)

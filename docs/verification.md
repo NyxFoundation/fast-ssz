@@ -12,14 +12,15 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links ninety-four registered operations to proofs over actual
+`verification/targets.json` links ninety-eight registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
-seven packed byte/bit root entrypoints and fifteen owned-bitfield constructors/projections.
-`verification/traits.json` separately registers every public `Ssz` declaration member and its thirteen
-library dictionaries: seven basic instances, three generic sequence constructors and three owned bitfields. Each proves the full `CodecLaw`;
+seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections and four owned
+byte-array methods. `verification/traits.json` separately registers every public `Ssz` declaration member
+and its fifteen library dictionaries: seven basic instances, three generic sequence constructors,
+three owned bitfields and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
 methods are not silently excluded. The three generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
@@ -133,6 +134,22 @@ and pushes. Positions/depths use `u32`; indices use every `u128` value. The lead
 primitive is the pinned Aeneas standard model, with its exact log2 arithmetic proved here.
 Native overflow checks and error precedence are part of these proofs. Typed field/element
 paths, progressive chunk positions and multiproof helper-set construction remain separate.
+
+`bytecollections::ByteVector<N>` and `bytecollections::ByteList<MAX>` are dedicated owned
+opaque-byte types with private `Vec<u8>` storage, not aliases for generic uint8 sequences.
+Their four registered public methods prove exact constructor fault classes, retention of the
+original vector on success, and immutable byte-for-byte projections. Rejected byte storage
+can be dropped without invoking arbitrary user element destructors. Runtime tests check allocation
+identity, zero/maximum bounds and bounded Debug output (unit-array markers are not formatted).
+Their two actual extracted generic dictionaries prove the unchanged full `CodecLaw`: exact opaque
+byte observations, encoding/decoding faults, unit decode state, and complete roots. Existing borrowed
+byte validators and packed-root proofs are reused, together with the real proved append loop for
+owned copies. No narrow-data or native-width hypotheses are introduced. Dedicated descriptors
+preserve pinned `.byteVector`/`.byteList` metadata: fixed/variable width, vector nonzero validity,
+composite packing classification, and compatibility with equal-bound vectors/lists of uint8.
+Compatibility does not identify wire specifications: opaque-byte serialization/deserialization has
+no generic sequence <2^32 size envelope. Containing generic sequences retain their own envelopes.
+All native slices and bounds are covered; allocation/resource failures retain the existing trust boundary.
 
 `collections::Vector<T, N>` and `collections::List<T, MAX>` own a private `Vec<T>`.
 Their generic constructors are proved for every element type and machine-size bound:

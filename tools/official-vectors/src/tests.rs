@@ -74,6 +74,70 @@ fn should_reject_negative_or_mistyped_yaml_values() {
 }
 
 #[test]
+fn should_preserve_exact_yaml_bytes_when_constructing_owned_byte_values() {
+    use nyx_ssz::bytecollections::{ByteList, ByteVector};
+
+    let bytes = Value::Sequence(vec![Value::from(1), Value::from(255)]);
+    assert_eq!(
+        ByteVector::<2>::from_fixture(&bytes).unwrap().as_bytes(),
+        &[1, 255]
+    );
+    assert_eq!(
+        ByteList::<2>::from_fixture(&bytes).unwrap().as_bytes(),
+        &[1, 255]
+    );
+    assert!(ByteVector::<1>::from_fixture(&bytes).is_err());
+    assert!(ByteList::<1>::from_fixture(&bytes).is_err());
+    assert!(ByteVector::<0>::from_fixture(&Value::Sequence(vec![])).is_err());
+    assert!(ByteList::<0>::from_fixture(&Value::Sequence(vec![])).is_ok());
+    for invalid in [
+        Value::Bool(true),
+        Value::Sequence(vec![Value::from(256)]),
+        Value::Sequence(vec![Value::from(-1)]),
+    ] {
+        assert!(ByteVector::<1>::from_fixture(&invalid).is_err());
+        assert!(ByteList::<1>::from_fixture(&invalid).is_err());
+    }
+}
+
+#[test]
+fn should_check_owned_byte_outputs_and_roots_against_fixture_expectations() {
+    use nyx_ssz::bytecollections::{ByteList, ByteVector};
+
+    let mut root = [0; 32];
+    root[..2].copy_from_slice(&[1, 255]);
+    let mut case = Case {
+        outcome: Outcome::Valid,
+        bytes: vec![1, 255],
+        value: Some(Value::Sequence(vec![Value::from(1), Value::from(255)])),
+        root: Some(root),
+    };
+    assert!(crate::types::verify::<ByteVector<2>>(&case).is_ok());
+    assert!(Schema::parse("basic_vector", "vec_uint8_2_random")
+        .unwrap()
+        .verify(&case)
+        .is_ok());
+    case.value = Some(Value::Sequence(vec![Value::from(255), Value::from(1)]));
+    assert!(crate::types::verify::<ByteVector<2>>(&case).is_err());
+    case.value = Some(Value::Sequence(vec![Value::from(1), Value::from(255)]));
+    case.root = Some([0; 32]);
+    assert!(crate::types::verify::<ByteVector<2>>(&case).is_err());
+    // Independent SHA-256 of the packed data chunk followed by the length chunk.
+    case.root = Some([
+        0x3d, 0x5e, 0x67, 0xb9, 0x23, 0x26, 0xd8, 0x24, 0x46, 0x27, 0x39, 0x37, 0xd1, 0x5e, 0x08,
+        0x6a, 0xc7, 0xf7, 0xfd, 0x57, 0x32, 0x53, 0x5e, 0xa3, 0xb9, 0x4f, 0x27, 0xc4, 0xfa, 0xad,
+        0xb4, 0x78,
+    ]);
+    assert!(crate::types::verify::<ByteList<2>>(&case).is_ok());
+    case.outcome = Outcome::Invalid;
+    assert!(crate::types::verify::<ByteVector<2>>(&case).is_err());
+    assert!(crate::types::verify::<ByteList<2>>(&case).is_err());
+    case.bytes.push(3);
+    assert!(crate::types::verify::<ByteVector<2>>(&case).is_ok());
+    assert!(crate::types::verify::<ByteList<2>>(&case).is_ok());
+}
+
+#[test]
 fn should_reject_malformed_or_oversized_snappy_before_allocating_output() {
     assert!(decode_snappy(&[255, 255, 255, 255, 255]).is_err());
     assert!(decode_snappy(&[128, 128, 128, 128, 1]).is_err());
