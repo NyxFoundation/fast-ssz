@@ -503,5 +503,10 @@
     "rust": "nyx_ssz::multiproof::verify_merkle_proof",
     "lean": "NyxSszRust.multiproof.verify_merkle_proof",
     "proof": "NyxSszVerification.multiproof_verify_merkle_proof_refines"
+  },
+  {
+    "rust": "nyx_ssz::container::container_view",
+    "lean": "NyxSszRust.container.container_view",
+    "proof": "NyxSszVerification.container_view_refines"
   }
 ]

@@ -12,10 +12,10 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links one hundred and one registered operations to proofs over actual
+`verification/targets.json` links one hundred and two registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
-fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
+fixed/variable-vector/list and mixed Container layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
 seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections, four owned
 byte-array methods and three multiproof operations. `verification/traits.json` separately registers
@@ -30,6 +30,23 @@ Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
 OverLimit/overLimit; other outcomes are false. Boolean errors classify scope/non-bit
 faults. Bounds cover `usize`, not all naturals. Zero-copy is source/test evidence,
 not a cost theorem. Derived error traits are not protocol proof targets.
+
+`container_view_refines` connects the actual extracted `container::container_view` to
+pinned `Ssz.structSlices` (the reference's Container layout executable). Its pointwise
+`containerMetadata` relation uses each supplied `Desc.fixedSize` exactly: `Ok(None)`
+for variable fields, `Ok(Some(width))` for representable fixed widths, and
+`Err(SizeOverflow)` for fixed natural widths above `usize::MAX`. It assumes no parent
+validity, desired output, representable child-width domain or reduced field/input bound.
+The size envelope precedes the all-fixed exact budget or mixed header minimum; budget
+faults precede first-offset, offset-order and final-scope faults. Natural sums exceeding
+the machine word are handled without arithmetic overflow. Zero fields/widths, repeated
+offsets, empty bodies and interspersed fixed fields retain exact field-order bytes.
+Success includes the existing `sequenceViewValid` range invariant, permitting immutable
+`SequenceView` projections without rechecking each range. The ≥2^32 input branch is
+proved symbolically, not exercised by allocating multi-gigabyte test inputs.
+This primitive validates layout only. No Container trait dictionary, derive macro,
+field-name/type validation, generated conversion/ownership proof or Container root is
+claimed here; all remain required for the future ordinary-named-struct codec.
 
 ProgressiveByteList is checked against `.progressiveList (.uint 1) limit`, not
 an opaque-byte descriptor. Its injective value view maps every byte to a uint8,

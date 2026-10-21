@@ -15,6 +15,7 @@ import NyxSszRust.Sequence
 import NyxSszRust.TreeHash
 import NyxSszRust.BitStorage
 import NyxSszRust.Codec
+import NyxSszRust.Container
 import NyxSszRust.Bitcollections
 import NyxSszRust.CollectionWire
 import NyxSszRust.BitCodec
