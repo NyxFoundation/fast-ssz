@@ -8,11 +8,19 @@ use nyx_ssz::{
 use yaml_serde::Value;
 
 use crate::{
+    bits::BitSchema,
     fixture::{Case, Outcome},
     TestResult,
 };
 
-const FAMILIES: [&str; 3] = ["boolean", "uints", "basic_vector"];
+const FAMILIES: [&str; 6] = [
+    "boolean",
+    "uints",
+    "basic_vector",
+    "bitvector",
+    "bitlist",
+    "progressive_bitlist",
+];
 
 pub(crate) fn validate_families(families: &[String]) -> TestResult {
     let unique = families.iter().collect::<std::collections::BTreeSet<_>>();
@@ -178,13 +186,26 @@ impl Primitive {
 }
 
 #[derive(Debug)]
+enum SchemaKind {
+    Basic {
+        primitive: Primitive,
+        count: Option<usize>,
+    },
+    Bits(BitSchema),
+}
+
+#[derive(Debug)]
 pub(crate) struct Schema {
-    primitive: Primitive,
-    count: Option<usize>,
+    kind: SchemaKind,
 }
 
 impl Schema {
     pub(crate) fn parse(family: &str, name: &str) -> TestResult<Self> {
+        if matches!(family, "bitvector" | "bitlist" | "progressive_bitlist") {
+            return Ok(Self {
+                kind: SchemaKind::Bits(BitSchema::parse(family, name)?),
+            });
+        }
         let mut parts = name.split('_');
         let (primitive, count) = match family {
             "boolean" => (Primitive::Bool, None),
@@ -210,23 +231,29 @@ impl Schema {
             }
             _ => return Err("unknown family or schema in pinned corpus".into()),
         };
-        Ok(Self { primitive, count })
+        Ok(Self {
+            kind: SchemaKind::Basic { primitive, count },
+        })
     }
 
     pub(crate) fn verify(&self, case: &Case) -> TestResult {
-        match self.count {
-            None => self.primitive.verify(case),
-            Some(0) => self.primitive.vector::<0>(case),
-            Some(1) => self.primitive.vector::<1>(case),
-            Some(2) => self.primitive.vector::<2>(case),
-            Some(3) => self.primitive.vector::<3>(case),
-            Some(4) => self.primitive.vector::<4>(case),
-            Some(5) => self.primitive.vector::<5>(case),
-            Some(8) => self.primitive.vector::<8>(case),
-            Some(16) => self.primitive.vector::<16>(case),
-            Some(31) => self.primitive.vector::<31>(case),
-            Some(512) => self.primitive.vector::<512>(case),
-            Some(513) => self.primitive.vector::<513>(case),
+        let (primitive, count) = match &self.kind {
+            SchemaKind::Bits(schema) => return schema.verify(case),
+            SchemaKind::Basic { primitive, count } => (primitive, count),
+        };
+        match count {
+            None => primitive.verify(case),
+            Some(0) => primitive.vector::<0>(case),
+            Some(1) => primitive.vector::<1>(case),
+            Some(2) => primitive.vector::<2>(case),
+            Some(3) => primitive.vector::<3>(case),
+            Some(4) => primitive.vector::<4>(case),
+            Some(5) => primitive.vector::<5>(case),
+            Some(8) => primitive.vector::<8>(case),
+            Some(16) => primitive.vector::<16>(case),
+            Some(31) => primitive.vector::<31>(case),
+            Some(512) => primitive.vector::<512>(case),
+            Some(513) => primitive.vector::<513>(case),
             Some(_) => Err("unknown vector length in pinned corpus".into()),
         }
     }

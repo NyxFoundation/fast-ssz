@@ -1,13 +1,20 @@
+mod arguments;
+mod bits;
 mod fixture;
+mod reference;
 mod types;
 
+#[cfg(test)]
+mod reference_tests;
 #[cfg(test)]
 mod tests;
 
 use std::{env, fs, path::Path};
 
+use arguments::Arguments;
 use fixture::{Case, Outcome};
-use types::{validate_families, Schema};
+use reference::ReferenceRoots;
+use types::Schema;
 
 type TestResult<T = ()> = Result<T, String>;
 
@@ -31,7 +38,31 @@ fn sorted_directories(path: &Path) -> TestResult<Vec<std::path::PathBuf>> {
     Ok(directories)
 }
 
-fn run_family(root: &Path, family: &str) -> TestResult<usize> {
+fn verify_case(
+    directory: &Path,
+    outcome: Outcome,
+    family: &str,
+    name: &str,
+    reference: &mut Option<ReferenceRoots>,
+) -> TestResult {
+    let schema = Schema::parse(family, name)?;
+    let case = Case::load(directory, outcome)?;
+    let case = if family == "progressive_bitlist" && outcome == Outcome::Valid {
+        reference
+            .as_mut()
+            .ok_or("missing version-aligned reference roots")?
+            .apply(family, "valid", name, case)?
+    } else {
+        case
+    };
+    schema.verify(&case)
+}
+
+fn run_family(
+    root: &Path,
+    family: &str,
+    reference: &mut Option<ReferenceRoots>,
+) -> TestResult<usize> {
     let mut count = 0;
     for (kind, outcome) in [("valid", Outcome::Valid), ("invalid", Outcome::Invalid)] {
         for directory in sorted_directories(&root.join(family).join(kind))? {
@@ -45,9 +76,7 @@ fn run_family(root: &Path, family: &str) -> TestResult<usize> {
             {
                 return Err("non-canonical fixture name".into());
             }
-            let result = Schema::parse(family, name).and_then(|schema| {
-                Case::load(&directory, outcome).and_then(|case| schema.verify(&case))
-            });
+            let result = verify_case(&directory, outcome, family, name, reference);
             result.map_err(|error| format!("{family}/{kind}/{name}: {error}"))?;
             count += 1;
         }
@@ -56,22 +85,27 @@ fn run_family(root: &Path, family: &str) -> TestResult<usize> {
 }
 
 fn run() -> TestResult {
-    let mut arguments = env::args_os().skip(1);
-    let root = arguments
-        .next()
-        .ok_or("usage: official-vectors ROOT FAMILY...")?;
-    let families = arguments
-        .map(|value| value.into_string().map_err(|_| "invalid family name"))
-        .collect::<Result<Vec<_>, _>>()?;
-    validate_families(&families)?;
-    let root = Path::new(&root);
+    let arguments = Arguments::parse(env::args_os().skip(1))?;
+    let mut reference = arguments
+        .reference
+        .as_ref()
+        .map(|source| ReferenceRoots::load(&source.path, &source.reference, &source.corpus))
+        .transpose()?;
     let mut count = 0;
-    for family in &families {
-        count += run_family(root, family)?;
+    for family in &arguments.families {
+        count += run_family(&arguments.root, family, &mut reference)?;
     }
+    if let Some(reference) = reference {
+        reference.finish()?;
+    }
+    let profile = if arguments.reference.is_some() {
+        " (version-aligned reference roots)"
+    } else {
+        ""
+    };
     println!(
-        "Verified {count} official cases for {}.",
-        families.join(", ")
+        "Verified {count} source-corpus cases for {}{profile}.",
+        arguments.families.join(", ")
     );
     Ok(())
 }

@@ -102,3 +102,33 @@ fn should_require_rejection_for_invalid_vectors() {
         .verify(&case)
         .is_ok());
 }
+
+#[test]
+fn should_parse_all_bit_family_schema_forms_without_guessing_missing_limits() {
+    for (family, name) in [
+        ("bitvector", "bitvec_15_random"),
+        ("bitlist", "bitlist_15_random_0"),
+        ("bitlist", "bitlist_no_delimiter_empty"),
+        ("progressive_bitlist", "progbitlist_lengthy_1025_0"),
+    ] {
+        assert!(Schema::parse(family, name).is_ok());
+    }
+    assert!(Schema::parse("bitlist", "bitlist_unknown_15").is_err());
+    assert!(Schema::parse("bitvector", "bitvec_unknown").is_err());
+}
+
+#[test]
+fn should_read_yaml_bit_order_independently_of_the_library_decoder() {
+    let data = Value::String("0x05".into());
+    assert_eq!(
+        crate::bits::expected_bits(&data, Some(3)).unwrap(),
+        [true, false, true]
+    );
+    let data = Value::String("0x0d".into());
+    assert_eq!(
+        crate::bits::expected_bits(&data, None).unwrap(),
+        [true, false, true]
+    );
+    assert!(crate::bits::expected_bits(&Value::String("0x85".into()), Some(3)).is_err());
+    assert!(crate::bits::expected_bits(&Value::String("0x00".into()), None).is_err());
+}

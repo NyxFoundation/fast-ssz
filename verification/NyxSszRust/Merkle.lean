@@ -35,7 +35,7 @@ inductive merkle.ProofError where
 | IndexOverflow : merkle.ProofError
 
 /-- [nyx_ssz::merkle::climb]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 77:0-88:1 -/
+    Source: 'crates/nyx-ssz/src/merkle.rs', lines 99:0-110:1 -/
 def merkle.climb
   (current : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
   (index : Std.U128) :
@@ -84,7 +84,7 @@ def merkle.zero_root (depth : Std.Usize) : RustM (Array Std.U8 32#usize) := do
 partial_fixpoint
 
 /-- [nyx_ssz::merkle::calculate_merkle_root]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 95:0-110:1
+    Source: 'crates/nyx-ssz/src/merkle.rs', lines 117:0-132:1
     Visibility: public -/
 def merkle.calculate_merkle_root
   (leaf : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
@@ -169,8 +169,46 @@ def merkle.merkleize
       let a ← merkle.subtree_root chunks i1
       ok (core.result.Result.Ok a)
 
+/-- [nyx_ssz::merkle::progressive_subtree_root]:
+    Source: 'crates/nyx-ssz/src/merkle.rs', lines 77:0-93:1 -/
+def merkle.progressive_subtree_root
+  (chunks : Slice (Array Std.U8 32#usize)) (depth : Std.Usize)
+  (width : Std.U128) :
+  RustM (Array Std.U8 32#usize)
+  := do
+  let b ← core.slice.Slice.is_empty chunks
+  if b
+  then ok (Array.repeat 32#usize 0#u8)
+  else
+    let i := Slice.len chunks
+    let i1 ← lift (UScalar.cast .U128 i)
+    let count ←
+      if width >= i1
+      then ok (Slice.len chunks)
+      else ok (UScalar.cast .Usize width)
+    let s ←
+      core.slice.index.Slice.index
+        (core.slice.index.SliceIndexRangeToUsizeSlice (Array Std.U8 32#usize))
+        chunks { «end» := count }
+    let left ← merkle.subtree_root s depth
+    let i2 := Slice.len chunks
+    let right ←
+      if count = i2
+      then ok (Array.repeat 32#usize 0#u8)
+      else
+        do
+        let s1 ←
+          core.slice.index.Slice.index
+            (core.slice.index.SliceIndexRangeFromUsizeSlice (Array Std.U8
+            32#usize)) chunks { start := count }
+        let i3 ← depth + 2#usize
+        let i4 ← width * 4#u128
+        merkle.progressive_subtree_root s1 i3 i4
+    sha256.hash_pair left right
+partial_fixpoint
+
 /-- [nyx_ssz::merkle::verify_merkle_proof]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 113:0-123:1
+    Source: 'crates/nyx-ssz/src/merkle.rs', lines 135:0-145:1
     Visibility: public -/
 def merkle.verify_merkle_proof
   (leaf : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
@@ -184,6 +222,14 @@ def merkle.verify_merkle_proof
       core.array.equality.PartialEqArray.eq core.cmp.PartialEqU8 actual root
     ok (core.result.Result.Ok b)
   | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
+
+/-- [nyx_ssz::merkle::merkleize_progressive]:
+    Source: 'crates/nyx-ssz/src/merkle.rs', lines 95:0-97:1 -/
+def merkle.merkleize_progressive
+  (chunks : Slice (Array Std.U8 32#usize)) :
+  RustM (Array Std.U8 32#usize)
+  := do
+  merkle.progressive_subtree_root chunks 0#usize 1#u128
 
 
 end NyxSszRust

@@ -9,7 +9,8 @@ borrowed ByteVector/ByteList/ProgressiveByteList codecs are implemented and prov
 including malformed inputs and illegal zero-length vector declarations.
 ProgressiveBitlist decoding returns a validated zero-copy `BitListView`, exposing
 its canonical SSZ bytes and a widened bit count without Boolean expansion.
-All seven basic types also have proved `hash_tree_root` operations.
+All seven basic types also have proved `hash_tree_root` operations. Borrowed byte/bit
+vectors, lists, Progressive lists and canonical `BitListView` inputs now have proved packed roots.
 SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
 32-byte nodes. Generic node Merkleization supports optional capacities and zero padding
 without allocating a padded tree. Single-branch root reconstruction and verification are implemented
@@ -42,9 +43,9 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Containers, remaining Progressive value codecs, CompatibleUnion, derive, borrowed byte/bit
-roots, typed index/path APIs, multiproofs, the complete official corpus and benchmarks
-remain unfinished. The agreed release condition is not met.
+Containers, remaining Progressive value codecs, CompatibleUnion, derive, owned byte/bit
+trait integration, typed index/path APIs, multiproofs, the complete official corpus and
+benchmarks remain unfinished. The agreed release condition is not met.
 
 ## Example
 
@@ -179,22 +180,49 @@ assert_eq!(decoded.as_slice()[0].as_slice(), &[1, 2]);
 assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
 ```
 
+## Packed byte/bit roots
+
+`tree_hash` provides byte/bit vector and list roots, Progressive byte/bit roots, and a
+Progressive `BitListView` root without Boolean expansion. Ordinary roots use declared
+capacities; Progressive roots use the EIP-7916 right-hand spine. Lists mix the actual
+byte/bit count, excluding bitlist delimiters. Empty values and machine-maximum bounds
+are supported without allocating padding.
+
+```rust
+use nyx_ssz::{bitfield::decode_progressive_bit_list, tree_hash::{
+    hash_tree_root_progressive_bit_list, hash_tree_root_progressive_bit_list_view,
+}};
+let encoded = [0x0d];
+let view = decode_progressive_bit_list(&encoded, None).unwrap();
+assert_eq!(hash_tree_root_progressive_bit_list_view(&view, None),
+           hash_tree_root_progressive_bit_list(&[true, false, true], None));
+```
+
+Optional Progressive bounds are context-policy checks: the proved reference is the explicit
+composition `Ssz.boundCheck` followed by the unchanged upstream root, which alone ignores
+those bounds. No narrower count assumption or generic `CodecLaw` change is made. Progressive
+byte roots do not impose a serialization offset envelope. Root functions return `CodecError`.
+
 ## Official test vectors
 
 The immutable `ethereum/consensus-spec-tests` commit in `sources.lock` is fetched into
-an external cache, not vendored. Cache checks verify Git provenance, the complete file
-inventory's independently pinned SHA-256 and each fixture's actual Git blob hash, rather than
-trusting cached Git object storage or status alone.
+an external cache, not vendored. Its independently pinned SHA-256 inventory and actual Git blob
+hashes authenticate the fixtures without trusting cached Git metadata or filters.
 
 ```sh
-python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector
+python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector \
+  --family bitvector --family bitlist --family progressive_bitlist
 ```
 
-This checks all 1,229 selected cases: exact YAML values, encoded bytes, roots and invalid-input
-rejection. It is a three-family slice, not full conformance; six other families remain.
-Omitting `--family` requests the entire corpus; unsupported families fail instead of being ignored.
-The Rust CI matrix runs this explicit slice on x86_64 and aarch64. See
-[runner details](tools/official-vectors/README.md).
+The selected six families contain 2,484 cases. Wire bytes and YAML values remain the original
+published data. The 2025 corpus predates the official 2026 Progressive-tree orientation fix;
+700 Progressive root expectations are therefore regenerated from an independently pinned,
+authenticated current official reference implementation, not silently compared to obsolete roots.
+Original metadata is preserved and paired exactly with each generated expectation.
+
+Three families remain unsupported. Omitting `--family` requests the entire corpus and fails on
+unsupported schemas rather than skipping them. Both native Rust CI architectures run this
+explicit slice. See [runner provenance and version details](tools/official-vectors/README.md).
 
 ## Reproduce
 

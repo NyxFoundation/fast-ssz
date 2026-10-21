@@ -14,3 +14,6 @@ Fetched SSZ/Aeneas/Lean dependencies retain upstream licenses.
 Official test data is fetched, not vendored, from the pinned ethereum/consensus-spec-tests
 repository (MIT). The sparse checkout retains its upstream LICENSE. The separate test-only
 runner uses yaml_serde, snap and hex under their upstream licenses; its Cargo.lock pins them.
+Current-version Progressive root expectations use a separately fetched, SHA-256-authenticated
+ethereum/remerkleable source revision (MIT), pinned in sources.lock. Its archive retains LICENSE;
+no reference source is vendored into the SSZ runtime.

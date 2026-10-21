@@ -54,7 +54,7 @@ fn pack_byte(bits: &[bool]) -> u8 {
         | (bit_at(bits, 7) << 7)
 }
 
-fn pack_bits(bits: &[bool]) -> Vec<u8> {
+pub(crate) fn pack_bits(bits: &[bool]) -> Vec<u8> {
     let count = bits.len().div_ceil(8);
     let mut output = Vec::new();
     let mut index = 0;
