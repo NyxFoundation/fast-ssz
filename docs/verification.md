@@ -1,5 +1,6 @@
 ---
 title: Verification scope and trust boundary
+description: Verified codec slice and raw Container wire assembly, not complete Container value codecs.
 last_updated: 2026-10-21
 tags:
   - ssz
@@ -12,16 +13,16 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links one hundred and two registered operations to proofs over actual
+`verification/targets.json` links one hundred and three registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list and mixed Container layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
 seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections, four owned
-byte-array methods and three multiproof operations. `verification/traits.json` separately registers
-every public `Ssz` declaration member and its fifteen library dictionaries: seven basic instances,
-three generic sequence constructors, three owned bitfields and two dedicated owned byte arrays.
-Each proves the full `CodecLaw`;
+byte-array methods, three multiproof operations and shared mixed-slot Container wire assembly.
+`verification/traits.json` separately registers every public `Ssz` declaration member and its fifteen
+library dictionaries: seven basic instances, three generic sequence constructors, three owned bitfields
+and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
 methods are not silently excluded. The three generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
@@ -252,6 +253,21 @@ spine. Runtime encode/root paths allocate packed byte/node buffers, never Boolea
 identity and allocation behavior remain source/test evidence rather than cost theorems. Official bit
 families now exercise the actual owned dictionaries in addition to the existing borrowed operations.
 
+`container_wire::assemble` is a proved raw internal-layout assembler over paired
+`(inline, Vec<u8>)` slots. `container_assemble_refines` relates the actual extracted
+implementation to unchanged `Ssz.assemble`, with flags and bytes projected from the
+same ordered slots. The size step, size loop and wrapper prove the exact four-byte
+budget check: totals at or above 2^32 return `SizeOverflow`, matching the reference
+`offsetOverflow` category. Header and body loops use decreasing remaining-index
+measures, preserve exact inline bytes, little-endian offsets and variable bodies,
+and prove native indexing, increments, casts, additions and Vec capacity safe.
+The registered wrapper has no extra count, width, byte-data or validity premises;
+empty slots and empty inline/variable parts are included. No Rust or generated
+extraction body is replaced by a paper model. This proves wire assembly only:
+Container declarations, ordinary-struct derive, generated ownership/conversions,
+value encoding/decoding and Container roots are not completed by this theorem.
+The fifteen existing `Ssz` dictionaries and their `CodecLaw` obligations are unchanged.
+
 `codec::Ssz` has a static immutable `TYPE` declaration and encode/decode/tree-root
 operations. Boolean and uint8/16/32/64/128/256 dictionaries prove that the complete
 declaration maps to their exact reference descriptor, in addition to their value-codec
@@ -342,7 +358,12 @@ Both paths establish the existing immutable view invariant, so typed element tra
 and getters need no new assumptions. Element validity and collection codecs remain separate.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
-pinned source integrity. Generated declarations are partitioned into dependency-ordered
+pinned source integrity. For the Container wire proof slice, `python3 scripts/verify.py check`
+passes all 80 operations, 10 dictionaries and 3,412 source cases. The library-source
+coverage gate (`cargo llvm-cov --workspace --ignore-filename-regex '/tests/' --fail-under-lines 80`)
+reports 95.95% lines overall and 100% for `container_wire.rs`. This excludes integration-test
+files but includes in-module unit tests; coverage is not a formal branch or cost guarantee.
+Generated declarations are partitioned into dependency-ordered
 modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction
 order changes invalidating cached proofs. Registry source-location comments use

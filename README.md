@@ -50,7 +50,12 @@ order, including interspersed fixed fields. This is shared layout only, not a Co
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
+The shared `container_wire::assemble` helper is proved against the unchanged reference
+assembler for every paired inline/variable byte-slot slice, including empty parts and
+exact four-byte overflow errors. This is raw internal-layout assembly, not a Container
+value codec; it does not yet provide struct derive or generated ownership/conversions.
+
+Container value codecs, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
 typed index/path APIs, proof generation, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 

@@ -3,6 +3,7 @@ import NyxSszVerification.Bytes
 import NyxSszVerification.Bytecollections
 import NyxSszVerification.Collections
 import NyxSszVerification.Collection.Law
+import NyxSszVerification.ContainerWire.Assemble
 import NyxSszVerification.ProgressiveCollection.Law
 import NyxSszVerification.OwnedBits.Law
 import NyxSszVerification.Sequence
