@@ -61,4 +61,17 @@ theorem list_as_slice_refines {T : Type} {capacity : Usize}
       result.val = value.values.val := by
   exact ⟨alloc.vec.Vec.deref value.values, rfl, rfl⟩
 
+/-- Unbounded storage preserves the entire owned native vector, at every element type. -/
+theorem progressive_list_refines {T : Type} (input : alloc.vec.Vec T) :
+    ∃ value, NyxSszRust.collections.progressive_list input = RustM.ok value ∧
+      value.values = input := by
+  exact ⟨⟨input⟩, rfl, rfl⟩
+
+/-- The immutable progressive-list projection exposes the original elements in order. -/
+theorem progressive_list_as_slice_refines {T : Type}
+    (value : NyxSszRust.collections.ProgressiveList T) :
+    ∃ result, NyxSszRust.collections.ProgressiveList.as_slice value = RustM.ok result ∧
+      result.val = value.values.val := by
+  exact ⟨alloc.vec.Vec.deref value.values, rfl, rfl⟩
+
 end NyxSszVerification
