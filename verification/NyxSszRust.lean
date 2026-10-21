@@ -21,5 +21,6 @@ import NyxSszRust.CollectionWire
 import NyxSszRust.BitCodec
 import NyxSszRust.Bytecollections
 import NyxSszRust.CollectionTree
+import NyxSszRust.ContainerWire
 import NyxSszRust.CollectionCodec
 import NyxSszRust.ProgressiveCodec

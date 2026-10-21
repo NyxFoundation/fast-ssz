@@ -508,5 +508,10 @@
     "rust": "nyx_ssz::container::container_view",
     "lean": "NyxSszRust.container.container_view",
     "proof": "NyxSszVerification.container_view_refines"
+  },
+  {
+    "rust": "nyx_ssz::container_wire::assemble",
+    "lean": "NyxSszRust.container_wire.assemble",
+    "proof": "NyxSszVerification.container_assemble_refines"
   }
 ]

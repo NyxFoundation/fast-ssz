@@ -17,6 +17,7 @@ mod collection_tree;
 mod collection_wire;
 pub mod collections;
 pub mod container;
+pub mod container_wire;
 pub mod error;
 pub mod gindex;
 pub mod merkle;
