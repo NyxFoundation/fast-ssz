@@ -116,3 +116,32 @@ pub fn list<T, const MAX: usize>(values: Vec<T>) -> Result<List<T, MAX>, LengthE
     }
     Ok(output)
 }
+
+/// An owned Progressive sequence without a declared maximum length.
+///
+/// Construction preserves the input allocation; element validity is checked by
+/// the codec. Optional context-policy bounds are not part of this declaration.
+pub struct ProgressiveList<T> {
+    values: Vec<T>,
+}
+
+impl<T> ProgressiveList<T> {
+    /// Borrow all elements without changing the length or allocation.
+    pub fn as_slice(&self) -> &[T] {
+        &self.values
+    }
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for ProgressiveList<T> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ProgressiveList")
+            .field("values", &self.values)
+            .finish()
+    }
+}
+
+/// Retain a complete Progressive sequence without imposing a context bound.
+pub fn progressive_list<T>(values: Vec<T>) -> ProgressiveList<T> {
+    ProgressiveList { values }
+}

@@ -383,5 +383,15 @@
     "rust": "nyx_ssz::tree_hash::hash_tree_root_progressive_bit_list_view",
     "lean": "NyxSszRust.tree_hash.hash_tree_root_progressive_bit_list_view",
     "proof": "NyxSszVerification.hash_tree_root_progressive_bit_list_view_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::progressive_list",
+    "lean": "NyxSszRust.collections.progressive_list",
+    "proof": "NyxSszVerification.progressive_list_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::ProgressiveList::as_slice",
+    "lean": "NyxSszRust.collections.ProgressiveList.as_slice",
+    "proof": "NyxSszVerification.progressive_list_as_slice_refines"
   }
 ]

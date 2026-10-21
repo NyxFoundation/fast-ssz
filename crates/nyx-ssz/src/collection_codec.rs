@@ -12,7 +12,7 @@ use crate::{
     type_info::TypeDescriptor,
 };
 
-fn empty_failure<T: Ssz>(kind: CodecError) -> DecodeFailure<SequenceDecodeState<T>> {
+pub(crate) fn empty_failure<T: Ssz>(kind: CodecError) -> DecodeFailure<SequenceDecodeState<T>> {
     DecodeFailure {
         kind,
         state: SequenceDecodeState {
@@ -59,10 +59,13 @@ fn vector_layout<T: Ssz>(input: &[u8], count: usize) -> Result<SequenceView<'_>,
     }
 }
 
-fn list_layout<T: Ssz>(input: &[u8], limit: usize) -> Result<SequenceView<'_>, CodecError> {
+pub(crate) fn list_layout<T: Ssz>(
+    input: &[u8],
+    limit: Option<usize>,
+) -> Result<SequenceView<'_>, CodecError> {
     match fixed_size::<T>() {
-        Ok(Some(width)) => fixed_list_view(input, width, Some(limit)),
-        Ok(None) => variable_list_view(input, Some(limit)),
+        Ok(Some(width)) => fixed_list_view(input, width, limit),
+        Ok(None) => variable_list_view(input, limit),
         Err(CodecError::SizeOverflow) => {
             if input.len() as u128 >= 4_294_967_296 {
                 return Err(CodecError::SizeOverflow);
@@ -103,7 +106,7 @@ fn decode_list<T: Ssz, const MAX: usize>(
     if let Err(kind) = validate_type::<T>() {
         return Err(empty_failure::<T>(kind));
     }
-    let view = match list_layout::<T>(input, MAX) {
+    let view = match list_layout::<T>(input, Some(MAX)) {
         Ok(view) => view,
         Err(kind) => return Err(empty_failure::<T>(kind)),
     };

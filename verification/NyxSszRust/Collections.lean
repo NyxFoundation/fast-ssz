@@ -32,6 +32,12 @@ structure collections.List (T : Type) (MAX : Std.Usize) where
   values : alloc.vec.Vec T
   _bound : Array Unit MAX
 
+/-- [nyx_ssz::collections::ProgressiveList]
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 124:0-126:1
+    Visibility: public -/
+structure collections.ProgressiveList (T : Type) where
+  values : alloc.vec.Vec T
+
 /-- [nyx_ssz::collections::Vector]
     Source: 'crates/nyx-ssz/src/collections.rs', lines 38:0-42:1
     Visibility: public -/
@@ -55,6 +61,13 @@ def collections.List.as_slice
   := do
   ok (alloc.vec.Vec.deref self.values)
 
+/-- [nyx_ssz::collections::{nyx_ssz::collections::ProgressiveList<T>}::as_slice]:
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 130:4-132:5
+    Visibility: public -/
+def collections.ProgressiveList.as_slice
+  {T : Type} (self : collections.ProgressiveList T) : RustM (Slice T) := do
+  ok (alloc.vec.Vec.deref self.values)
+
 /-- [nyx_ssz::collections::{nyx_ssz::collections::Vector<T, N>}::as_slice]:
     Source: 'crates/nyx-ssz/src/collections.rs', lines 46:4-48:5
     Visibility: public -/
@@ -63,6 +76,15 @@ def collections.Vector.as_slice
   RustM (Slice T)
   := do
   ok (alloc.vec.Vec.deref self.values)
+
+/-- [nyx_ssz::collections::progressive_list]:
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 145:0-147:1
+    Visibility: public -/
+def collections.progressive_list
+  {T : Type} (values : alloc.vec.Vec T) :
+  RustM (collections.ProgressiveList T)
+  := do
+  ok { values }
 
 /-- [nyx_ssz::collections::list]:
     Source: 'crates/nyx-ssz/src/collections.rs', lines 106:0-118:1
