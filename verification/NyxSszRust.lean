@@ -16,3 +16,4 @@ import NyxSszRust.Codec
 import NyxSszRust.CollectionWire
 import NyxSszRust.CollectionTree
 import NyxSszRust.CollectionCodec
+import NyxSszRust.ProgressiveCodec

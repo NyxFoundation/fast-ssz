@@ -1,4 +1,4 @@
-use std::ffi::OsString;
+use std::{ffi::OsString, path::Path};
 
 use yaml_serde::Value;
 
@@ -13,7 +13,7 @@ const CORPUS: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 fn document() -> Value {
     yaml_serde::from_str(&format!(
-        r#"{{"format_version":1,"reference_revision":"{REFERENCE}","corpus_revision":"{CORPUS}","roots":{{"progressive_bitlist/valid/progbitlist_nil_0_0":{{"source_root":"0x{}","root":"0x{}"}}}}}}"#,
+        r#"{{"format_version":2,"reference_revision":"{REFERENCE}","corpus_revision":"{CORPUS}","roots":{{"progressive_bitlist/valid/progbitlist_nil_0_0":{{"source_root":"0x{}","root":"0x{}"}}}}}}"#,
         "00".repeat(32), "11".repeat(32)
     )).unwrap()
 }
@@ -36,6 +36,7 @@ fn should_apply_current_roots_only_when_both_source_identity_and_original_root_m
             "valid",
             "progbitlist_nil_0_0",
             case([0; 32]),
+            Path::new("/unused"),
         )
         .unwrap();
     assert_eq!(value.root, Some([17; 32]));
@@ -48,7 +49,8 @@ fn should_apply_current_roots_only_when_both_source_identity_and_original_root_m
             "progressive_bitlist",
             "valid",
             "progbitlist_nil_0_0",
-            case([2; 32])
+            case([2; 32]),
+            Path::new("/unused"),
         )
         .is_err());
 }
@@ -59,7 +61,13 @@ fn should_refuse_unused_or_missing_reference_inventory_entries() {
     assert!(roots.finish().is_err());
     let mut roots = ReferenceRoots::from_document(&document(), REFERENCE, CORPUS).unwrap();
     assert!(roots
-        .apply("progressive_bitlist", "valid", "unknown", case([0; 32]))
+        .apply(
+            "progressive_bitlist",
+            "valid",
+            "unknown",
+            case([0; 32]),
+            Path::new("/unused")
+        )
         .is_err());
 }
 

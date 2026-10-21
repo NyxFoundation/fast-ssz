@@ -8,12 +8,14 @@ mod types;
 mod reference_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod witness_tests;
 
 use std::{env, fs, path::Path};
 
 use arguments::Arguments;
 use fixture::{Case, Outcome};
-use reference::ReferenceRoots;
+use reference::{is_progressive_family, ReferenceRoots};
 use types::Schema;
 
 type TestResult<T = ()> = Result<T, String>;
@@ -39,6 +41,7 @@ fn sorted_directories(path: &Path) -> TestResult<Vec<std::path::PathBuf>> {
 }
 
 fn verify_case(
+    corpus: &Path,
     directory: &Path,
     outcome: Outcome,
     family: &str,
@@ -47,11 +50,16 @@ fn verify_case(
 ) -> TestResult {
     let schema = Schema::parse(family, name)?;
     let case = Case::load(directory, outcome)?;
-    let case = if family == "progressive_bitlist" && outcome == Outcome::Valid {
+    let case = if is_progressive_family(family) {
+        let kind = if outcome == Outcome::Valid {
+            "valid"
+        } else {
+            "invalid"
+        };
         reference
             .as_mut()
             .ok_or("missing version-aligned reference roots")?
-            .apply(family, "valid", name, case)?
+            .apply(family, kind, name, case, corpus)?
     } else {
         case
     };
@@ -76,7 +84,7 @@ fn run_family(
             {
                 return Err("non-canonical fixture name".into());
             }
-            let result = verify_case(&directory, outcome, family, name, reference);
+            let result = verify_case(root, &directory, outcome, family, name, reference);
             result.map_err(|error| format!("{family}/{kind}/{name}: {error}"))?;
             count += 1;
         }

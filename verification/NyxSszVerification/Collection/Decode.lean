@@ -107,7 +107,7 @@ theorem collection_decode_list_refines {T State : Type} (limit : Usize)
       | error fault => simp [validity, codecValidityAgrees] at agrees
       | ok resultUnit => cases resultUnit; rfl
     have parentValid : (Ssz.Desc.list shape limit.val).wellFormed = .ok () := valid
-    apply spec_bind (collection_list_layout_refines child shape law.declaration input limit)
+    apply spec_bind (collection_list_layout_refines child shape law.declaration input (some limit))
     intro layout layoutAgrees
     cases layout with
     | Err kind =>

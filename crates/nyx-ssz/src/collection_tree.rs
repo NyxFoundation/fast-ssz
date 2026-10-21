@@ -1,10 +1,10 @@
-//! Bounded collection roots, packing basic elements but rooting composite ones.
+//! Collection roots, packing basic elements but rooting composite ones.
 
 use crate::{
     codec::{fixed_size, is_basic, Ssz},
     collection_wire::encode_parts,
     error::CodecError,
-    merkle::{merkleize, MerkleizeError, Node},
+    merkle::{merkleize, merkleize_progressive, MerkleizeError, Node},
     sha256::hash_pair,
     tree_hash::hash_tree_root_u128,
 };
@@ -49,6 +49,19 @@ fn basic_capacity<T: Ssz>(positions: usize) -> Result<usize, CodecError> {
         Some(width @ (1 | 2 | 4 | 8 | 16 | 32)) => Ok(positions.div_ceil(32 / width)),
         _ => Err(CodecError::InvalidIntegerWidth),
     }
+}
+
+pub(crate) fn root_progressive_sequence<T: Ssz>(values: &[T]) -> Result<Node, CodecError> {
+    let chunks = if is_basic::<T>() {
+        pack_parts(&encode_parts(values)?)
+    } else {
+        root_elements(values)?
+    };
+    let contents = merkleize_progressive(&chunks);
+    Ok(hash_pair(
+        &contents,
+        &hash_tree_root_u128(values.len() as u128),
+    ))
 }
 
 pub(crate) fn root_sequence<T: Ssz>(

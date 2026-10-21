@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ffi::OsString, path::PathBuf};
 
-use crate::{types::validate_families, TestResult};
+use crate::{reference::is_progressive_family, types::validate_families, TestResult};
 
 pub(crate) struct ReferenceArguments {
     pub(crate) path: PathBuf,
@@ -18,10 +18,7 @@ fn reference_arguments(
     mut options: BTreeMap<String, OsString>,
     families: &[String],
 ) -> TestResult<Option<ReferenceArguments>> {
-    if !families
-        .iter()
-        .any(|family| family == "progressive_bitlist")
-    {
+    if !families.iter().any(|family| is_progressive_family(family)) {
         if !options.is_empty() {
             return Err("unused regenerated-root options".into());
         }

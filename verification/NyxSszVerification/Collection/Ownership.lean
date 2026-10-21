@@ -52,7 +52,7 @@ theorem list_decode_layout_failure {T State : Type} (limit : Usize)
     (child : NyxSszRust.codec.Ssz T State) (input : Slice U8)
     (kind : NyxSszRust.error.CodecError)
     (declared : NyxSszRust.codec.validate_type child = RustM.ok (.Ok ()))
-    (rejected : NyxSszRust.collection_codec.list_layout child input limit = RustM.ok (.Err kind)) :
+    (rejected : NyxSszRust.collection_codec.list_layout child input (some limit) = RustM.ok (.Err kind)) :
     NyxSszRust.collection_codec.decode_list limit child input =
       RustM.ok (.Err ⟨kind, ⟨alloc.vec.Vec.new T, none⟩⟩) := by
   simp [NyxSszRust.collection_codec.decode_list, declared, rejected]
@@ -76,7 +76,7 @@ theorem list_decode_callback_failure {T State : Type} (limit : Usize)
     (view : NyxSszRust.sequence.SequenceView)
     (failure : NyxSszRust.error.DecodeFailure (NyxSszRust.codec.SequenceDecodeState T State))
     (declared : NyxSszRust.codec.validate_type child = RustM.ok (.Ok ()))
-    (layout : NyxSszRust.collection_codec.list_layout child input limit = RustM.ok (.Ok view))
+    (layout : NyxSszRust.collection_codec.list_layout child input (some limit) = RustM.ok (.Ok view))
     (callback : NyxSszRust.codec.decode_elements child view = RustM.ok (.Err failure)) :
     NyxSszRust.collection_codec.decode_list limit child input = RustM.ok (.Err failure) := by
   simp [NyxSszRust.collection_codec.decode_list, declared, layout, callback,
@@ -147,7 +147,7 @@ theorem list_decode_retains_trace {T State : Type} (limit : Usize)
     (view : NyxSszRust.sequence.SequenceView) (valid : sequenceViewValid view)
     (kind : NyxSszRust.error.CodecError) (completed : List T) (state : State)
     (declared : NyxSszRust.codec.validate_type child = RustM.ok (.Ok ()))
-    (layout : NyxSszRust.collection_codec.list_layout child input limit = RustM.ok (.Ok view))
+    (layout : NyxSszRust.collection_codec.list_layout child input (some limit) = RustM.ok (.Ok view))
     (trace : decodeRangesModel child view.input view.ranges.val [] =
       RustM.ok (.Err ⟨kind, (completed, some state)⟩)) :
     NyxSszRust.collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.decode limit child input

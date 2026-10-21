@@ -225,8 +225,52 @@ def collection_tree.pack_parts
   then alloc.vec.Vec.push chunks pending1
   else ok chunks
 
+/-- [nyx_ssz::collection_tree::root_progressive_sequence]:
+    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 54:0-65:1 -/
+def collection_tree.root_progressive_sequence
+  {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
+  Clause0_DecodeState) (values : Slice T) :
+  RustM (core.result.Result (Array Std.U8 32#usize) error.CodecError)
+  := do
+  let b ← codec.is_basic codecSszInst
+  if b
+  then
+    let r ← collection_wire.encode_parts codecSszInst values
+    let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+    match cf with
+    | core.ops.control_flow.ControlFlow.Continue val =>
+      let s := alloc.vec.Vec.deref val
+      let chunks ← collection_tree.pack_parts s
+      let s1 := alloc.vec.Vec.deref chunks
+      let contents ← merkle.merkleize_progressive s1
+      let i := Slice.len values
+      let i1 ← lift (UScalar.cast .U128 i)
+      let a ← tree_hash.hash_tree_root_u128 i1
+      let a1 ← sha256.hash_pair contents a
+      ok (core.result.Result.Ok a1)
+    | core.ops.control_flow.ControlFlow.Break residual =>
+      core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+        (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError)
+        residual
+  else
+    let r ← collection_tree.root_elements codecSszInst values
+    let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+    match cf with
+    | core.ops.control_flow.ControlFlow.Continue val =>
+      let s := alloc.vec.Vec.deref val
+      let contents ← merkle.merkleize_progressive s
+      let i := Slice.len values
+      let i1 ← lift (UScalar.cast .U128 i)
+      let a ← tree_hash.hash_tree_root_u128 i1
+      let a1 ← sha256.hash_pair contents a
+      ok (core.result.Result.Ok a1)
+    | core.ops.control_flow.ControlFlow.Break residual =>
+      core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+        (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError)
+        residual
+
 /-- [nyx_ssz::collection_tree::root_sequence]:
-    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 54:0-78:1 -/
+    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 67:0-91:1 -/
 def collection_tree.root_sequence
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T) (positions : Std.Usize)

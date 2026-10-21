@@ -33,18 +33,18 @@ def collection_codec.empty_failure
   ok { kind, state := { values := (alloc.vec.Vec.new T), child := none } }
 
 /-- [nyx_ssz::collection_codec::list_layout]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 62:0-81:1 -/
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 62:0-84:1 -/
 def collection_codec.list_layout
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
-  Clause0_DecodeState) (input : Slice Std.U8) (limit : Std.Usize) :
+  Clause0_DecodeState) (input : Slice Std.U8) (limit : Option Std.Usize) :
   RustM (core.result.Result sequence.SequenceView error.CodecError)
   := do
   let r ← codec.fixed_size codecSszInst
   match r with
   | core.result.Result.Ok o =>
     match o with
-    | none => sequence.variable_list_view input (some limit)
-    | some width => sequence.fixed_list_view input width (some limit)
+    | none => sequence.variable_list_view input limit
+    | some width => sequence.fixed_list_view input width limit
   | core.result.Result.Err ce =>
     match ce with
     | error.CodecError.InvalidLength =>
@@ -173,7 +173,7 @@ def collection_codec.vector_type
   else codec.validate_type codecSszInst
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::List<T, MAX>}::TYPE]
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 146:4-146:78
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 149:4-149:78
     Visibility: public -/
 @[global_simps, irreducible]
 def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE {T : Type}
@@ -183,7 +183,7 @@ def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE {T : Type}
   ok (type_info.TypeDescriptor.List td MAX)
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::List<T, MAX>}::encode]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 148:4-155:5
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 151:4-158:5
     Visibility: public -/
 def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
   {T : Type} {Clause0_DecodeState : Type} {MAX : Std.Usize} (codecSszInst :
@@ -204,7 +204,7 @@ def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
       (alloc.vec.Vec Std.U8) (core.convert.FromSame error.CodecError) residual
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::List<T, MAX>}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 161:4-168:5
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 164:4-171:5
     Visibility: public -/
 def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
   {T : Type} {Clause0_DecodeState : Type} {MAX : Std.Usize} (codecSszInst :
@@ -225,7 +225,7 @@ def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
       (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError) residual
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::Vector<T, N>}::TYPE]
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 119:4-119:78
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 122:4-122:78
     Visibility: public -/
 @[global_simps, irreducible]
 def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE {T : Type}
@@ -235,7 +235,7 @@ def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE {T : Type}
   ok (type_info.TypeDescriptor.Vector td N)
 
 /-- [nyx_ssz::collection_codec::decode_list]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 100:0-115:1 -/
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 103:0-118:1 -/
 def collection_codec.decode_list
   {T : Type} {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst :
   codec.Ssz T Clause0_DecodeState) (input : Slice Std.U8) :
@@ -245,7 +245,7 @@ def collection_codec.decode_list
   let r ← codec.validate_type codecSszInst
   match r with
   | core.result.Result.Ok _ =>
-    let r1 ← collection_codec.list_layout codecSszInst input MAX
+    let r1 ← collection_codec.list_layout codecSszInst input (some MAX)
     match r1 with
     | core.result.Result.Ok sv =>
       let r2 ← codec.decode_elements codecSszInst sv
@@ -270,7 +270,7 @@ def collection_codec.decode_list
     ok (core.result.Result.Err df)
 
 /-- [nyx_ssz::collection_codec::decode_vector]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 83:0-98:1 -/
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 86:0-101:1 -/
 def collection_codec.decode_vector
   {T : Type} {Clause0_DecodeState : Type} (N : Std.Usize) (codecSszInst :
   codec.Ssz T Clause0_DecodeState) (input : Slice Std.U8) :
@@ -305,7 +305,7 @@ def collection_codec.decode_vector
     ok (core.result.Result.Err df)
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::Vector<T, N>}::encode]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 121:4-128:5
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 124:4-131:5
     Visibility: public -/
 def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
   {T : Type} {Clause0_DecodeState : Type} {N : Std.Usize} (codecSszInst :
@@ -326,7 +326,7 @@ def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
       (alloc.vec.Vec Std.U8) (core.convert.FromSame error.CodecError) residual
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::Vector<T, N>}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 134:4-141:5
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 137:4-144:5
     Visibility: public -/
 def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
   {T : Type} {Clause0_DecodeState : Type} {N : Std.Usize} (codecSszInst :
@@ -347,7 +347,7 @@ def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
       (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError) residual
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::List<T, MAX>}::decode]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 157:4-159:5
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 160:4-162:5
     Visibility: public -/
 def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
   {T : Type} {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst :
@@ -358,7 +358,7 @@ def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
   collection_codec.decode_list MAX codecSszInst bytes1
 
 /-- [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::Vector<T, N>}::decode]:
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 130:4-132:5
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 133:4-135:5
     Visibility: public -/
 def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
   {T : Type} {Clause0_DecodeState : Type} (N : Std.Usize) (codecSszInst :
@@ -369,7 +369,7 @@ def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
   collection_codec.decode_vector N codecSszInst bytes1
 
 /-- Trait implementation: [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::List<T, MAX>}]
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 144:0-169:1 -/
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 147:0-172:1 -/
 @[reducible]
 def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState {T : Type}
   {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst : codec.Ssz T
@@ -387,7 +387,7 @@ def collections.List.Insts.Nyx_sszCodecSszSequenceDecodeState {T : Type}
 }
 
 /-- Trait implementation: [nyx_ssz::collection_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::Vector<T, N>}]
-    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 117:0-142:1 -/
+    Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 120:0-145:1 -/
 @[reducible]
 def collections.Vector.Insts.Nyx_sszCodecSszSequenceDecodeState {T : Type}
   {Clause0_DecodeState : Type} (N : Std.Usize) (codecSszInst : codec.Ssz T

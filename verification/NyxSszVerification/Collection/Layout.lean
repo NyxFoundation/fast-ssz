@@ -53,9 +53,9 @@ namespace NyxSszVerification
 @[step] theorem collection_list_layout_refines {T State : Type}
     (child : NyxSszRust.codec.Ssz T State) (shape : Ssz.Desc)
     (declared : child.TYPE ⦃ actual => typeDescriptorToSpec actual = shape ⦄)
-    (input : Slice U8) (limit : Usize) :
+    (input : Slice U8) (limit : Option Usize) :
     NyxSszRust.collection_codec.list_layout child input limit ⦃ actual =>
-      sequenceViewAgrees actual (Ssz.listSlices shape (some limit.val) (bytesToSpec input.val)) ⦄ := by
+      sequenceViewAgrees actual (Ssz.listSlices shape (limit.map fun bound => bound.val) (bytesToSpec input.val)) ⦄ := by
   unfold NyxSszRust.collection_codec.list_layout
   apply spec_bind (codec_fixed_size_refines child shape declared)
   intro actual agrees
@@ -63,7 +63,7 @@ namespace NyxSszVerification
   | none =>
     have same := codec_width_none actual (by simpa only [expected] using agrees)
     rw [same]
-    exact variable_list_view_refines input (some limit) shape expected
+    exact variable_list_view_refines input limit shape expected
   | some width =>
     cases actual with
     | Ok childWidth =>
@@ -71,7 +71,7 @@ namespace NyxSszVerification
       | none => simp [expected, codecWidthAgrees] at agrees
       | some held =>
         have same : held.val = width := by simpa [expected, codecWidthAgrees] using agrees
-        exact fixed_list_view_refines input held (some limit) shape (by simpa only [same] using expected)
+        exact fixed_list_view_refines input held limit shape (by simpa only [same] using expected)
     | Err kind =>
       cases kind <;> simp only [expected, codecWidthAgrees] at agrees
       have scopeBound := input.property

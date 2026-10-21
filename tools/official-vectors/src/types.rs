@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use nyx_ssz::{
     codec::Ssz,
-    collections::{vector, Vector},
+    collections::{progressive_list, vector, ProgressiveList, Vector},
     U256,
 };
 use yaml_serde::Value;
@@ -13,13 +13,14 @@ use crate::{
     TestResult,
 };
 
-const FAMILIES: [&str; 6] = [
+const FAMILIES: [&str; 7] = [
     "boolean",
     "uints",
     "basic_vector",
     "bitvector",
     "bitlist",
     "progressive_bitlist",
+    "basic_progressive_list",
 ];
 
 pub(crate) fn validate_families(families: &[String]) -> TestResult {
@@ -104,6 +105,27 @@ impl<T: FromFixture, const N: usize> FromFixture for Vector<T, N> {
     }
 }
 
+impl<T: FromFixture> FromFixture for ProgressiveList<T> {
+    fn from_fixture(value: &Value) -> TestResult<Self> {
+        let values = value.as_sequence().ok_or("expected YAML sequence")?;
+        Ok(progressive_list(
+            values
+                .iter()
+                .map(T::from_fixture)
+                .collect::<TestResult<Vec<_>>>()?,
+        ))
+    }
+
+    fn equivalent(&self, expected: &Self) -> bool {
+        self.as_slice().len() == expected.as_slice().len()
+            && self
+                .as_slice()
+                .iter()
+                .zip(expected.as_slice())
+                .all(|(actual, expected)| actual.equivalent(expected))
+    }
+}
+
 fn verify<T: Ssz + FromFixture>(case: &Case) -> TestResult {
     let actual = T::decode(&case.bytes);
     if case.outcome == Outcome::Invalid {
@@ -172,6 +194,18 @@ impl Primitive {
         }
     }
 
+    fn progressive(self, case: &Case) -> TestResult {
+        match self {
+            Self::Bool => verify::<ProgressiveList<bool>>(case),
+            Self::U8 => verify::<ProgressiveList<u8>>(case),
+            Self::U16 => verify::<ProgressiveList<u16>>(case),
+            Self::U32 => verify::<ProgressiveList<u32>>(case),
+            Self::U64 => verify::<ProgressiveList<u64>>(case),
+            Self::U128 => verify::<ProgressiveList<u128>>(case),
+            Self::U256 => verify::<ProgressiveList<U256>>(case),
+        }
+    }
+
     fn vector<const N: usize>(self, case: &Case) -> TestResult {
         match self {
             Self::Bool => verify::<Vector<bool, N>>(case),
@@ -192,6 +226,7 @@ enum SchemaKind {
         count: Option<usize>,
     },
     Bits(BitSchema),
+    Progressive(Primitive),
 }
 
 #[derive(Debug)]
@@ -199,11 +234,28 @@ pub(crate) struct Schema {
     kind: SchemaKind,
 }
 
+fn progressive_schema(name: &str) -> TestResult<SchemaKind> {
+    let mut parts = name.split('_');
+    if parts.next() != Some("proglist") {
+        return Err("unknown Progressive list schema".into());
+    }
+    let primitive = Primitive::parse(parts.next().ok_or("missing Progressive element type")?)?;
+    if parts.next().is_none() {
+        return Err("missing Progressive case identifier".into());
+    }
+    Ok(SchemaKind::Progressive(primitive))
+}
+
 impl Schema {
     pub(crate) fn parse(family: &str, name: &str) -> TestResult<Self> {
         if matches!(family, "bitvector" | "bitlist" | "progressive_bitlist") {
             return Ok(Self {
                 kind: SchemaKind::Bits(BitSchema::parse(family, name)?),
+            });
+        }
+        if family == "basic_progressive_list" {
+            return Ok(Self {
+                kind: progressive_schema(name)?,
             });
         }
         let mut parts = name.split('_');
@@ -239,6 +291,7 @@ impl Schema {
     pub(crate) fn verify(&self, case: &Case) -> TestResult {
         let (primitive, count) = match &self.kind {
             SchemaKind::Bits(schema) => return schema.verify(case),
+            SchemaKind::Progressive(primitive) => return primitive.progressive(case),
             SchemaKind::Basic { primitive, count } => (primitive, count),
         };
         match count {

@@ -20,11 +20,11 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
-      - name: Check the current-version six-family official vector slice
+      - name: Check the current-version seven-family official vector slice
         run: >-
           python3 scripts/official_vectors.py check
           --family boolean --family uints --family basic_vector
-          --family bitvector --family bitlist --family progressive_bitlist
+          --family bitvector --family bitlist --family progressive_bitlist --family basic_progressive_list
       - run: rustup component add llvm-tools --toolchain nightly-2026-08-18
       - run: cargo install cargo-llvm-cov --version 0.8.7 --locked
       - run: cargo llvm-cov --workspace --fail-under-lines 80
