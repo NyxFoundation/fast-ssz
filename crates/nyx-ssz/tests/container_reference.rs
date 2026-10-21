@@ -106,6 +106,30 @@ fn short_mixed_layouts_match_the_reference_including_truncation() {
 }
 
 #[test]
+fn actual_codec_metadata_cancels_overflow_for_variable_children_and_zero_counts() {
+    use nyx_ssz::{
+        codec::fixed_size,
+        collections::{List, Vector},
+    };
+    type Huge = Vector<u64, { usize::MAX }>;
+    type Variable = Vector<List<Huge, 1>, { usize::MAX }>;
+
+    let variable = fixed_size::<Variable>();
+    assert_eq!(variable, Ok(None));
+    let input = [4, 0, 0, 0];
+    let view = container_view(&input, &[variable]).unwrap();
+    assert_eq!(view.len(), 1);
+    assert_eq!(view.get(0), Some(&input[4..]));
+
+    // Raw layout follows metadata even for an invalid zero-count declaration.
+    let zero = fixed_size::<Vector<Huge, 0>>();
+    assert_eq!(zero, Ok(Some(0)));
+    let view = container_view(&[], &[zero]).unwrap();
+    assert_eq!(view.len(), 1);
+    assert_eq!(view.get(0), Some(&[][..]));
+}
+
+#[test]
 fn actual_codec_metadata_supports_unrepresentable_fixed_natural_widths() {
     use nyx_ssz::{codec::fixed_size, collections::Vector};
     let width = fixed_size::<Vector<u64, { usize::MAX }>>();

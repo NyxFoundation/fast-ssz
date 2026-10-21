@@ -1,7 +1,7 @@
 ---
 title: Verification scope and trust boundary
-description: Verified codec slice and raw Container wire assembly, not complete Container value codecs.
-last_updated: 2026-10-21
+description: Verified owned codecs, multiproofs and raw Container layout/assembly, not complete Container value codecs.
+last_updated: 2026-10-22
 tags:
   - ssz
   - aeneas
@@ -358,11 +358,14 @@ Both paths establish the existing immutable view invariant, so typed element tra
 and getters need no new assumptions. Element validity and collection codecs remain separate.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
-pinned source integrity. For the Container wire proof slice, `python3 scripts/verify.py check`
-passes all 80 operations, 10 dictionaries and 3,412 source cases. The library-source
+pinned source integrity. For the integrated owned byte/bit and raw Container proof slice,
+`python3 scripts/verify.py check` passes all 100 operations, 15 dictionaries and 3,412 source
+cases, including the actual owned byte and bit dictionaries. All 103 Python regression tests
+also pass (`python3 -m unittest discover -s scripts -p 'test_*.py'`). The library-source
 coverage gate (`cargo llvm-cov --workspace --ignore-filename-regex '/tests/' --fail-under-lines 80`)
-reports 95.95% lines overall and 100% for `container_wire.rs`. This excludes integration-test
-files but includes in-module unit tests; coverage is not a formal branch or cost guarantee.
+reports 95.26% lines overall, 96.75% for `container.rs` and 100% for `container_wire.rs`.
+This excludes integration-test files but includes in-module unit tests; coverage is not a
+formal branch or cost guarantee.
 Generated declarations are partitioned into dependency-ordered
 modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction
