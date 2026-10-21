@@ -10,6 +10,9 @@ repository = "https://github.com/ethereum/consensus-spec-tests"
 revision = "bc5c1a7fb2a8871aaffd4b16ee4dd9c72bb81908"
 path = "tests/general/phase0/ssz_generic"
 manifest_sha256 = "75810a966a11398e72d1fd3fa45320377e208ba93a42e63a16179137ffa6f2fb"
+reference_repository = "https://github.com/ethereum/remerkleable"
+reference_revision = "2f0baeef0082d4278acaef7d822deb7009d7db7e"
+reference_archive_sha256 = "a25c10de302585649542dbbd61da1689959db7a57ac5cd4505a8ed795eee3feb"
 
 [extraction]
 transparent_items = ["ruint", "core::num::_::div_ceil"]

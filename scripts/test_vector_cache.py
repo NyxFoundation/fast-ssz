@@ -96,6 +96,19 @@ class VectorCacheFlowTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         vectors.check(PINS, selected)
 
+    def test_should_forward_both_pins_and_the_fresh_reference_document_to_the_runner(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "progressive_bitlist").mkdir()
+            with patch.object(vectors, "ensure_checkout", return_value=root), \
+                    patch.object(vectors, "regenerate", return_value=root / "current.json"), \
+                    patch.object(vectors, "reference_source", return_value=("a" * 40, "c" * 64)), \
+                    patch.object(vectors.subprocess, "run", return_value=None) as run:
+                vectors.check(PINS, ["progressive_bitlist"])
+                arguments = run.call_args.args[0]
+                self.assertEqual(arguments[-6:], ["--reference-roots", str(root / "current.json"),
+                    "--reference-revision", "a" * 40, "--corpus-revision", REVISION])
+
     def test_should_report_unselected_families_explicitly(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

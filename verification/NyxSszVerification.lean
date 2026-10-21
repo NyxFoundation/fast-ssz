@@ -20,3 +20,7 @@ import NyxSszVerification.Bitfield
 import NyxSszVerification.Bitlist
 import NyxSszVerification.ProgressiveBits
 import NyxSszVerification.TreeHash
+import NyxSszVerification.PackedRoots.Bytes
+import NyxSszVerification.PackedRoots.Bits
+import NyxSszVerification.PackedRoots.Entrypoints
+import NyxSszVerification.PackedRoots.Counterexample

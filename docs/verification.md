@@ -11,12 +11,13 @@ tags:
 **Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
-roots are implemented.
-`verification/targets.json` links seventy registered operations to proofs over actual
+roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
+`verification/targets.json` links seventy-seven registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
-body-range decoding, plus four declaration-derived metadata APIs and eleven generalized-index operations. `verification/traits.json` separately
+body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
+seven packed byte/bit root entrypoints. `verification/traits.json` separately
 registers every public `Ssz` declaration member and its nine library dictionaries: seven basic
 instances and the two generic Vector/List constructors. Each proves the full `CodecLaw`;
 methods are not silently excluded. The two generic laws compose with the law of their actual
@@ -75,7 +76,24 @@ layout, packing, bounded merkleization and depth-zero tree rules. The extracted
 array-prefix mutation and standard `copy_from_slice` call are proved safe and
 preserve every encoded byte, with zero padding to 32 bytes. A uint256 fills the
 node exactly. Basic roots do not SHA-256 hash their single leaf. Generic Vector/List roots
-are separately proved below; borrowed byte/bit and other family roots remain unfinished.
+are separately proved below. Packed byte/bit and Progressive roots are also proved; other family
+root APIs remain unfinished.
+
+Packed roots cover every native byte/Boolean slice, declaration and machine-size/optional capacity.
+The real loop preserves all bytes and masks only a borrowed bitlist's delimiter position, then produces
+exact zero-padded nodes. Bounded capacities use ceil(bytes/32) or ceil(bits/256). Progressive recursion
+uses capacities 1,4,16,... on the right-hand spine, terminating as the remaining chunk count decreases;
+all shifts, depth increments, width multiplication, slices and pushes are proved safe. List mixins retain
+the actual count, not capacity. The canonical borrowed-view invariant established by its decoder is the
+only view precondition, and its full u128 bit count is not narrowed to usize. Input encoding is immutable;
+no intermediate encoding copy or Boolean expansion is required, though a node buffer is allocated.
+
+The pinned upstream root deliberately ignores optional Progressive bounds. The three raw Progressive
+APIs therefore refine explicit local reference wrappers composing unchanged `Ssz.boundCheck` with
+unchanged `checkedHashTreeRoot`. Counterexample lemmas record why direct equality would be false.
+This preserves every input/bound, exact fault category and complete root; it does not alter `CodecLaw`,
+`codecFaultAgrees` or the pinned executable. Progressive byte roots do not inherit the unrelated <2^32
+serialization-envelope restriction.
 
 `hash_pair_refines` proves termination and exact equality with upstream `Ssz.combine`
 for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing path,
@@ -317,9 +335,15 @@ checking files directly instead of consulting index cleanliness. Real repository
 replacement refs, fsmonitor and clean-filter execution, corrupt nested objects, and modifications hidden
 by index flags. Fresh checkout attributes force raw blobs without filters or text/encoding conversions;
 this also avoids host Git LFS settings falsely reporting upstream YAML files as modified.
-The current explicit CI selection covers
-all 1,229 Boolean/unsigned/basic-Vector cases, comparing decoded YAML values, re-encoding, roots and
-invalid-input rejection. Six other corpus families remain. This test slice is neither a universal proof
-nor full official-corpus coverage. Unsupported selected schemas fail rather than being skipped.
+The current explicit CI selection covers all 2,484 Boolean/unsigned/basic-Vector/Bitvector/Bitlist/
+ProgressiveBitlist cases, comparing decoded YAML values, re-encoding, roots and invalid-input rejection.
+The published 2025 corpus uses the pre-fix left-hand Progressive spine. Its source data and old root
+metadata remain immutable; 700 current root expectations are regenerated, with 472 differences, by
+`ethereum/remerkleable` commit 2f0baeef0082d4278acaef7d822deb7009d7db7e. The official source archive's
+SHA-256 is pinned and checked before extraction/execution. Fresh extraction rejects path traversal,
+links, duplicate entries and oversized sources; an isolated Python process uses only that authenticated
+package. Generated expectations identify both revisions, must match each original metadata root and
+must all be consumed exactly once; there is no old-root fallback. The remaining three families are not
+silently skipped. This is neither a universal proof of the external oracle nor full corpus coverage.
 OS faults/resource exhaustion and whole-library/cryptographic security are excluded.
 x86_64 extraction requires the prepared Miri sysroot. Native aarch64 extraction has not been exercised.

@@ -348,5 +348,40 @@
     "rust": "nyx_ssz::gindex::branch_indices",
     "lean": "NyxSszRust.gindex.branch_indices",
     "proof": "NyxSszVerification.gindex_branch_indices_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_byte_vector",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_byte_vector",
+    "proof": "NyxSszVerification.hash_tree_root_byte_vector_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_byte_list",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_byte_list",
+    "proof": "NyxSszVerification.hash_tree_root_byte_list_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_progressive_byte_list",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_progressive_byte_list",
+    "proof": "NyxSszVerification.hash_tree_root_progressive_byte_list_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_bit_vector",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_bit_vector",
+    "proof": "NyxSszVerification.hash_tree_root_bit_vector_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_bit_list",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_bit_list",
+    "proof": "NyxSszVerification.hash_tree_root_bit_list_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_progressive_bit_list",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_progressive_bit_list",
+    "proof": "NyxSszVerification.hash_tree_root_progressive_bit_list_refines"
+  },
+  {
+    "rust": "nyx_ssz::tree_hash::hash_tree_root_progressive_bit_list_view",
+    "lean": "NyxSszRust.tree_hash.hash_tree_root_progressive_bit_list_view",
+    "proof": "NyxSszVerification.hash_tree_root_progressive_bit_list_view_refines"
   }
 ]

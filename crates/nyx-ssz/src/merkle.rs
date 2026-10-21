@@ -74,6 +74,28 @@ pub fn merkleize(chunks: &[Node], limit: Option<usize>) -> Result<Node, Merkleiz
     Ok(subtree_root(chunks, depth_for(capacity)))
 }
 
+fn progressive_subtree_root(chunks: &[Node], depth: usize, width: u128) -> Node {
+    if chunks.is_empty() {
+        return [0; 32];
+    }
+    let count = if width >= chunks.len() as u128 {
+        chunks.len()
+    } else {
+        width as usize
+    };
+    let left = subtree_root(&chunks[..count], depth);
+    let right = if count == chunks.len() {
+        [0; 32]
+    } else {
+        progressive_subtree_root(&chunks[count..], depth + 2, width * 4)
+    };
+    hash_pair(&left, &right)
+}
+
+pub(crate) fn merkleize_progressive(chunks: &[Node]) -> Node {
+    progressive_subtree_root(chunks, 0, 1)
+}
+
 fn climb(current: Node, proof: &[Node], index: u128) -> Node {
     if proof.is_empty() {
         return current;

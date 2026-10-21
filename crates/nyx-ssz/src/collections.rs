@@ -1,7 +1,7 @@
 //! Owned, length-checked storage for SSZ collections.
 //!
 //! These types enforce element counts, not element validity or wire layout.
-//! These storage types do not yet implement the `codec::Ssz` trait.
+//! With `Ssz` elements, these storage types implement the `codec::Ssz` trait.
 //!
 //! ```
 //! use nyx_ssz::collections::{list, vector, List, Vector};

@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+from reference_vectors import regenerate, reference_source
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICIAL = "https://github.com/ethereum/consensus-spec-tests"
@@ -160,9 +161,16 @@ def check(pins, families):
         raise ValueError("families must be a nonempty distinct selection from the pinned corpus")
     for arguments in (["fmt", "--manifest-path", str(MANIFEST), "--", "--check"],
                       ["clippy", "--locked", "--manifest-path", str(MANIFEST), "--all-targets", "--", "-D", "warnings"],
-                      ["test", "--locked", "--manifest-path", str(MANIFEST)],
-                      ["run", "--locked", "--manifest-path", str(MANIFEST), "--", str(directory), *selected]):
+                      ["test", "--locked", "--manifest-path", str(MANIFEST)]):
         subprocess.run(["cargo", *arguments], cwd=ROOT, check=True)
+    with tempfile.TemporaryDirectory(prefix="nyx-current-reference-") as temporary:
+        reference = regenerate(pins, directory, selected, Path(temporary))
+        arguments = ["cargo", "run", "--locked", "--manifest-path", str(MANIFEST), "--", str(directory), *selected]
+        if reference is not None:
+            revision, _ = reference_source(pins)
+            arguments.extend(["--reference-roots", str(reference), "--reference-revision", revision,
+                              "--corpus-revision", pins["test_vectors"]["revision"]])
+        subprocess.run(arguments, cwd=ROOT, check=True)
     remaining = sorted(set(available) - set(selected))
     if remaining:
         print(f"Official vector slice only; remaining families: {', '.join(remaining)}. NOT full conformance.")

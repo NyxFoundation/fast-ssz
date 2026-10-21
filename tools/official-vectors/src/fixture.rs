@@ -19,7 +19,7 @@ pub(crate) struct Case {
     pub(crate) root: Option<[u8; 32]>,
 }
 
-fn read_file(path: &Path) -> TestResult<Vec<u8>> {
+pub(crate) fn read_file(path: &Path) -> TestResult<Vec<u8>> {
     if !fs::symlink_metadata(path)
         .map_err(|_| "fixture file is missing")?
         .is_file()
@@ -60,6 +60,10 @@ fn load_root(path: &Path) -> TestResult<[u8; 32]> {
         .get("root")
         .and_then(Value::as_str)
         .ok_or("missing root metadata")?;
+    parse_root(text)
+}
+
+pub(crate) fn parse_root(text: &str) -> TestResult<[u8; 32]> {
     let text = text.strip_prefix("0x").ok_or("root must be hexadecimal")?;
     let mut root = [0; 32];
     hex::decode_to_slice(text, &mut root).map_err(|_| "root must contain exactly 32 bytes")?;

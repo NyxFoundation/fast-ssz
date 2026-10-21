@@ -450,7 +450,8 @@ def check(pins, targets, contracts, directory):
     run(["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"])
     run(["cargo", "test", "--workspace"])
     run([sys.executable, ROOT / "scripts" / "official_vectors.py", "check",
-         "--family", "boolean", "--family", "uints", "--family", "basic_vector"])
+         "--family", "boolean", "--family", "uints", "--family", "basic_vector",
+         "--family", "bitvector", "--family", "bitlist", "--family", "progressive_bitlist"])
     assert_same_artifact(extract(pins, targets, directory, contracts), generated_artifacts())
     assert_import_closure(VERIFICATION)
     run(["lake", "build", "NyxSszVerification"], cwd=VERIFICATION)
