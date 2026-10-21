@@ -3,7 +3,7 @@ use yaml_serde::Value;
 
 use crate::{
     fixture::{Case, Outcome},
-    TestResult,
+    owned_bits, TestResult,
 };
 
 const MAX_EXPECTED_BITS: usize = 16 * 1024 * 1024;
@@ -43,9 +43,18 @@ impl BitSchema {
 
     pub(crate) fn verify(&self, case: &Case) -> TestResult {
         match *self {
-            Self::Vector(length) => verify_bounded(case, length, true),
-            Self::List(limit) => verify_bounded(case, limit, false),
-            Self::Progressive => verify_progressive(case),
+            Self::Vector(length) => {
+                verify_bounded(case, length, true)?;
+                owned_bits::verify_bounded(case, length, true)
+            }
+            Self::List(limit) => {
+                verify_bounded(case, limit, false)?;
+                owned_bits::verify_bounded(case, limit, false)
+            }
+            Self::Progressive => {
+                verify_progressive(case)?;
+                owned_bits::verify_progressive(case)
+            }
             Self::MissingDelimiter => {
                 if case.outcome != Outcome::Invalid {
                     return Err("delimiter-only schema must be an invalid case".into());
@@ -55,7 +64,7 @@ impl BitSchema {
                 for limit in [0, usize::MAX] {
                     require_rejection(bitfield::decode_bit_list(&case.bytes, limit).is_err())?;
                 }
-                Ok(())
+                owned_bits::verify_missing_delimiter(case)
             }
         }
     }

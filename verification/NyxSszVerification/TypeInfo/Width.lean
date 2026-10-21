@@ -1,4 +1,5 @@
 import NyxSszVerification.Codec.Law
+import NyxSszVerification.Bitfield.Count
 
 open Aeneas Aeneas.Std Aeneas.Std.WP
 
@@ -16,6 +17,14 @@ theorem codec_width_none (actual : core.result.Result (Option Usize) NyxSszRust.
   induction declaration with
   | Boolean => simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
   | Uint width => simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
+  | BitVector count =>
+    unfold NyxSszRust.type_info.fixed_size
+    step*
+    simp_all [typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
+  | BitList limit =>
+    simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
+  | ProgressiveBitList limit =>
+    simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
   | List element limit ih =>
     simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
   | ProgressiveList element limit ih =>

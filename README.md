@@ -32,7 +32,8 @@ Their `Ssz` implementations additionally compose encoding, decoding and roots wi
 any explicitly lawful child codec, including nested fixed- and variable-width collections.
 
 The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
-widths, generic Vector, List and canonical unbounded ProgressiveList. Its ten library implementations have proved declaration
+widths, generic Vector/List/ProgressiveList, and owned BitVector/BitList/ProgressiveBitList.
+Its thirteen library implementations have proved declaration
 metadata, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
@@ -43,7 +44,7 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive, owned byte/bit
+Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive, owned byte
 trait integration, typed index/path APIs, multiproofs, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 
@@ -94,7 +95,8 @@ an outer zero count cancels even an unrepresentable fixed child width, whereas a
 child stays variable. `ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
 children using the same canonical list layout, and uses the Progressive tree with the element count.
 `CodecError` implements the standard error interfaces. The seven basic implementations
-and generic Vector/List/ProgressiveList implementations are certified; borrowed byte/bit codecs remain separate APIs.
+and generic Vector/List/ProgressiveList and owned bitfield implementations are certified.
+Borrowed byte/bit codecs remain separately available.
 
 ```rust
 use nyx_ssz::{codec::decode, error::CodecError};
@@ -122,6 +124,27 @@ assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
 Construction moves the original allocation without a context bound. Codec calls validate the
 child declaration, including for empty values. Nested Progressive/bounded collections compose;
 failed decoding retains every completed value and the exact nested child state.
+
+## Owned packed bitfields
+
+```rust
+use nyx_ssz::{bitcollections::{BitList, BitVector, ProgressiveBitList}, codec::{decode, encode}};
+let vector = BitVector::<3>::from_bits(&[true, false, true]).unwrap();
+assert_eq!(vector.as_ssz_bytes(), &[5]);
+let bits = BitList::<8>::from_ssz_bytes(vec![13]).unwrap();
+assert_eq!(bits.len_bits(), 3);
+assert_eq!(bits.get(2), Some(true));
+assert_eq!(bits.get(3), None); // The delimiter is not an element.
+let progressive = decode::<ProgressiveBitList>(&[13]).unwrap();
+assert_eq!(encode(&progressive), Ok(vec![13]));
+```
+
+Owned storage remains packed. `from_ssz_bytes(Vec<u8>)` validates and moves the original allocation;
+`from_bits` packs Boolean input. Decoding rejects nonzero vector padding and malformed list delimiters
+with distinct `CodecError` categories. Fields and byte projections are immutable. Logical lengths and
+indices use `u128`, so a Progressive value never narrows its bit count to `usize`.
+Encoding and roots allocate byte/node buffers but never expand packed values into Boolean arrays.
+The same official bit-family cases exercise both borrowed APIs and these actual typed dictionaries.
 
 ## Borrowed sequence layout
 

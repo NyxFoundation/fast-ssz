@@ -2,7 +2,7 @@
   {
     "rust": "nyx_ssz::codec::Ssz",
     "law": "NyxSszVerification.CodecLaw",
-    "modules": ["nyx_ssz::codec", "nyx_ssz::collection_codec", "nyx_ssz::progressive_codec"],
+    "modules": ["nyx_ssz::codec", "nyx_ssz::collection_codec", "nyx_ssz::progressive_codec", "nyx_ssz::bit_codec"],
     "members": {
       "DecodeState": "assoc_type",
       "TYPE": "assoc_const",
@@ -60,6 +60,21 @@
         "type": "crate::collections::ProgressiveList<T>",
         "lean": "NyxSszRust.collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState",
         "proof": "NyxSszVerification.progressive_list_codec_refines"
+      },
+      {
+        "type": "crate::bitcollections::BitVector<N>",
+        "lean": "NyxSszRust.bitcollections.BitVector.Insts.Nyx_sszCodecSszTuple",
+        "proof": "NyxSszVerification.owned_bit_vector_codec_refines"
+      },
+      {
+        "type": "crate::bitcollections::BitList<MAX>",
+        "lean": "NyxSszRust.bitcollections.BitList.Insts.Nyx_sszCodecSszTuple",
+        "proof": "NyxSszVerification.owned_bit_list_codec_refines"
+      },
+      {
+        "type": "crate::bitcollections::ProgressiveBitList",
+        "lean": "NyxSszRust.bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple",
+        "proof": "NyxSszVerification.owned_progressive_bit_list_codec_refines"
       }
     ]
   }

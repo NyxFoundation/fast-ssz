@@ -12,14 +12,14 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links seventy-nine registered operations to proofs over actual
+`verification/targets.json` links ninety-four registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
-seven packed byte/bit root entrypoints. `verification/traits.json` separately
-registers every public `Ssz` declaration member and its ten library dictionaries: seven basic
-instances and three generic Vector/List/unbounded-ProgressiveList constructors. Each proves the full `CodecLaw`;
+seven packed byte/bit root entrypoints and fifteen owned-bitfield constructors/projections.
+`verification/traits.json` separately registers every public `Ssz` declaration member and its thirteen
+library dictionaries: seven basic instances, three generic sequence constructors and three owned bitfields. Each proves the full `CodecLaw`;
 methods are not silently excluded. The three generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
@@ -166,6 +166,25 @@ not packed-byte length. Declaration failures and overflowing fixed child widths 
 precedence, including successful empty lists. No context bound is silently encoded in this type;
 bounded generic Progressive contexts and other Progressive value families remain separate work.
 
+Owned `BitVector<N>`, `BitList<MAX>` and unbounded `ProgressiveBitList` retain packed bytes.
+Byte constructors establish exact canonical decoder invariants and retain the entire accepted Vec;
+Boolean constructors prove the corresponding serialization and decoded logical bits. Immutable byte
+projections preserve storage exactly. List counts/getters cover every u128 index and their full widened
+logical count; vector logical getters use the canonical invariant established by construction/decoding.
+No progressive bit-count-to-usize assumption is added. Type declarations and all four distinct
+padding/delimiter fault categories are preserved. Debug omits zero-sized const markers.
+
+All three complete dictionary laws quantify over every extracted struct value, not only canonical
+storage. Their observation retains every logical data bit: vector storage uses its final declared bit
+width, and delimited storage uses every byte before the highest final bit. Empty private storage
+observes empty bits. Canonical re-encoding masks vector padding and supplies a missing logical delimiter
+for otherwise inaccessible malformed stored states. This does not relax wire decoding: byte constructors
+and decoders still reject noncanonical input. No canonical-storage premise is added to `CodecLaw`.
+Roots prove exact byte/vector capacity equivalence, delimiter masking, length mixins and the Progressive
+spine. Runtime encode/root paths allocate packed byte/node buffers, never Boolean expansions; pointer
+identity and allocation behavior remain source/test evidence rather than cost theorems. Official bit
+families now exercise the actual owned dictionaries in addition to the existing borrowed operations.
+
 `codec::Ssz` has a static immutable `TYPE` declaration and encode/decode/tree-root
 operations. Boolean and uint8/16/32/64/128/256 dictionaries prove that the complete
 declaration maps to their exact reference descriptor, in addition to their value-codec
@@ -188,7 +207,7 @@ and formatting do not invoke its destructor or expose it.
 from `Ssz::TYPE` without invoking value codecs. The shared implementations refine
 `Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and `Ssz.isCompatible` over every
 represented finite declaration. The descriptor represents Boolean, machine-size integer
-widths and recursively nested Vector/List/ProgressiveList declarations. All represented
+widths and recursively nested Vector/List/ProgressiveList declarations and all three bitfield descriptors. All represented
 counts, bounds and widths, including zero, unsupported widths and `usize::MAX`, are covered. Validation rejects illegal widths, while width/classification remain separate
 metadata exactly as in the reference. Compatibility distinguishes Boolean from uint8
 and does not imply declaration validity. The descriptor view preserves the entire

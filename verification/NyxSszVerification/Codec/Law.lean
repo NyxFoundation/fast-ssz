@@ -23,6 +23,10 @@ def codecFaultAgrees : NyxSszRust.error.CodecError → Ssz.Err → Prop
   | .OffsetBelowTable, .offsetBelowTable => True
   | .OffsetUnaligned, .offsetUnaligned => True
   | .OverLimit, .overLimit _ _ => True
+  | .PaddingBits, .paddingBits => True
+  | .EmptyEncoding, .emptyEncoding => True
+  | .NoDelimiter, .noDelimiter => True
+  | .TrailingZeros, .trailingZeros => True
   | _, _ => False
 
 def codecEncodingAgrees

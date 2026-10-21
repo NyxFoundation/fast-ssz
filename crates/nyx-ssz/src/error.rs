@@ -17,6 +17,10 @@ pub enum CodecError {
     OffsetBelowTable,
     OffsetUnaligned,
     OverLimit,
+    PaddingBits,
+    EmptyEncoding,
+    NoDelimiter,
+    TrailingZeros,
 }
 
 /// A decoding refusal that returns ownership of every partially decoded value.
@@ -65,6 +69,10 @@ impl std::fmt::Display for CodecError {
             Self::OffsetBelowTable => "SSZ first offset is below its table width",
             Self::OffsetUnaligned => "SSZ first offset is not aligned to its table width",
             Self::OverLimit => "SSZ element count exceeds its declared capacity",
+            Self::PaddingBits => "SSZ bitvector has nonzero padding bits",
+            Self::EmptyEncoding => "SSZ bitlist encoding must contain a delimiter",
+            Self::NoDelimiter => "SSZ bitlist encoding has no delimiter",
+            Self::TrailingZeros => "SSZ bitlist encoding has bytes after its delimiter",
         })
     }
 }

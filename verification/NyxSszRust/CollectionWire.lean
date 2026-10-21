@@ -348,6 +348,14 @@ def collection_wire.encode_sequence
         ok (core.result.Result.Err error.CodecError.OffsetUnaligned)
       | error.CodecError.OverLimit =>
         ok (core.result.Result.Err error.CodecError.OverLimit)
+      | error.CodecError.PaddingBits =>
+        ok (core.result.Result.Err error.CodecError.PaddingBits)
+      | error.CodecError.EmptyEncoding =>
+        ok (core.result.Result.Err error.CodecError.EmptyEncoding)
+      | error.CodecError.NoDelimiter =>
+        ok (core.result.Result.Err error.CodecError.NoDelimiter)
+      | error.CodecError.TrailingZeros =>
+        ok (core.result.Result.Err error.CodecError.TrailingZeros)
   | core.ops.control_flow.ControlFlow.Break residual =>
     core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
       (alloc.vec.Vec Std.U8) (core.convert.FromSame error.CodecError) residual

@@ -45,8 +45,11 @@ def bitDecodingAgrees : core.result.Result (alloc.vec.Vec Bool) NyxSszRust.bitfi
     NyxSszRust.bitfield.decode_bit_vector bytes length ⦃ actual =>
       bitDecodingAgrees actual
         (checkedDeserialize (.bitVector length.val) (bytesToSpec bytes.val)) ⦄ := by
-  unfold NyxSszRust.bitfield.decode_bit_vector
-  step*
+  unfold NyxSszRust.bitfield.decode_bit_vector NyxSszRust.bitfield.validate_bit_vector
+  split <;> step*
+  all_goals try (split <;> step*)
+  all_goals try (split <;> step*)
+  all_goals try (split <;> step*)
   all_goals
     simp_all [checkedDeserialize, Ssz.Desc.wellFormed, Ssz.deserialize, bitDecodingAgrees,
       bitFaultAgrees, bytesToSpec_getElem, byte_shift_zero_nat, Nat.one_le_iff_ne_zero,
