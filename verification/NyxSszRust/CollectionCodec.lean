@@ -85,6 +85,14 @@ def collection_codec.list_layout
       ok (core.result.Result.Err error.CodecError.OffsetUnaligned)
     | error.CodecError.OverLimit =>
       ok (core.result.Result.Err error.CodecError.OverLimit)
+    | error.CodecError.PaddingBits =>
+      ok (core.result.Result.Err error.CodecError.PaddingBits)
+    | error.CodecError.EmptyEncoding =>
+      ok (core.result.Result.Err error.CodecError.EmptyEncoding)
+    | error.CodecError.NoDelimiter =>
+      ok (core.result.Result.Err error.CodecError.NoDelimiter)
+    | error.CodecError.TrailingZeros =>
+      ok (core.result.Result.Err error.CodecError.TrailingZeros)
 
 /-- [nyx_ssz::collection_codec::storage_failure]:
     Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 25:0-38:1 -/
@@ -160,6 +168,14 @@ def collection_codec.vector_layout
       ok (core.result.Result.Err error.CodecError.OffsetUnaligned)
     | error.CodecError.OverLimit =>
       ok (core.result.Result.Err error.CodecError.OverLimit)
+    | error.CodecError.PaddingBits =>
+      ok (core.result.Result.Err error.CodecError.PaddingBits)
+    | error.CodecError.EmptyEncoding =>
+      ok (core.result.Result.Err error.CodecError.EmptyEncoding)
+    | error.CodecError.NoDelimiter =>
+      ok (core.result.Result.Err error.CodecError.NoDelimiter)
+    | error.CodecError.TrailingZeros =>
+      ok (core.result.Result.Err error.CodecError.TrailingZeros)
 
 /-- [nyx_ssz::collection_codec::vector_type]:
     Source: 'crates/nyx-ssz/src/collection_codec.rs', lines 40:0-45:1 -/

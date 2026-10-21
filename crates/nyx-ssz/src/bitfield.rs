@@ -86,8 +86,7 @@ pub fn encode_bit_vector(bits: &[bool], length: usize) -> Result<Vec<u8>, Bitfie
     Ok(pack_bits(bits))
 }
 
-/// Decode exactly `length` bits, rejecting wrong byte counts and nonzero padding.
-pub fn decode_bit_vector(bytes: &[u8], length: usize) -> Result<Vec<bool>, BitfieldError> {
+pub(crate) fn validate_bit_vector(bytes: &[u8], length: usize) -> Result<(), BitfieldError> {
     if length == 0 {
         return Err(BitfieldError::EmptyVector);
     }
@@ -98,6 +97,12 @@ pub fn decode_bit_vector(bytes: &[u8], length: usize) -> Result<Vec<bool>, Bitfi
     if remainder != 0 && bytes[bytes.len() - 1] >> remainder != 0 {
         return Err(BitfieldError::PaddingBits);
     }
+    Ok(())
+}
+
+/// Decode exactly `length` bits, rejecting wrong byte counts and nonzero padding.
+pub fn decode_bit_vector(bytes: &[u8], length: usize) -> Result<Vec<bool>, BitfieldError> {
+    validate_bit_vector(bytes, length)?;
     Ok(unpack_bits(bytes, length))
 }
 
@@ -112,7 +117,7 @@ fn all_zero(bytes: &[u8]) -> bool {
     true
 }
 
-fn highest_bit(byte: u8) -> usize {
+pub(crate) fn highest_bit(byte: u8) -> usize {
     if (byte >> 7) & 1 == 1 {
         7
     } else if (byte >> 6) & 1 == 1 {

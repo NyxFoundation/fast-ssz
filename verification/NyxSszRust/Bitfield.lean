@@ -37,7 +37,7 @@ inductive bitfield.BitfieldError where
 | TrailingZeros : bitfield.BitfieldError
 
 /-- [nyx_ssz::bitfield::all_zero]: loop body 0:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 106:4-113:1 -/
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 111:4-118:1 -/
 @[rust_loop_body]
 def bitfield.all_zero_loop.body
   (bytes1 : Slice Std.U8) (index : Std.Usize) :
@@ -66,7 +66,7 @@ def bitfield.bit_at
   else ok 0#u8
 
 /-- [nyx_ssz::bitfield::highest_bit]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 115:0-133:1 -/
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 120:0-138:1 -/
 def bitfield.highest_bit (byte : Std.U8) : RustM Std.Usize := do
   let i ← byte >>> 7#i32
   let i1 ← lift (i &&& 1#u8)
@@ -132,7 +132,7 @@ def bitfield.BitListView.as_ssz_bytes
   ok self.encoded
 
 /-- [nyx_ssz::bitfield::all_zero]: loop 0:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 106:4-113:1 -/
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 111:4-118:1 -/
 @[rust_loop]
 def bitfield.all_zero_loop
   (bytes1 : Slice Std.U8) (index : Std.Usize) : RustM Bool := do
@@ -179,6 +179,32 @@ def bitfield.unpack_bits_loop
       output1 index1)
     (output, index)
 
+/-- [nyx_ssz::bitfield::validate_bit_vector]:
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 89:0-101:1 -/
+def bitfield.validate_bit_vector
+  (bytes1 : Slice Std.U8) (length : Std.Usize) :
+  RustM (core.result.Result Unit bitfield.BitfieldError)
+  := do
+  if length = 0#usize
+  then ok (core.result.Result.Err bitfield.BitfieldError.EmptyVector)
+  else
+    let i := Slice.len bytes1
+    let i1 ← core.num.Usize.div_ceil length 8#usize
+    if i != i1
+    then ok (core.result.Result.Err bitfield.BitfieldError.InvalidLength)
+    else
+      let remainder ← length % 8#usize
+      if remainder != 0#usize
+      then
+        let i2 := Slice.len bytes1
+        let i3 ← i2 - 1#usize
+        let i4 ← Slice.index_usize bytes1 i3
+        let i5 ← i4 >>> remainder
+        if i5 != 0#u8
+        then ok (core.result.Result.Err bitfield.BitfieldError.PaddingBits)
+        else ok (core.result.Result.Ok ())
+      else ok (core.result.Result.Ok ())
+
 /-- [nyx_ssz::bitfield::{nyx_ssz::bitfield::BitListView<'a>}::len_bits]:
     Source: 'crates/nyx-ssz/src/bitfield.rs', lines 30:4-35:5
     Visibility: public -/
@@ -197,7 +223,7 @@ def bitfield.BitListView.len_bits
   i4 + i6
 
 /-- [nyx_ssz::bitfield::all_zero]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 104:0-113:1 -/
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 109:0-118:1 -/
 @[reducible]
 def bitfield.all_zero (bytes1 : Slice Std.U8) : RustM Bool := do
   bitfield.all_zero_loop bytes1 0#usize
@@ -234,7 +260,7 @@ def bitfield.unpack_bits
   bitfield.unpack_bits_loop bytes1 count (alloc.vec.Vec.new Bool) 0#usize
 
 /-- [nyx_ssz::bitfield::decode_bit_list]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 152:0-174:1
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 157:0-179:1
     Visibility: public -/
 def bitfield.decode_bit_list
   (bytes1 : Slice Std.U8) (limit : Std.Usize) :
@@ -271,38 +297,25 @@ def bitfield.decode_bit_list
           ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::bitfield::decode_bit_vector]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 90:0-102:1
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 104:0-107:1
     Visibility: public -/
 def bitfield.decode_bit_vector
   (bytes1 : Slice Std.U8) (length : Std.Usize) :
   RustM (core.result.Result (alloc.vec.Vec Bool) bitfield.BitfieldError)
   := do
-  if length = 0#usize
-  then ok (core.result.Result.Err bitfield.BitfieldError.EmptyVector)
-  else
-    let i := Slice.len bytes1
-    let i1 ← core.num.Usize.div_ceil length 8#usize
-    if i != i1
-    then ok (core.result.Result.Err bitfield.BitfieldError.InvalidLength)
-    else
-      let remainder ← length % 8#usize
-      if remainder != 0#usize
-      then
-        let i2 := Slice.len bytes1
-        let i3 ← i2 - 1#usize
-        let i4 ← Slice.index_usize bytes1 i3
-        let i5 ← i4 >>> remainder
-        if i5 != 0#u8
-        then ok (core.result.Result.Err bitfield.BitfieldError.PaddingBits)
-        else
-          let v ← bitfield.unpack_bits bytes1 length
-          ok (core.result.Result.Ok v)
-      else
-        let v ← bitfield.unpack_bits bytes1 length
-        ok (core.result.Result.Ok v)
+  let r ← bitfield.validate_bit_vector bytes1 length
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue _ =>
+    let v ← bitfield.unpack_bits bytes1 length
+    ok (core.result.Result.Ok v)
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (alloc.vec.Vec Bool) (core.convert.FromSame bitfield.BitfieldError)
+      residual
 
 /-- [nyx_ssz::bitfield::decode_progressive_bit_list]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 200:0-223:1
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 205:0-228:1
     Visibility: public -/
 def bitfield.decode_progressive_bit_list
   (bytes1 : Slice Std.U8) (limit : Option Std.Usize) :
@@ -352,7 +365,7 @@ def bitfield.pack_bits (bits : Slice Bool) : RustM (alloc.vec.Vec Std.U8) := do
   bitfield.pack_bits_loop bits count (alloc.vec.Vec.new Std.U8) 0#usize
 
 /-- [nyx_ssz::bitfield::encode_bit_list]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 136:0-149:1
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 141:0-154:1
     Visibility: public -/
 def bitfield.encode_bit_list
   (bits : Slice Bool) (limit : Std.Usize) :
@@ -397,7 +410,7 @@ def bitfield.encode_bit_vector
          ok (core.result.Result.Ok v)
 
 /-- [nyx_ssz::bitfield::encode_progressive_bit_list]:
-    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 177:0-186:1
+    Source: 'crates/nyx-ssz/src/bitfield.rs', lines 182:0-191:1
     Visibility: public -/
 def bitfield.encode_progressive_bit_list
   (bits : Slice Bool) (limit : Option Std.Usize) :

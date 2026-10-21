@@ -10,6 +10,9 @@ use crate::error::CodecError;
 pub enum TypeDescriptor {
     Boolean,
     Uint(usize),
+    BitVector(usize),
+    BitList(usize),
+    ProgressiveBitList(Option<usize>),
     Vector(&'static TypeDescriptor, usize),
     List(&'static TypeDescriptor, usize),
     ProgressiveList(&'static TypeDescriptor, Option<usize>),
@@ -19,7 +22,11 @@ pub(crate) const fn fixed_size(declaration: &TypeDescriptor) -> Result<Option<us
     match declaration {
         TypeDescriptor::Boolean => Ok(Some(1)),
         TypeDescriptor::Uint(width) => Ok(Some(*width)),
-        TypeDescriptor::List(_, _) | TypeDescriptor::ProgressiveList(_, _) => Ok(None),
+        TypeDescriptor::BitVector(count) => Ok(Some(count.div_ceil(8))),
+        TypeDescriptor::BitList(_)
+        | TypeDescriptor::ProgressiveBitList(_)
+        | TypeDescriptor::List(_, _)
+        | TypeDescriptor::ProgressiveList(_, _) => Ok(None),
         TypeDescriptor::Vector(element, count) => match fixed_size(element) {
             Ok(None) => Ok(None),
             Ok(Some(width)) => match width.checked_mul(*count) {
@@ -52,6 +59,17 @@ pub(crate) const fn is_compatible(left: &TypeDescriptor, right: &TypeDescriptor)
             TypeDescriptor::Uint(right_width) => *left_width == *right_width,
             _ => false,
         },
+        TypeDescriptor::BitVector(left_count) => match right {
+            TypeDescriptor::BitVector(right_count) => *left_count == *right_count,
+            _ => false,
+        },
+        TypeDescriptor::BitList(left_limit) => match right {
+            TypeDescriptor::BitList(right_limit) => *left_limit == *right_limit,
+            _ => false,
+        },
+        TypeDescriptor::ProgressiveBitList(_) => {
+            matches!(right, TypeDescriptor::ProgressiveBitList(_))
+        }
         TypeDescriptor::Vector(left_element, left_count) => match right {
             TypeDescriptor::Vector(right_element, right_count) => {
                 *left_count == *right_count && is_compatible(left_element, right_element)
@@ -80,6 +98,14 @@ pub(crate) const fn validate(declaration: &TypeDescriptor) -> Result<(), CodecEr
             1 | 2 | 4 | 8 | 16 | 32 => Ok(()),
             _ => Err(CodecError::InvalidIntegerWidth),
         },
+        TypeDescriptor::BitVector(count) => {
+            if *count == 0 {
+                Err(CodecError::EmptyVector)
+            } else {
+                Ok(())
+            }
+        }
+        TypeDescriptor::BitList(_) | TypeDescriptor::ProgressiveBitList(_) => Ok(()),
         TypeDescriptor::Vector(element, count) => {
             if *count == 0 {
                 Err(CodecError::EmptyVector)

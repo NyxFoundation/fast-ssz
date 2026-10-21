@@ -393,5 +393,80 @@
     "rust": "nyx_ssz::collections::ProgressiveList::as_slice",
     "lean": "NyxSszRust.collections.ProgressiveList.as_slice",
     "proof": "NyxSszVerification.progressive_list_as_slice_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitVector::from_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.BitVector.from_ssz_bytes",
+    "proof": "NyxSszVerification.owned_bit_vector_from_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitVector::from_bits",
+    "lean": "NyxSszRust.bitcollections.BitVector.from_bits",
+    "proof": "NyxSszVerification.owned_bit_vector_from_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitVector::as_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.BitVector.as_ssz_bytes",
+    "proof": "NyxSszVerification.owned_bit_vector_as_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitVector::len_bits",
+    "lean": "NyxSszRust.bitcollections.BitVector.len_bits",
+    "proof": "NyxSszVerification.owned_bit_vector_len_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitVector::get",
+    "lean": "NyxSszRust.bitcollections.BitVector.get",
+    "proof": "NyxSszVerification.owned_bit_vector_get_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitList::from_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.BitList.from_ssz_bytes",
+    "proof": "NyxSszVerification.owned_bit_list_from_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitList::from_bits",
+    "lean": "NyxSszRust.bitcollections.BitList.from_bits",
+    "proof": "NyxSszVerification.owned_bit_list_from_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitList::as_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.BitList.as_ssz_bytes",
+    "proof": "NyxSszVerification.owned_bit_list_as_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitList::len_bits",
+    "lean": "NyxSszRust.bitcollections.BitList.len_bits",
+    "proof": "NyxSszVerification.owned_bit_list_len_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BitList::get",
+    "lean": "NyxSszRust.bitcollections.BitList.get",
+    "proof": "NyxSszVerification.owned_bit_list_get_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::ProgressiveBitList::from_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.ProgressiveBitList.from_ssz_bytes",
+    "proof": "NyxSszVerification.owned_progressive_bit_list_from_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::ProgressiveBitList::from_bits",
+    "lean": "NyxSszRust.bitcollections.ProgressiveBitList.from_bits",
+    "proof": "NyxSszVerification.owned_progressive_bit_list_from_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::ProgressiveBitList::as_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.ProgressiveBitList.as_ssz_bytes",
+    "proof": "NyxSszVerification.owned_progressive_bit_list_as_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::ProgressiveBitList::len_bits",
+    "lean": "NyxSszRust.bitcollections.ProgressiveBitList.len_bits",
+    "proof": "NyxSszVerification.owned_progressive_bit_list_len_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::ProgressiveBitList::get",
+    "lean": "NyxSszRust.bitcollections.ProgressiveBitList.get",
+    "proof": "NyxSszVerification.owned_progressive_bit_list_get_refines"
   }
 ]

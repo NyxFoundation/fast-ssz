@@ -59,7 +59,7 @@ fn pack_bytes(bytes: &[u8], count: usize, final_mask: u8) -> Vec<Node> {
     output
 }
 
-fn packed_root(
+pub(crate) fn packed_root(
     bytes: &[u8],
     count: usize,
     final_mask: u8,
@@ -159,7 +159,7 @@ pub fn hash_tree_root_progressive_bit_list(
     packed_root(&bytes, bytes.len(), 255, None, Some(bits.len() as u128))
 }
 
-fn bitlist_payload(byte_count: usize, bit_count: u128) -> (usize, u8) {
+pub(crate) fn bitlist_payload(byte_count: usize, bit_count: u128) -> (usize, u8) {
     let remainder = (bit_count % 8) as u32;
     if remainder == 0 {
         (byte_count - 1, 255)

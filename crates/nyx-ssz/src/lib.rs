@@ -5,6 +5,9 @@
 
 pub use ruint::aliases::U256;
 
+mod bit_codec;
+mod bit_storage;
+pub mod bitcollections;
 pub mod bitfield;
 pub mod bytes;
 pub mod codec;
