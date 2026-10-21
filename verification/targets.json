@@ -488,5 +488,20 @@
     "rust": "nyx_ssz::bytecollections::ByteList::as_bytes",
     "lean": "NyxSszRust.bytecollections.ByteList.as_bytes",
     "proof": "NyxSszVerification.byte_list_as_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::multiproof::helper_indices",
+    "lean": "NyxSszRust.multiproof.helper_indices",
+    "proof": "NyxSszVerification.multiproof_helper_indices_refines"
+  },
+  {
+    "rust": "nyx_ssz::multiproof::calculate_merkle_root",
+    "lean": "NyxSszRust.multiproof.calculate_merkle_root",
+    "proof": "NyxSszVerification.multiproof_calculate_merkle_root_refines"
+  },
+  {
+    "rust": "nyx_ssz::multiproof::verify_merkle_proof",
+    "lean": "NyxSszRust.multiproof.verify_merkle_proof",
+    "proof": "NyxSszVerification.multiproof_verify_merkle_proof_refines"
   }
 ]

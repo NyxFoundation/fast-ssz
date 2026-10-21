@@ -10,6 +10,7 @@ import NyxSszRust.Ruint
 import NyxSszRust.TypeInfo
 import NyxSszRust.Gindex
 import NyxSszRust.Scalar
+import NyxSszRust.Multiproof
 import NyxSszRust.Sequence
 import NyxSszRust.TreeHash
 import NyxSszRust.BitStorage

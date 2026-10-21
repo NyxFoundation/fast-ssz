@@ -10,17 +10,18 @@ tags:
 
 **Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
-single-branch Merkle verification, generic node Merkleization and all basic-type
+single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links ninety-eight registered operations to proofs over actual
+`verification/targets.json` links one hundred and one registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
-seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections and four owned
-byte-array methods. `verification/traits.json` separately registers every public `Ssz` declaration member
-and its fifteen library dictionaries: seven basic instances, three generic sequence constructors,
-three owned bitfields and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
+seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections, four owned
+byte-array methods and three multiproof operations. `verification/traits.json` separately registers
+every public `Ssz` declaration member and its fifteen library dictionaries: seven basic instances,
+three generic sequence constructors, three owned bitfields and two dedicated owned byte arrays.
+Each proves the full `CodecLaw`;
 methods are not silently excluded. The three generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
@@ -119,7 +120,7 @@ index and incorrect branch lengths return the corresponding error category;
 a well-formed nonmatching proof returns false. Proofs cover index guards, sibling
 order, recursive termination, SHA-256 composition and bytewise root comparison.
 Error relations classify reasons, not the reference error's numeric diagnostics.
-Typed paths, multiproofs and full-library conformance are not yet proved.
+Typed paths, proof generation and full-library conformance are not yet proved.
 
 `gindex` implements raw numeric tree operations, not typed path resolution. Depth and
 branch length refine `Ssz.gindexDepth`/`gindexLength`, distinguishing zero, root and
@@ -133,7 +134,39 @@ all nodes and their order. Their real Vec loops terminate with bounded shifts, i
 and pushes. Positions/depths use `u32`; indices use every `u128` value. The leading-zero
 primitive is the pinned Aeneas standard model, with its exact log2 arithmetic proved here.
 Native overflow checks and error precedence are part of these proofs. Typed field/element
-paths, progressive chunk positions and multiproof helper-set construction remain separate.
+paths and progressive chunk positions remain separate.
+
+`multiproof::{helper_indices, calculate_merkle_root, verify_merkle_proof}` refine
+`Ssz.getHelperIndices`, `Ssz.calculateMultiMerkleRoot` and `Ssz.verifyMerkleMultiproof`.
+Their unconditional kernel theorems cover all native slices and every `u128` index,
+including depth 127. Leaf-count refusal precedes helper validation. Empty/repeated
+requests, per-claim zero/root/path validation, related claims and proof-length errors
+preserve the reference order and error categories. Descending helper order is exact;
+complete frontiers reconstruct a root and well-formed mismatches return false.
+
+Helper selection scans sibling candidates, excludes all claim paths, and selects the
+next distinct greatest helper before pushing. It never accumulates flattened paths.
+`SizeOverflow` is allowed exactly when the mathematical helper list exceeds `usize::MAX`;
+there is no input, path-count or working-set restriction. The verifier validates first
+and stops helper collection once another helper exceeds the supplied proof length.
+Its refusal is therefore exact `proofLength`, even for an unrepresentable helper list,
+not `SizeOverflow`. The checked pushes depend only on actual output length.
+
+Root reconstruction borrows leaves and helpers separately and recursively hashes the
+finite frontier tree, using at most 128 frames. No combined `leaves + helpers` vector,
+count addition or machine-size budget is needed. Checked child arithmetic and decreasing
+depth cover top-bit indices. Antichain, uniqueness and complete-frontier lemmas connect
+this traversal to the unchanged reference level fold. Existing `hash_pair` proofs
+supply every parent hash. Allocation failure and finite stack/runtime resources remain
+trust boundaries, not excuses for machine-index overflow or weakened contracts.
+
+`Multiproof/{Frontier,Antichain,Fold,Cut}.lean` adapt relevant pinned SSZ proof lemmas
+under the project's Lean version; they prove statements about the unchanged executable
+specification. The upstream proof-module dependency tree requires its newer toolchain,
+so these kernel-checked compatibility proofs avoid importing it. No pinned source or
+old fault cases are changed. The full gate also runs `tools/multiproof-oracle.lean`
+against the actual pinned executable definitions, checking precedence, explicit trees,
+wrong roots/order and every supported depth. This baseline makes no performance claim.
 
 `bytecollections::ByteVector<N>` and `bytecollections::ByteList<MAX>` are dedicated owned
 opaque-byte types with private `Vec<u8>` storage, not aliases for generic uint8 sequences.

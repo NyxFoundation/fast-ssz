@@ -20,6 +20,10 @@ path concatenation/rebasing and bottom-up path/sibling indices over the full `u1
 domain. Unrepresentable natural-number results return `ProofError::IndexOverflow`;
 bit queries and truncation explicitly handle positions beyond the word width.
 These numeric helpers do not yet resolve typed field/element paths.
+The `multiproof` module provides proved descending helper indices, multi-leaf root
+reconstruction and verification, including malformed requests and full-depth indices.
+Helper output overflow is distinguished from proof-length refusal; neither path imposes
+a combined-frontier or accumulated-path size budget.
 RustCrypto `sha2` is a test oracle only, not a runtime dependency.
 `U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
 and proved, not assumed correct. Other `ruint` operations are outside these proofs.
@@ -45,7 +49,7 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
 Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
-typed index/path APIs, multiproofs, the complete official corpus and
+typed index/path APIs, proof generation, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 
 ## Example
