@@ -13,3 +13,6 @@ import NyxSszRust.Scalar
 import NyxSszRust.Sequence
 import NyxSszRust.TreeHash
 import NyxSszRust.Codec
+import NyxSszRust.CollectionWire
+import NyxSszRust.CollectionTree
+import NyxSszRust.CollectionCodec

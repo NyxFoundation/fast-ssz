@@ -5,6 +5,12 @@ repository = "https://github.com/ethereum/ssz-specs"
 revision = "c68b96a852559284cc4311b6c14105bcf51ac6ce"
 upstream_lean_toolchain = "leanprover/lean4:v4.33.1"
 
+[test_vectors]
+repository = "https://github.com/ethereum/consensus-spec-tests"
+revision = "bc5c1a7fb2a8871aaffd4b16ee4dd9c72bb81908"
+path = "tests/general/phase0/ssz_generic"
+manifest_sha256 = "75810a966a11398e72d1fd3fa45320377e208ba93a42e63a16179137ffa6f2fb"
+
 [extraction]
 transparent_items = ["ruint", "core::num::_::div_ceil"]
 
@@ -12,8 +18,8 @@ transparent_items = ["ruint", "core::num::_::div_ceil"]
 cargo_hax_version = "0.4.0"
 charon_version = "nightly-2026.09.02"
 charon_revision = "fea3fc68d445181cf4ce094855a43a17192a2b12"
-aeneas_version = "a114695"
+aeneas_version = "3a73834"
 aeneas_repository = "https://github.com/NyxFoundation/aeneas"
-aeneas_revision = "a11469524b7169278dbac472fe593abde5b0ac3e"
+aeneas_revision = "3a7383419516c80c634f8d9b392e8cb7a0b3580f"
 rust_toolchain = "nightly-2026-08-18"
 lean_toolchain = "leanprover/lean4:v4.31.0"

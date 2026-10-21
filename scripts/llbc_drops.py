@@ -2,8 +2,8 @@
 
 This checks emitted local Drop statements, not arbitrary foreign library models or
 caller callbacks. Unwinding and compiler-generated drop glue are outside the API
-normal-return contract. Only closed standard containers without user destructors
-may be discarded inside that contract.
+normal-return contract. Closed standard containers and transparent local records
+with recursively safe fields and no user Drop implementation may be discarded.
 """
 
 
@@ -46,22 +46,50 @@ def _name(declaration):
     return "::".join(part["Ident"][0] for part in declaration["item_meta"]["name"] if "Ident" in part)
 
 
-def _closed_standard_type(value, table, types, trail=frozenset()):
+def _safe_structures(translated, table, types):
+    drop_traits = {item["def_id"] for item in translated["trait_decls"] if item
+                   and _name(item) == "core::ops::drop::Drop"}
+    custom = set()
+    for implementation in translated["trait_impls"]:
+        if not implementation or implementation["src"] == "Destruct":
+            continue
+        trait = implementation["impl_trait"]
+        if trait["id"] not in drop_traits:
+            continue
+        owner, _ = _resolve(trait["generics"]["types"][0], table, frozenset())
+        if not isinstance(owner, dict) or "Adt" not in owner:
+            raise ValueError("unsupported user destructor receiver")
+        custom.add(owner["Adt"]["id"])
+    return {identifier: item["kind"]["Struct"] for identifier, item in types.items()
+            if identifier not in custom and item["item_meta"]["is_local"]
+            and item["item_meta"].get("opacity") == "Transparent"
+            and "Struct" in item.get("kind", {})
+            and not item["generics"]["types"] and not item["generics"]["const_generics"]
+            and not item["generics"]["trait_clauses"]}
+
+
+def _closed_standard_type(value, table, types, structures, trail=frozenset()):
     ty, trail = _resolve(value, table, trail)
     if not isinstance(ty, dict):
         return False
     if "Literal" in ty or "Ref" in ty or "RawPtr" in ty:
         return True
+    if "Array" in ty:
+        return _closed_standard_type(ty["Array"][0], table, types, structures, trail)
     if "Adt" not in ty:
         return False
     adt = ty["Adt"]
     arguments = adt["generics"]["types"]
     if adt["builtin"] in ("Array", "Tuple"):
-        return all(_closed_standard_type(arg, table, types, trail) for arg in arguments)
+        return all(_closed_standard_type(arg, table, types, structures, trail) for arg in arguments)
     declaration = types.get(adt["id"])
-    return (declaration is not None and _name(declaration) == "alloc::vec::Vec"
-            and len(arguments) == 1
-            and _closed_standard_type(arguments[0], table, types, trail))
+    if declaration is not None and _name(declaration) == "alloc::vec::Vec":
+        return len(arguments) == 1 and _closed_standard_type(arguments[0], table, types, structures, trail)
+    key = ("structure", adt["id"])
+    if adt["id"] not in structures or arguments or key in trail:
+        return False
+    return all(_closed_standard_type(field["ty"], table, types, structures, trail | {key})
+               for field in structures[adt["id"]])
 
 
 def _generated_destructor(function, implementations):
@@ -72,12 +100,12 @@ def _generated_destructor(function, implementations):
     return implementations[identifier]["src"] == "Destruct"
 
 
-def _check_statement(node, table, types, functions):
+def _check_statement(node, table, types, structures, functions):
     if "Drop" in node:
         drop = node["Drop"]
         if drop["kind"] != "Precise":
             raise ValueError("normal-flow drops must be precise")
-        if not _closed_standard_type(drop["place"]["ty"], table, types):
+        if not _closed_standard_type(drop["place"]["ty"], table, types, structures):
             raise ValueError("unmodeled normal-flow drop; return owned state instead")
     if "Call" not in node:
         return
@@ -97,10 +125,11 @@ def assert_safe_drops(document):
         raise ValueError("ownership audit requires successful precise, undesugared LLBC")
     table = _interned(document)
     types = {item["def_id"]: item for item in translated["type_decls"] if item}
+    structures = _safe_structures(translated, table, types)
     implementations = {item["def_id"]: item for item in translated["trait_impls"] if item}
     functions = {item["def_id"]: item for item in translated["fun_decls"] if item}
     for function in functions.values():
         if not function["item_meta"]["is_local"] or _generated_destructor(function, implementations):
             continue
         for node in _nodes(function["body"], skip_unwind=True):
-            _check_statement(node, table, types, functions)
+            _check_statement(node, table, types, structures, functions)

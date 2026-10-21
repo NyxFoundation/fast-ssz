@@ -8,6 +8,7 @@ from trait_contracts import load_contracts, validate_traits, assert_extracted_in
 
 CONTRACT = {
     "rust": "nyx_ssz::codec::Ssz", "law": "NyxSszVerification.CodecLaw",
+    "modules": ["nyx_ssz::codec"],
     "members": {"TYPE": "assoc_const", "encode": "function", "DecodeState": "assoc_type"},
     "instances": [{"type": "bool", "lean": "NyxSszRust.Bool.Insts.Ssz",
                    "proof": "NyxSszVerification.bool_law"}],
@@ -20,12 +21,28 @@ def document():
               "inner": {"trait": {"items": [2, 3, 7], "implementations": [4]}}},
         "2": {"name": "TYPE", "inner": {"assoc_const": {}}},
         "3": {"name": "encode", "inner": {"function": {}}},
-        "4": {"inner": {"impl": {"for": {"primitive": "bool"}, "items": [5, 6, 8]}}},
+        "4": {"inner": {"impl": {"for": {"primitive": "bool"}, "items": [5, 6, 8],
+              "generics": {"params": [], "where_predicates": []}}}},
         "5": {"name": "TYPE", "inner": {"assoc_const": {}}},
         "6": {"name": "encode", "inner": {"function": {}}},
         "7": {"name": "DecodeState", "inner": {"assoc_type": {}}},
         "8": {"name": "DecodeState", "inner": {"assoc_type": {}}},
     }}
+
+
+def generic_document():
+    data = document()
+    impl = data["index"]["4"]["inner"]["impl"]
+    impl["for"] = {"resolved_path": {"path": "crate::collections::Vector", "id": 10, "args": {
+        "angle_bracketed": {"args": [{"type": {"generic": "T"}},
+            {"const": {"expr": "N", "value": None, "is_literal": False}}], "constraints": []}}}}
+    impl["generics"] = {"params": [
+        {"name": "T", "kind": {"type": {"bounds": [{"trait_bound": {
+            "trait": {"path": "Ssz", "id": 1, "args": None}, "generic_params": [], "modifier": "none"}}],
+            "default": None, "is_synthetic": False}}},
+        {"name": "N", "kind": {"const": {"type": {"primitive": "usize"}, "default": None}}},
+    ], "where_predicates": []}
+    return data
 
 
 class TraitContractTests(unittest.TestCase):
@@ -49,6 +66,34 @@ class TraitContractTests(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 validate_traits(data, contracts)
             contracts = self.load([CONTRACT])
+
+    def test_should_inventory_generic_type_and_const_arguments_when_a_collection_is_registered(self):
+        contracts = copy.deepcopy([CONTRACT])
+        contracts[0]["instances"][0]["type"] = "crate::collections::Vector<T,N>"
+        data = generic_document()
+        self.assertEqual(validate_traits(data, self.load(contracts)), {"2", "3", "5", "6", "7", "8"})
+
+    def test_should_reject_specialized_or_constrained_instances_when_a_generic_codec_is_registered(self):
+        contracts = copy.deepcopy([CONTRACT])
+        contracts[0]["instances"][0]["type"] = "crate::collections::Vector<T,N>"
+        for mutation in ("concrete-type", "constant", "extra-bound", "where", "unused", "duplicate"):
+            data = generic_document()
+            impl = data["index"]["4"]["inner"]["impl"]
+            arguments = impl["for"]["resolved_path"]["args"]["angle_bracketed"]["args"]
+            if mutation == "concrete-type":
+                arguments[0] = {"type": {"primitive": "u8"}}
+            elif mutation == "constant":
+                arguments[1]["const"] = {"expr": "2", "value": "2", "is_literal": True}
+            elif mutation == "extra-bound":
+                impl["generics"]["params"][0]["kind"]["type"]["bounds"].append({"outlives": "'static"})
+            elif mutation == "where":
+                impl["generics"]["where_predicates"] = [{"unsupported": "predicate"}]
+            elif mutation == "unused":
+                impl["generics"]["params"].append({"name": "U", "kind": {"type": {"bounds": []}}})
+            else:
+                arguments[1] = arguments[0]
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                validate_traits(data, self.load(contracts))
 
     def test_should_reject_missing_or_miskinded_associated_types(self):
         contracts = self.load([CONTRACT])

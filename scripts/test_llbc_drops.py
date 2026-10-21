@@ -20,10 +20,25 @@ def fixture(ty, kind="Precise"):
     return {"has_errors": False, "translated": {
         "options": {"precise_drops": True, "desugar_drops": False},
         "type_decls": [{"def_id": 0, "item_meta": named("alloc::vec::Vec", False)}],
+        "trait_decls": [{"def_id": 0, "item_meta": named("core::ops::drop::Drop", False)}],
         "trait_impls": [{"def_id": 0, "src": "Destruct"}],
         "fun_decls": [{"def_id": 0, "item_meta": named("nyx_ssz::decode"), "src": "Normal",
                        "body": {"Ok": {"Switch": {"Drop": {"kind": kind, "place": {"ty": ty}}}}}}],
     }}
+
+
+def structure(fields, custom_drop=False, local=True):
+    ty = {"Adt": {"id": 1, "builtin": None, "generics": {"types": []}}}
+    document = fixture(ty)
+    document["translated"]["type_decls"].append({
+        "def_id": 1, "item_meta": {**named("nyx_ssz::Bookkeeping", local), "opacity": "Transparent"},
+        "generics": {"types": [], "const_generics": [], "trait_clauses": []},
+        "kind": {"Struct": [{"ty": field} for field in fields]},
+    })
+    if custom_drop:
+        document["translated"]["trait_impls"].append({
+            "def_id": 1, "src": "Normal", "impl_trait": {"id": 0, "generics": {"types": [ty]}}})
+    return document
 
 
 class DropGateTests(unittest.TestCase):
@@ -31,6 +46,19 @@ class DropGateTests(unittest.TestCase):
         for ty in (U8, vector(U8), vector(vector(U8)), {"Ref": [None, PARAMETER, "Shared"]}):
             with self.subTest(ty=ty):
                 assert_safe_drops(fixture(ty))
+
+    def test_should_accept_current_llbc_array_nodes_when_elements_have_no_user_destructor(self):
+        assert_safe_drops(fixture(vector({"Array": [U8, {"Literal": 32}]})))
+        with self.assertRaisesRegex(ValueError, "unmodeled normal-flow drop"):
+            assert_safe_drops(fixture(vector({"Array": [PARAMETER, {"Literal": 32}]})))
+
+    def test_should_accept_local_closed_structures_when_their_fields_are_safe_and_drop_is_absent(self):
+        assert_safe_drops(structure([{"Ref": [None, PARAMETER, "Shared"]}, vector(U8)]))
+        for document in (structure([vector(U8)], custom_drop=True),
+                         structure([vector(PARAMETER)]), structure([vector(U8)], local=False),
+                         structure([{"Adt": {"id": 1, "builtin": None, "generics": {"types": []}}}])):
+            with self.subTest(document=document), self.assertRaisesRegex(ValueError, "unmodeled normal-flow drop"):
+                assert_safe_drops(document)
 
     def test_should_reject_dropping_generic_values_or_their_owned_containers(self):
         for ty in (PARAMETER, vector(PARAMETER), {"TraitType": []}, {"FutureType": None}):

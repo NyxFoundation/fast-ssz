@@ -17,13 +17,18 @@ def qualified(value, separator):
 
 
 def validate_contract(contract):
-    if not isinstance(contract, dict) or set(contract) != {"rust", "law", "members", "instances"}:
+    if not isinstance(contract, dict) or set(contract) != {"rust", "law", "members", "instances", "modules"}:
         raise ValueError("invalid trait contract fields")
     if not qualified(contract["rust"], "::") or not qualified(contract["law"], "."):
         raise ValueError("invalid trait contract identifier")
     if (contract["rust"], contract["law"]) != (
             "nyx_ssz::codec::Ssz", "NyxSszVerification.CodecLaw"):
         raise ValueError("unsupported trait correctness law")
+    modules = contract["modules"]
+    if (not isinstance(modules, list) or not modules
+            or any(not qualified(module, "::") for module in modules)
+            or len(set(modules)) != len(modules)):
+        raise ValueError("invalid trait extraction modules")
     members = contract["members"]
     if not isinstance(members, dict) or not members:
         raise ValueError("nonempty trait member inventory required")
@@ -43,7 +48,10 @@ def validate_contract(contract):
 def validate_instance(instance):
     if not isinstance(instance, dict) or set(instance) != {"type", "lean", "proof"}:
         raise ValueError("invalid trait instance fields")
-    if not qualified(instance["type"], "::"):
+    signature = instance["type"]
+    pattern = rf"({IDENTIFIER}(?:::{IDENTIFIER})*)(?:<({IDENTIFIER}(?:,{IDENTIFIER})*)>)?"
+    match = re.fullmatch(pattern, signature) if isinstance(signature, str) else None
+    if match is None or (match[2] and len(set(match[2].split(","))) != len(match[2].split(","))):
         raise ValueError("unsupported trait instance type")
     if not qualified(instance["lean"], ".") or not qualified(instance["proof"], "."):
         raise ValueError("invalid trait instance identifier")
@@ -70,19 +78,59 @@ def member_inventory(index, identifiers):
     return members
 
 
-def instance_type(value):
-    if set(value) == {"primitive"}:
+def generic_argument(argument, parameters, trait_identifier):
+    if set(argument) == {"type"} and set(argument["type"]) == {"generic"}:
+        name = argument["type"]["generic"]
+        kind = parameters.get(name, {}).get("kind", {}).get("type")
+        if (kind is None or kind.get("default") is not None
+                or kind.get("is_synthetic") is not False or len(kind["bounds"]) != 1):
+            raise ValueError("unsupported generic codec type parameter")
+        bound = kind["bounds"][0].get("trait_bound", {})
+        if (str(bound.get("trait", {}).get("id")) != str(trait_identifier)
+                or bound.get("trait", {}).get("args") is not None
+                or bound.get("generic_params") != [] or bound.get("modifier") != "none"):
+            raise ValueError("generic child must have exactly the registered trait bound")
+        return name
+    if set(argument) == {"const"}:
+        constant = argument["const"]
+        name = constant["expr"]
+        kind = parameters.get(name, {}).get("kind", {}).get("const")
+        if (kind is None or kind.get("type") != {"primitive": "usize"}
+                or kind.get("default") is not None or constant.get("value") is not None
+                or constant.get("is_literal") is not False):
+            raise ValueError("generic codec const must be an unconstrained usize parameter")
+        return name
+    raise ValueError("specialized codec arguments are not a generic constructor")
+
+
+def instance_type(implementation, trait_identifier):
+    value, generics = implementation["for"], implementation["generics"]
+    if generics["where_predicates"]:
+        raise ValueError("extra generic codec constraints are unsupported")
+    parameters = {parameter["name"]: parameter for parameter in generics["params"]}
+    if len(parameters) != len(generics["params"]):
+        raise ValueError("duplicate generic codec parameters")
+    if set(value) == {"primitive"} and not parameters:
         return value["primitive"]
-    if set(value) == {"resolved_path"} and value["resolved_path"]["args"] is None:
-        return value["resolved_path"]["path"]
-    raise ValueError("trait instance type needs proof inventory support")
+    if set(value) != {"resolved_path"}:
+        raise ValueError("trait instance type needs proof inventory support")
+    reference = value["resolved_path"]
+    if reference["args"] is None and not parameters:
+        return reference["path"]
+    angle = (reference["args"] or {}).get("angle_bracketed")
+    if angle is None or angle["constraints"]:
+        raise ValueError("unsupported generic codec argument form")
+    names = [generic_argument(argument, parameters, trait_identifier) for argument in angle["args"]]
+    if len(set(names)) != len(names) or set(names) != set(parameters):
+        raise ValueError("generic codec parameters must each occur exactly once")
+    return reference["path"] + "<" + ",".join(names) + ">"
 
 
-def validate_implementations(index, declaration, contract):
+def validate_implementations(index, trait_identifier, declaration, contract):
     discovered, items = [], set()
     for identifier in declaration["implementations"]:
         implementation = index[str(identifier)]["inner"]["impl"]
-        discovered.append(instance_type(implementation["for"]))
+        discovered.append(instance_type(implementation, trait_identifier))
         if member_inventory(index, implementation["items"]) != contract["members"]:
             raise ValueError("trait implementation member inventory differs")
         items.update(str(value) for value in implementation["items"])
@@ -107,7 +155,7 @@ def validate_traits(document, contracts):
         if member_inventory(index, declaration["items"]) != contract["members"]:
             raise ValueError("trait declaration member inventory differs")
         reserved.update(str(value) for value in declaration["items"])
-        reserved.update(validate_implementations(index, declaration, contract))
+        reserved.update(validate_implementations(index, identifier, declaration, contract))
     if registered:
         raise ValueError("registered trait is not a public declaration")
     return reserved

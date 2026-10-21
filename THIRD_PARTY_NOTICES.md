@@ -11,3 +11,6 @@ include ruint's limb access/construction and Rust's `usize::div_ceil`; their
 copyright/permission notices are preserved in LICENSE. Cargo.lock pins ruint and
 its compile-time ruint-macro dependency. Other ruint APIs are not part of these proofs.
 Fetched SSZ/Aeneas/Lean dependencies retain upstream licenses.
+Official test data is fetched, not vendored, from the pinned ethereum/consensus-spec-tests
+repository (MIT). The sparse checkout retains its upstream LICENSE. The separate test-only
+runner uses yaml_serde, snap and hex under their upstream licenses; its Cargo.lock pins them.
