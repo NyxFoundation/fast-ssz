@@ -12,15 +12,15 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-branch Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links seventy-seven registered operations to proofs over actual
-Aeneas output: the thirty-nine existing codec/hash/view operations, four owned collection
+`verification/targets.json` links seventy-nine registered operations to proofs over actual
+Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
 seven packed byte/bit root entrypoints. `verification/traits.json` separately
-registers every public `Ssz` declaration member and its nine library dictionaries: seven basic
-instances and the two generic Vector/List constructors. Each proves the full `CodecLaw`;
-methods are not silently excluded. The two generic laws compose with the law of their actual
+registers every public `Ssz` declaration member and its ten library dictionaries: seven basic
+instances and three generic Vector/List/unbounded-ProgressiveList constructors. Each proves the full `CodecLaw`;
+methods are not silently excluded. The three generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -156,6 +156,15 @@ actual element count, not capacity. Every byte and node survives packing; capaci
 is widened and bounded before narrowing. Declaration/layout failures carry empty owned state;
 callback failures forward the exact typed completed prefix and exact nested child state.
 These ownership equalities are proved separately from the protocol error observation.
+
+`collections::ProgressiveList<T>` has the exact `.progressiveList child none` declaration.
+Its constructor and immutable projection preserve every owner, including machine-maximum zero-sized
+storage. Its complete dictionary proves the unchanged `CodecLaw` using only its actual child's law:
+canonical fixed/variable serialization, exact decode observations and owned partial state, and the
+Progressive root over packed basic elements or complete child roots. Roots mix the element count,
+not packed-byte length. Declaration failures and overflowing fixed child widths retain existing error
+precedence, including successful empty lists. No context bound is silently encoded in this type;
+bounded generic Progressive contexts and other Progressive value families remain separate work.
 
 `codec::Ssz` has a static immutable `TYPE` declaration and encode/decode/tree-root
 operations. Boolean and uint8/16/32/64/128/256 dictionaries prove that the complete
@@ -335,15 +344,25 @@ checking files directly instead of consulting index cleanliness. Real repository
 replacement refs, fsmonitor and clean-filter execution, corrupt nested objects, and modifications hidden
 by index flags. Fresh checkout attributes force raw blobs without filters or text/encoding conversions;
 this also avoids host Git LFS settings falsely reporting upstream YAML files as modified.
-The current explicit CI selection covers all 2,484 Boolean/unsigned/basic-Vector/Bitvector/Bitlist/
-ProgressiveBitlist cases, comparing decoded YAML values, re-encoding, roots and invalid-input rejection.
+The current explicit CI selection covers all 3,412 Boolean/unsigned/basic-Vector/Bitvector/Bitlist/
+ProgressiveBitlist/basic-ProgressiveList source cases, comparing decoded YAML values, re-encoding,
+roots and invalid-input rejection under the explicit current-version profile.
 The published 2025 corpus uses the pre-fix left-hand Progressive spine. Its source data and old root
-metadata remain immutable; 700 current root expectations are regenerated, with 472 differences, by
+metadata remain immutable; 1,020 current root expectations are regenerated, with 730 differences, by
 `ethereum/remerkleable` commit 2f0baeef0082d4278acaef7d822deb7009d7db7e. The official source archive's
 SHA-256 is pinned and checked before extraction/execution. Fresh extraction rejects path traversal,
 links, duplicate entries and oversized sources; an isolated Python process uses only that authenticated
 package. Generated expectations identify both revisions, must match each original metadata root and
-must all be consumed exactly once; there is no old-root fallback. The remaining three families are not
-silently skipped. This is neither a universal proof of the external oracle nor full corpus coverage.
+must all be consumed exactly once; there is no old-root fallback.
+
+The original basic-ProgressiveList data also has 237 contradictory invalid labels (30 empty, 207
+nonempty): every affected compressed blob is exactly equal to a published valid blob of the same
+primitive type. The version-2 profile records each concrete valid witness, never edits the corpus and
+never skips an invalid case. The runner resolves only published same-type witnesses, rechecks their
+original root metadata and decompressed byte equality, then requires the supposedly-invalid input to
+produce that valid witness's full value, encoding and current root. Missing, repeated, cross-type,
+escaping or unconsumed witnesses fail. All other originally-invalid cases still require rejection.
+Two corpus families remain unsupported. This is neither a universal proof of the external oracle nor
+full corpus coverage.
 OS faults/resource exhaustion and whole-library/cryptographic security are excluded.
 x86_64 extraction requires the prepared Miri sysroot. Native aarch64 extraction has not been exercised.

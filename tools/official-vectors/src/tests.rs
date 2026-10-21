@@ -22,6 +22,34 @@ fn should_reject_unknown_schemas_instead_of_skipping_them() {
 }
 
 #[test]
+fn should_check_typed_progressive_values_roots_and_invalid_inputs() {
+    use nyx_ssz::collections::progressive_list;
+    let value = progressive_list(vec![0x0102_u16, 0x0304]);
+    let case = Case {
+        outcome: Outcome::Valid,
+        bytes: vec![2, 1, 4, 3],
+        value: Some(Value::Sequence(vec![Value::from(258), Value::from(772)])),
+        root: Some(value.hash_tree_root().unwrap()),
+    };
+    let schema = Schema::parse("basic_progressive_list", "proglist_uint16_random_2").unwrap();
+    assert!(schema.verify(&case).is_ok());
+    let wrong = Case {
+        root: Some([0; 32]),
+        ..case
+    };
+    assert!(schema.verify(&wrong).is_err());
+    let invalid = Case {
+        outcome: Outcome::Invalid,
+        bytes: vec![1],
+        value: None,
+        root: None,
+    };
+    assert!(schema.verify(&invalid).is_ok());
+    assert!(Schema::parse("basic_progressive_list", "proglist_uint17_zero_0").is_err());
+    assert!(validate_families(&["basic_progressive_list".into()]).is_ok());
+}
+
+#[test]
 fn should_validate_family_arguments_before_accessing_the_filesystem() {
     assert!(validate_families(&[]).is_err());
     assert!(validate_families(&["../outside".into()]).is_err());

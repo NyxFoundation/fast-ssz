@@ -68,7 +68,7 @@ class ReferenceSourceFlowTests(unittest.TestCase):
                 self.assertEqual(reference.regenerate(PINS, root, ["progressive_bitlist"], root),
                                  root / "reference-roots.json")
                 self.assertEqual(run.call_args.args[0][1:3], ["-I", "-B"])
-                self.assertEqual(run.call_args.args[0][-2:], [REVISION, "b" * 40])
+                self.assertEqual(run.call_args.args[0][-3:], [REVISION, "b" * 40, "progressive_bitlist"])
 
     def test_should_reject_invalid_archive_structure(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):

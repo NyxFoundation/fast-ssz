@@ -116,11 +116,12 @@ def extract_reference(data, revision, directory):
 
 
 def regenerate(pins, corpus, families, temporary):
-    if "progressive_bitlist" not in families:
+    progressive = sorted(set(families) & {"progressive_bitlist", "basic_progressive_list"})
+    if not progressive:
         return None
     revision, _ = reference_source(pins)
     source = extract_reference(source_archive(pins), revision, temporary / "reference")
     output = temporary / "reference-roots.json"
     subprocess.run([sys.executable, "-I", "-B", str(ORACLE), str(source), str(corpus), str(output),
-                    revision, pins["test_vectors"]["revision"]], check=True, cwd=temporary)
+                    revision, pins["test_vectors"]["revision"], *progressive], check=True, cwd=temporary)
     return output

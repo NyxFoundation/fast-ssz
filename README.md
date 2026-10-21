@@ -32,7 +32,7 @@ Their `Ssz` implementations additionally compose encoding, decoding and roots wi
 any explicitly lawful child codec, including nested fixed- and variable-width collections.
 
 The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
-widths, generic Vector and List. Its nine library implementations have proved declaration
+widths, generic Vector, List and canonical unbounded ProgressiveList. Its ten library implementations have proved declaration
 metadata, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
@@ -43,7 +43,7 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Containers, remaining Progressive value codecs, CompatibleUnion, derive, owned byte/bit
+Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive, owned byte/bit
 trait integration, typed index/path APIs, multiproofs, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 
@@ -91,9 +91,10 @@ Merkle layouts but does not imply type validity. These are not independently ove
 metadata constants. The descriptor covers Boolean, unsigned integers, and recursively
 nested Vector/List/ProgressiveList declarations. Vector widths use checked multiplication;
 an outer zero count cancels even an unrepresentable fixed child width, whereas a variable
-child stays variable. ProgressiveList declaration support is not yet a value codec.
+child stays variable. `ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
+children using the same canonical list layout, and uses the Progressive tree with the element count.
 `CodecError` implements the standard error interfaces. The seven basic implementations
-and generic Vector/List implementations are certified; borrowed byte/bit codecs remain separate APIs.
+and generic Vector/List/ProgressiveList implementations are certified; borrowed byte/bit codecs remain separate APIs.
 
 ```rust
 use nyx_ssz::{codec::decode, error::CodecError};
@@ -106,6 +107,21 @@ External implementations declare their own `DecodeState`. Error state is returne
 unchanged by the dispatcher; callers decide when to inspect or drop it. Formatting
 reports only the error kind and does not require or reveal the state. There is no
 legacy state-discarding decoder wrapper.
+
+```rust
+use nyx_ssz::{codec::{decode, encode, hash_tree_root},
+    collections::{progressive_list, ProgressiveList}};
+let value = progressive_list(vec![1_u16, 2, 3]);
+let bytes = encode(&value).unwrap();
+assert_eq!(bytes, [1, 0, 2, 0, 3, 0]);
+let decoded = decode::<ProgressiveList<u16>>(&bytes).unwrap();
+assert_eq!(decoded.as_slice(), &[1, 2, 3]);
+assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
+```
+
+Construction moves the original allocation without a context bound. Codec calls validate the
+child declaration, including for empty values. Nested Progressive/bounded collections compose;
+failed decoding retains every completed value and the exact nested child state.
 
 ## Borrowed sequence layout
 
@@ -211,16 +227,19 @@ hashes authenticate the fixtures without trusting cached Git metadata or filters
 
 ```sh
 python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector \
-  --family bitvector --family bitlist --family progressive_bitlist
+  --family bitvector --family bitlist --family progressive_bitlist --family basic_progressive_list
 ```
 
-The selected six families contain 2,484 cases. Wire bytes and YAML values remain the original
+The selected seven families contain 3,412 source cases. Wire bytes and YAML values remain the original
 published data. The 2025 corpus predates the official 2026 Progressive-tree orientation fix;
-700 Progressive root expectations are therefore regenerated from an independently pinned,
+1,020 Progressive root expectations are therefore regenerated from an independently pinned,
 authenticated current official reference implementation, not silently compared to obsolete roots.
-Original metadata is preserved and paired exactly with each generated expectation.
+Original metadata is preserved and paired exactly with each generated expectation. The old corpus
+also labels 237 same-type, byte-identical copies of valid Progressive-list values as invalid
+(including 30 empty cases). Each is explicitly linked to its published valid witness and tested
+for exact value, bytes and current root; no case is skipped and no original file is changed.
 
-Three families remain unsupported. Omitting `--family` requests the entire corpus and fails on
+Two families remain unsupported. Omitting `--family` requests the entire corpus and fails on
 unsupported schemas rather than skipping them. Both native Rust CI architectures run this
 explicit slice. See [runner provenance and version details](tools/official-vectors/README.md).
 
