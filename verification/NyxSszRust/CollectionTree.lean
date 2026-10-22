@@ -226,7 +226,7 @@ def collection_tree.pack_parts
   else ok chunks
 
 /-- [nyx_ssz::collection_tree::root_progressive_sequence]:
-    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 54:0-65:1 -/
+    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 54:0-69:1 -/
 def collection_tree.root_progressive_sequence
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T) :
@@ -239,15 +239,18 @@ def collection_tree.root_progressive_sequence
     let cf ← core.result.Result.Insts.CoreOpsTry.branch r
     match cf with
     | core.ops.control_flow.ControlFlow.Continue val =>
-      let s := alloc.vec.Vec.deref val
-      let chunks ← collection_tree.pack_parts s
-      let s1 := alloc.vec.Vec.deref chunks
-      let contents ← merkle.merkleize_progressive s1
-      let i := Slice.len values
-      let i1 ← lift (UScalar.cast .U128 i)
-      let a ← tree_hash.hash_tree_root_u128 i1
-      let a1 ← sha256.hash_pair contents a
-      ok (core.result.Result.Ok a1)
+      match val with
+      | none => ok (core.result.Result.Err error.CodecError.InvalidLength)
+      | some parts =>
+        let s := alloc.vec.Vec.deref parts
+        let chunks ← collection_tree.pack_parts s
+        let s1 := alloc.vec.Vec.deref chunks
+        let contents ← merkle.merkleize_progressive s1
+        let i := Slice.len values
+        let i1 ← lift (UScalar.cast .U128 i)
+        let a ← tree_hash.hash_tree_root_u128 i1
+        let a1 ← sha256.hash_pair contents a
+        ok (core.result.Result.Ok a1)
     | core.ops.control_flow.ControlFlow.Break residual =>
       core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
         (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError)
@@ -270,7 +273,7 @@ def collection_tree.root_progressive_sequence
         residual
 
 /-- [nyx_ssz::collection_tree::root_sequence]:
-    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 67:0-91:1 -/
+    Source: 'crates/nyx-ssz/src/collection_tree.rs', lines 71:0-98:1 -/
 def collection_tree.root_sequence
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T) (positions : Std.Usize)
@@ -284,30 +287,33 @@ def collection_tree.root_sequence
     let cf ← core.result.Result.Insts.CoreOpsTry.branch r
     match cf with
     | core.ops.control_flow.ControlFlow.Continue val =>
-      let s := alloc.vec.Vec.deref val
-      let chunks ← collection_tree.pack_parts s
-      let r1 ← collection_tree.basic_capacity codecSszInst positions
-      let cf1 ← core.result.Result.Insts.CoreOpsTry.branch r1
-      match cf1 with
-      | core.ops.control_flow.ControlFlow.Continue val1 =>
-        let s1 := alloc.vec.Vec.deref chunks
-        let r2 ← merkle.merkleize s1 (some val1)
-        match r2 with
-        | core.result.Result.Ok root =>
-          if mix_length
-          then
-            let i := Slice.len values
-            let i1 ← lift (UScalar.cast .U128 i)
-            let a ← tree_hash.hash_tree_root_u128 i1
-            let a1 ← sha256.hash_pair root a
-            ok (core.result.Result.Ok a1)
-          else ok (core.result.Result.Ok root)
-        | core.result.Result.Err _ =>
-          ok (core.result.Result.Err error.CodecError.InvalidLength)
-      | core.ops.control_flow.ControlFlow.Break residual =>
-        core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
-          (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError)
-          residual
+      match val with
+      | none => ok (core.result.Result.Err error.CodecError.InvalidLength)
+      | some parts =>
+        let s := alloc.vec.Vec.deref parts
+        let chunks ← collection_tree.pack_parts s
+        let r1 ← collection_tree.basic_capacity codecSszInst positions
+        let cf1 ← core.result.Result.Insts.CoreOpsTry.branch r1
+        match cf1 with
+        | core.ops.control_flow.ControlFlow.Continue val1 =>
+          let s1 := alloc.vec.Vec.deref chunks
+          let r2 ← merkle.merkleize s1 (some val1)
+          match r2 with
+          | core.result.Result.Ok root =>
+            if mix_length
+            then
+              let i := Slice.len values
+              let i1 ← lift (UScalar.cast .U128 i)
+              let a ← tree_hash.hash_tree_root_u128 i1
+              let a1 ← sha256.hash_pair root a
+              ok (core.result.Result.Ok a1)
+            else ok (core.result.Result.Ok root)
+          | core.result.Result.Err _ =>
+            ok (core.result.Result.Err error.CodecError.InvalidLength)
+        | core.ops.control_flow.ControlFlow.Break residual =>
+          core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+            (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError)
+            residual
     | core.ops.control_flow.ControlFlow.Break residual =>
       core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
         (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError)

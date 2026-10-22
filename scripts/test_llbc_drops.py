@@ -47,6 +47,20 @@ class DropGateTests(unittest.TestCase):
             with self.subTest(ty=ty):
                 assert_safe_drops(fixture(ty))
 
+    def test_should_accept_only_closed_optional_temporaries(self):
+        for element, accepted in ((vector(vector(U8)), True), (PARAMETER, False),
+                                  (vector(PARAMETER), False)):
+            document = fixture({"Adt": {"id": 1, "builtin": None,
+                                       "generics": {"types": [element]}}})
+            document["translated"]["type_decls"].append({
+                "def_id": 1, "item_meta": named("core::option::Option", False)})
+            with self.subTest(element=element):
+                if accepted:
+                    assert_safe_drops(document)
+                else:
+                    with self.assertRaisesRegex(ValueError, "unmodeled normal-flow drop"):
+                        assert_safe_drops(document)
+
     def test_should_accept_current_llbc_array_nodes_when_elements_have_no_user_destructor(self):
         assert_safe_drops(fixture(vector({"Array": [U8, {"Literal": 32}]})))
         with self.assertRaisesRegex(ValueError, "unmodeled normal-flow drop"):

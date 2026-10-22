@@ -34,6 +34,7 @@ def codecEncodingAgrees
     (expected : Except Ssz.Err Ssz.Bytes) : Prop :=
   match actual, expected with
   | .Ok bytes, .ok data => bytesToSpec bytes.val = data
+  | .Err .NativeOutputOverflow, .ok data => Usize.max < data.size
   | .Err error, .error fault => codecFaultAgrees error fault
   | _, _ => False
 

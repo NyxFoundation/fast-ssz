@@ -33,6 +33,28 @@ theorem collection_basic_serialize_size (shape : Ssz.Desc) (basic : shape.isBasi
       simp [Ssz.uintBytes_size, Ssz.Desc.itemLength]
     · contradiction
 
+theorem collection_basic_parts_native (shape : Ssz.Desc)
+    (valid : shape.wellFormed = .ok ()) (basic : shape.isBasic = true)
+    (values : List Ssz.Value) (parts : List Ssz.Bytes)
+    (wrote : Ssz.serializeEach shape values = .ok parts) :
+    ¬ ∃ part ∈ parts, Usize.max < part.size := by
+  have width := collection_basic_width_bound shape valid basic
+  have platform := Usize.bounds_eq
+  induction values generalizing parts with
+  | nil => simp [Ssz.serializeEach] at wrote; subst parts; simp
+  | cons value values ih =>
+    cases head : Ssz.serialize shape value with
+    | error fault => simp [Ssz.serializeEach, head, Bind.bind, Except.bind] at wrote
+    | ok bytes =>
+      cases tail : Ssz.serializeEach shape values with
+      | error fault => simp [Ssz.serializeEach, head, tail, Bind.bind, Except.bind] at wrote
+      | ok rest =>
+        simp [Ssz.serializeEach, head, tail, Bind.bind, Except.bind, Pure.pure, Except.pure] at wrote
+        subst parts
+        have size := collection_basic_serialize_size shape basic value bytes head
+        have bounded : bytes.size ≤ Usize.max := by scalar_tac
+        simpa only [List.mem_cons, exists_eq_or_imp, Nat.not_lt.mpr bounded, false_or] using ih rest tail
+
 theorem collection_basic_parts_size (shape : Ssz.Desc) (basic : shape.isBasic = true)
     (values : List Ssz.Value) (parts : List Ssz.Bytes)
     (wrote : Ssz.serializeEach shape values = .ok parts) :

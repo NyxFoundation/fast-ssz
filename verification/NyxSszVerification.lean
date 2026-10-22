@@ -14,6 +14,7 @@ import NyxSszVerification.Sequence.List
 import NyxSszVerification.Sequence.FixedList
 import NyxSszVerification.Container
 import NyxSszVerification.Codec.Basic
+import NyxSszVerification.Codec.Native
 import NyxSszVerification.Codec.Metadata
 import NyxSszVerification.Codec.Elements
 import NyxSszVerification.ProgressiveBytes

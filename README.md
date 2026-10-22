@@ -42,6 +42,13 @@ metadata, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
 partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `CodecError`.
+Encoding keeps `Vec<u8>` and exactly three outcomes: exact representable reference bytes,
+the original protocol fault, or distinct `NativeOutputOverflow` **iff** successful natural
+reference output exceeds `usize::MAX`. It cannot reject representable output or replace a
+protocol fault. Parent collectors defer native markers so later child protocol faults keep
+precedence; sequence assembly still enforces the unchanged strict 2^32 envelope.
+Decoder/root/metadata laws do not permit native refusals. This full-domain rule prepares
+future typed unions/derive; those codecs remain unimplemented.
 The shared offset-span validator and fixed- or inferred-count layout parsers for
 both fixed- and variable-width elements are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
 headers, four-byte size envelope and body ranges. It does not decode element values.

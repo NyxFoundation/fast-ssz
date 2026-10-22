@@ -114,6 +114,9 @@ def container.header_width_loop.body
         ok (done (core.result.Result.Err error.CodecError.EmptyVector))
       | error.CodecError.SizeOverflow =>
         ok (done (core.result.Result.Err fault))
+      | error.CodecError.NativeOutputOverflow =>
+        ok (done (core.result.Result.Err
+          error.CodecError.NativeOutputOverflow))
       | error.CodecError.OffsetUnordered =>
         ok (done (core.result.Result.Err error.CodecError.OffsetUnordered))
       | error.CodecError.OffsetPastScope =>

@@ -1,6 +1,6 @@
 ---
 title: Verification scope and trust boundary
-description: Verified owned codecs, multiproofs and raw Container layout/assembly, not complete Container value codecs.
+description: Exact native-output boundary for verified codecs; raw Container foundations, not complete value codecs.
 last_updated: 2026-10-22
 tags:
   - ssz
@@ -26,12 +26,66 @@ library dictionaries: seven basic instances, four generic sequence constructors,
 and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
 methods are not silently excluded. The four generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
-Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
+Every slice/bound yields `RustM.ok`. Encoding has exactly three semantic outcomes:
+representable reference success returns exact bytes/order/length; reference protocol error
+retains the existing exact fault relation; successful reference bytes longer than
+`usize::MAX` permit only the distinct `CodecError::NativeOutputOverflow` refusal.
+No representable success or reference error may use that marker. This is the sole
+approved extension to `codecEncodingAgrees`, not a resource-failure policy, input-domain
+premise, offset-envelope relaxation or additional `CodecLaw` field. Decoder, root,
+metadata and fault relations remain unchanged and exclude the new variant.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
 Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
 OverLimit/overLimit; other outcomes are false. Boolean errors classify scope/non-bit
 faults. Bounds cover `usize`, not all naturals. Zero-copy is source/test evidence,
 not a cost theorem. Derived error traits are not protocol proof targets.
+
+## Exact native-output boundary
+
+Pinned `Ssz.serialize` for CompatibleUnion returns the selector prefix followed by the
+child bytes without a union-level offset envelope. A lawful single-option union with
+a `usize::MAX`-byte opaque ByteVector body therefore reference-succeeds with
+`usize::MAX + 1` bytes. `compatible_union_prefix_size`,
+`compatible_union_native_boundary` and `compatible_union_native_exists` prove this
+symbolically with natural array-size lemmas, not native evaluation or a giant allocation.
+`codec_encoding_representable`, `codec_encoding_oversized` and
+`codec_encoding_reference_error` prove exact success/refusal/error correspondence.
+Only `propext`, `Classical.choice` and `Quot.sound` remain permitted axioms.
+
+The internal collector interface is
+`collection_wire::encode_parts<T: Ssz>(&[T]) -> Result<Option<Vec<Vec<u8>>>, CodecError>`.
+`Ok(Some(parts))` contains every exact stored part. `Ok(None)` means every child
+reference-succeeded but at least one body exceeds native capacity; it is not a fake
+empty byte buffer. `Err(error)` is the first genuine child protocol error.
+The loop keeps checking subsequent child encoders after a native marker, so a later
+protocol refusal wins. An earlier genuine `SizeOverflow` stops immediately. Only after
+all children succeed and fixed/variable metadata is checked does `encode_sequence`
+turn `None` into the reference's existing `SizeOverflow`/`offsetOverflow`: every
+sequence's total must be strictly less than 2^32, even for fixed children. Overflowing
+fixed metadata still means fixed, not variable. No combined working-budget or `n*width`
+refusal is introduced. Basic root paths prove `None` impossible (each child ≤32 bytes);
+they do not gain native-error permission. Encoded temporaries may be discarded, never
+owned user input or decoder prefixes/states. The precise-drop gate now also checks
+closed standard `Option` temporaries recursively, retaining rejection of user drops.
+
+All fifteen current dictionaries are reproved; generic Vector/List/ProgressiveList
+compose solely with the true child's `CodecLaw`, over the full existing domain.
+Scripted Rust dictionaries test both fixed and variable layouts and all three parents,
+including deferred-marker/later-error precedence; they are not claimed certified.
+The kernel fixture gate rejects an actual dictionary claiming native overflow for
+one-byte Boolean success, protocol faults hidden by the marker, and native decoder/root
+faults. Positive fixtures exercise the symbolic union boundary and representable
+exclusion. The registry stays at 103 operations / 15 dictionaries.
+Future typed unions and Container/derive codecs will consume this policy; none is
+implemented or declared complete by this boundary change.
+
+Boundary validation (2026-10-22): `python3 scripts/verify.py check` passes 103/15,
+including fresh extraction/API/trait/import/axiom and positive/negative kernel gates,
+all 3,412 unchanged source cases, fmt/clippy/workspace tests and doctests. The complete
+`cargo test --locked --workspace --all-features --target i686-unknown-linux-musl`
+suite passes, including all four new scripted runtime regressions. All 104 Python
+regressions pass. `cargo llvm-cov --workspace --fail-under-lines 80` reports 95.44%
+library line coverage.
 
 `container_view_refines` connects the actual extracted `container::container_view` to
 pinned `Ssz.structSlices` (the reference's Container layout executable). Its pointwise
@@ -464,7 +518,7 @@ storage, and typed decode errors retain partial ownership rather than silently d
 arbitrary elements inside the operation. The element traversal now proves exact retention
 of values and nested state, separately from wire conformance. Before backend translation,
 `llbc_drops.py` checks successful precise, undesugared LLBC and rejects local normal-flow
-Drop statements except closed standard scalar/reference/array/tuple/Vec types and transparent
+Drop statements except closed standard scalar/reference/array/tuple/Vec/Option types and transparent
 local non-generic records with recursively safe fields and no user destructor. Real freshly emitted
 LLBC fixtures accept closed bookkeeping and node arrays while rejecting an actual user `Drop`.
 It resolves interned types, rejects unknown/generic owned types and

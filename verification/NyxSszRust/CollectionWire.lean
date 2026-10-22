@@ -20,7 +20,7 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::collection_wire::append]: loop body 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 21:4-24:5 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 28:4-31:5 -/
 @[rust_loop_body]
 def collection_wire.append_loop.body
   (bytes1 : Slice Std.U8) (output : alloc.vec.Vec Std.U8) (index : Std.Usize) :
@@ -37,37 +37,78 @@ def collection_wire.append_loop.body
   else ok (done output)
 
 /-- [nyx_ssz::collection_wire::encode_parts]: loop body 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 12:4-17:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 15:4-24:1 -/
 @[rust_loop_body]
 def collection_wire.encode_parts_loop.body
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T)
-  (parts : alloc.vec.Vec (alloc.vec.Vec Std.U8)) (index : Std.Usize) :
-  RustM (ControlFlow ((alloc.vec.Vec (alloc.vec.Vec Std.U8)) × Std.Usize)
-    (core.result.Result (alloc.vec.Vec (alloc.vec.Vec Std.U8))
-    error.CodecError))
+  (parts : alloc.vec.Vec (alloc.vec.Vec Std.U8)) (oversized : Bool)
+  (index : Std.Usize) :
+  RustM (ControlFlow ((alloc.vec.Vec (alloc.vec.Vec Std.U8)) × Bool ×
+    Std.Usize) (core.result.Result (Option (alloc.vec.Vec (alloc.vec.Vec
+    Std.U8))) error.CodecError))
   := do
   let i := Slice.len values
   if index < i
   then
     let t ← Slice.index_usize values index
     let r ← codecSszInst.encode t
-    let cf ← core.result.Result.Insts.CoreOpsTry.branch r
-    match cf with
-    | core.ops.control_flow.ControlFlow.Continue val =>
-      let parts1 ← alloc.vec.Vec.push parts val
+    match r with
+    | core.result.Result.Ok part =>
+      let parts1 ← alloc.vec.Vec.push parts part
       let index1 ← index + 1#usize
-      ok (cont (parts1, index1))
-    | core.ops.control_flow.ControlFlow.Break residual =>
-      let r1 ←
-        core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
-          (alloc.vec.Vec (alloc.vec.Vec Std.U8)) (core.convert.FromSame
-          error.CodecError) residual
-      ok (done r1)
-  else ok (done (core.result.Result.Ok parts))
+      ok (cont (parts1, oversized, index1))
+    | core.result.Result.Err ce =>
+      match ce with
+      | error.CodecError.InvalidLength =>
+        ok (done (core.result.Result.Err error.CodecError.InvalidLength))
+      | error.CodecError.InvalidBoolean =>
+        ok (done (core.result.Result.Err error.CodecError.InvalidBoolean))
+      | error.CodecError.InvalidIntegerWidth =>
+        ok (done (core.result.Result.Err error.CodecError.InvalidIntegerWidth))
+      | error.CodecError.EmptyVector =>
+        ok (done (core.result.Result.Err error.CodecError.EmptyVector))
+      | error.CodecError.SizeOverflow =>
+        ok (done (core.result.Result.Err error.CodecError.SizeOverflow))
+      | error.CodecError.NativeOutputOverflow =>
+        let index1 ← index + 1#usize
+        ok (cont (parts, true, index1))
+      | error.CodecError.OffsetUnordered =>
+        ok (done (core.result.Result.Err error.CodecError.OffsetUnordered))
+      | error.CodecError.OffsetPastScope =>
+        ok (done (core.result.Result.Err error.CodecError.OffsetPastScope))
+      | error.CodecError.ScopeTooSmall =>
+        ok (done (core.result.Result.Err error.CodecError.ScopeTooSmall))
+      | error.CodecError.ScopeWidthless =>
+        ok (done (core.result.Result.Err error.CodecError.ScopeWidthless))
+      | error.CodecError.ScopeUndivided =>
+        ok (done (core.result.Result.Err error.CodecError.ScopeUndivided))
+      | error.CodecError.FirstOffset =>
+        ok (done (core.result.Result.Err error.CodecError.FirstOffset))
+      | error.CodecError.OffsetBelowTable =>
+        ok (done (core.result.Result.Err error.CodecError.OffsetBelowTable))
+      | error.CodecError.OffsetUnaligned =>
+        ok (done (core.result.Result.Err error.CodecError.OffsetUnaligned))
+      | error.CodecError.OverLimit =>
+        ok (done (core.result.Result.Err error.CodecError.OverLimit))
+      | error.CodecError.PaddingBits =>
+        ok (done (core.result.Result.Err error.CodecError.PaddingBits))
+      | error.CodecError.EmptyEncoding =>
+        ok (done (core.result.Result.Err error.CodecError.EmptyEncoding))
+      | error.CodecError.NoDelimiter =>
+        ok (done (core.result.Result.Err error.CodecError.NoDelimiter))
+      | error.CodecError.TrailingZeros =>
+        ok (done (core.result.Result.Err error.CodecError.TrailingZeros))
+  else
+    let o ← if oversized
+              then ok none
+              else ok (some parts)
+    if oversized
+    then ok (done (core.result.Result.Ok o))
+    else ok (done (core.result.Result.Ok o))
 
 /-- [nyx_ssz::collection_wire::leading_and_total]: loop body 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 34:4-42:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 41:4-49:1 -/
 @[rust_loop_body]
 def collection_wire.leading_and_total_loop.body
   (parts : Slice (alloc.vec.Vec Std.U8)) (leading : Std.U128)
@@ -92,7 +133,7 @@ def collection_wire.leading_and_total_loop.body
     ok (done (core.result.Result.Ok (i1, i2)))
 
 /-- [nyx_ssz::collection_wire::append]: loop 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 21:4-24:5 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 28:4-31:5 -/
 @[rust_loop]
 def collection_wire.append_loop
   (output : alloc.vec.Vec Std.U8) (bytes1 : Slice Std.U8) (index : Std.Usize) :
@@ -104,22 +145,23 @@ def collection_wire.append_loop
     (output, index)
 
 /-- [nyx_ssz::collection_wire::encode_parts]: loop 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 12:4-17:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 15:4-24:1 -/
 @[rust_loop]
 def collection_wire.encode_parts_loop
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T)
-  (parts : alloc.vec.Vec (alloc.vec.Vec Std.U8)) (index : Std.Usize) :
-  RustM (core.result.Result (alloc.vec.Vec (alloc.vec.Vec Std.U8))
+  (parts : alloc.vec.Vec (alloc.vec.Vec Std.U8)) (oversized : Bool)
+  (index : Std.Usize) :
+  RustM (core.result.Result (Option (alloc.vec.Vec (alloc.vec.Vec Std.U8)))
     error.CodecError)
   := do
   loop
-    (fun (parts1, index1) => collection_wire.encode_parts_loop.body
-      codecSszInst values parts1 index1)
-    (parts, index)
+    (fun (parts1, oversized1, index1) => collection_wire.encode_parts_loop.body
+      codecSszInst values parts1 oversized1 index1)
+    (parts, oversized, index)
 
 /-- [nyx_ssz::collection_wire::leading_and_total]: loop 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 34:4-42:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 41:4-49:1 -/
 @[rust_loop]
 def collection_wire.leading_and_total_loop
   (parts : Slice (alloc.vec.Vec Std.U8)) (leading : Std.U128)
@@ -132,7 +174,7 @@ def collection_wire.leading_and_total_loop
     (total, index)
 
 /-- [nyx_ssz::collection_wire::append]:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 19:0-25:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 26:0-32:1 -/
 @[reducible]
 def collection_wire.append
   (output : alloc.vec.Vec Std.U8) (bytes1 : Slice Std.U8) :
@@ -141,19 +183,19 @@ def collection_wire.append
   collection_wire.append_loop output bytes1 0#usize
 
 /-- [nyx_ssz::collection_wire::encode_parts]:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 9:0-17:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 11:0-24:1 -/
 @[reducible]
 def collection_wire.encode_parts
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T) :
-  RustM (core.result.Result (alloc.vec.Vec (alloc.vec.Vec Std.U8))
+  RustM (core.result.Result (Option (alloc.vec.Vec (alloc.vec.Vec Std.U8)))
     error.CodecError)
   := do
   collection_wire.encode_parts_loop codecSszInst values (alloc.vec.Vec.new
-    (alloc.vec.Vec Std.U8)) 0#usize
+    (alloc.vec.Vec Std.U8)) false 0#usize
 
 /-- [nyx_ssz::collection_wire::leading_and_total]:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 27:0-42:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 34:0-49:1 -/
 def collection_wire.leading_and_total
   (parts : Slice (alloc.vec.Vec Std.U8)) (fixed : Bool) :
   RustM (core.result.Result (Std.Usize × Std.Usize) error.CodecError)
@@ -171,7 +213,7 @@ def collection_wire.leading_and_total
   else collection_wire.leading_and_total_loop parts leading leading 0#usize
 
 /-- [nyx_ssz::collection_wire::assemble]: loop body 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 57:4-60:5 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 64:4-67:5 -/
 @[rust_loop_body]
 def collection_wire.assemble_loop0.body
   (parts : Slice (alloc.vec.Vec Std.U8)) (output : alloc.vec.Vec Std.U8)
@@ -190,7 +232,7 @@ def collection_wire.assemble_loop0.body
   else ok (done output)
 
 /-- [nyx_ssz::collection_wire::assemble]: loop body 1:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 50:8-54:9 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 57:8-61:9 -/
 @[rust_loop_body]
 def collection_wire.assemble_loop1.body
   (parts : Slice (alloc.vec.Vec Std.U8)) (output : alloc.vec.Vec Std.U8)
@@ -213,7 +255,7 @@ def collection_wire.assemble_loop1.body
   else ok (done output)
 
 /-- [nyx_ssz::collection_wire::assemble]: loop body 2:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 57:4-60:5 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 64:4-67:5 -/
 @[rust_loop_body]
 def collection_wire.assemble_loop2.body
   (parts : Slice (alloc.vec.Vec Std.U8)) (output : alloc.vec.Vec Std.U8)
@@ -232,7 +274,7 @@ def collection_wire.assemble_loop2.body
   else ok (done output)
 
 /-- [nyx_ssz::collection_wire::assemble]: loop 0:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 57:4-60:5 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 64:4-67:5 -/
 @[rust_loop]
 def collection_wire.assemble_loop0
   (parts : Slice (alloc.vec.Vec Std.U8)) (output : alloc.vec.Vec Std.U8)
@@ -245,7 +287,7 @@ def collection_wire.assemble_loop0
     (output, index)
 
 /-- [nyx_ssz::collection_wire::assemble]: loop 1:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 50:8-54:9 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 57:8-61:9 -/
 @[rust_loop]
 def collection_wire.assemble_loop1
   (parts : Slice (alloc.vec.Vec Std.U8)) (output : alloc.vec.Vec Std.U8)
@@ -258,7 +300,7 @@ def collection_wire.assemble_loop1
     (output, offset, index)
 
 /-- [nyx_ssz::collection_wire::assemble]: loop 2:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 57:4-60:5 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 64:4-67:5 -/
 @[rust_loop]
 def collection_wire.assemble_loop2
   (parts : Slice (alloc.vec.Vec Std.U8)) (output : alloc.vec.Vec Std.U8)
@@ -271,7 +313,7 @@ def collection_wire.assemble_loop2
     (output, index)
 
 /-- [nyx_ssz::collection_wire::assemble]:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 44:0-62:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 51:0-69:1 -/
 def collection_wire.assemble
   (parts : Slice (alloc.vec.Vec Std.U8)) (fixed : Bool) :
   RustM (core.result.Result (alloc.vec.Vec Std.U8) error.CodecError)
@@ -297,7 +339,7 @@ def collection_wire.assemble
       (alloc.vec.Vec Std.U8) (core.convert.FromSame error.CodecError) residual
 
 /-- [nyx_ssz::collection_wire::encode_sequence]:
-    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 64:0-73:1 -/
+    Source: 'crates/nyx-ssz/src/collection_wire.rs', lines 71:0-85:1 -/
 def collection_wire.encode_sequence
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (values : Slice T) :
@@ -312,11 +354,17 @@ def collection_wire.encode_sequence
     | core.result.Result.Ok o =>
       match o with
       | none =>
-        let s := alloc.vec.Vec.deref val
-        collection_wire.assemble s false
+        match val with
+        | none => ok (core.result.Result.Err error.CodecError.SizeOverflow)
+        | some parts =>
+          let s := alloc.vec.Vec.deref parts
+          collection_wire.assemble s false
       | some _ =>
-        let s := alloc.vec.Vec.deref val
-        collection_wire.assemble s true
+        match val with
+        | none => ok (core.result.Result.Err error.CodecError.SizeOverflow)
+        | some parts =>
+          let s := alloc.vec.Vec.deref parts
+          collection_wire.assemble s true
     | core.result.Result.Err ce =>
       match ce with
       | error.CodecError.InvalidLength =>
@@ -328,8 +376,13 @@ def collection_wire.encode_sequence
       | error.CodecError.EmptyVector =>
         ok (core.result.Result.Err error.CodecError.EmptyVector)
       | error.CodecError.SizeOverflow =>
-        let s := alloc.vec.Vec.deref val
-        collection_wire.assemble s true
+        match val with
+        | none => ok (core.result.Result.Err error.CodecError.SizeOverflow)
+        | some parts =>
+          let s := alloc.vec.Vec.deref parts
+          collection_wire.assemble s true
+      | error.CodecError.NativeOutputOverflow =>
+        ok (core.result.Result.Err error.CodecError.NativeOutputOverflow)
       | error.CodecError.OffsetUnordered =>
         ok (core.result.Result.Err error.CodecError.OffsetUnordered)
       | error.CodecError.OffsetPastScope =>

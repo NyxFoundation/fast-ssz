@@ -67,6 +67,8 @@ def collection_codec.list_layout
           ok (core.result.Result.Ok
             { input, ranges := (alloc.vec.Vec.new sequence.BodyRange) })
         else ok (core.result.Result.Err error.CodecError.ScopeUndivided)
+    | error.CodecError.NativeOutputOverflow =>
+      ok (core.result.Result.Err error.CodecError.NativeOutputOverflow)
     | error.CodecError.OffsetUnordered =>
       ok (core.result.Result.Err error.CodecError.OffsetUnordered)
     | error.CodecError.OffsetPastScope =>
@@ -150,6 +152,8 @@ def collection_codec.vector_layout
       if i1 >= 4294967296#u128
       then ok (core.result.Result.Err error.CodecError.SizeOverflow)
       else ok (core.result.Result.Err error.CodecError.InvalidLength)
+    | error.CodecError.NativeOutputOverflow =>
+      ok (core.result.Result.Err error.CodecError.NativeOutputOverflow)
     | error.CodecError.OffsetUnordered =>
       ok (core.result.Result.Err error.CodecError.OffsetUnordered)
     | error.CodecError.OffsetPastScope =>

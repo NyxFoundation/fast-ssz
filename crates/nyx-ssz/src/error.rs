@@ -8,6 +8,8 @@ pub enum CodecError {
     InvalidIntegerWidth,
     EmptyVector,
     SizeOverflow,
+    /// Exact successful reference output exceeds `usize::MAX` bytes.
+    NativeOutputOverflow,
     OffsetUnordered,
     OffsetPastScope,
     ScopeTooSmall,
@@ -60,6 +62,7 @@ impl std::fmt::Display for CodecError {
             }
             Self::EmptyVector => "SSZ vector declarations must contain at least one element",
             Self::SizeOverflow => "SSZ size exceeds its supported representation",
+            Self::NativeOutputOverflow => "SSZ reference output exceeds native byte capacity",
             Self::OffsetUnordered => "SSZ offsets must be nondecreasing",
             Self::OffsetPastScope => "SSZ offset exceeds its input scope",
             Self::ScopeTooSmall => "SSZ input is smaller than its header",
