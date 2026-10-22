@@ -23,6 +23,26 @@ pub enum CodecError {
     EmptyEncoding,
     NoDelimiter,
     TrailingZeros,
+    /// Reference `containerEmpty` (CONTAINER_EMPTY).
+    EmptyContainer,
+    /// Reference `badDeclaration` (BAD_DECLARATION).
+    BadDeclaration,
+    /// Reference `layoutWidth` (LAYOUT_WIDTH).
+    LayoutWidth,
+    /// Reference `layoutTrailingGap` (LAYOUT_TRAILING_GAP).
+    LayoutTrailingGap,
+    /// Reference `layoutTooWide` (LAYOUT_TOO_WIDE).
+    LayoutTooWide,
+    /// Reference `layoutFieldCount` (LAYOUT_FIELD_COUNT).
+    LayoutFieldCount,
+    /// Reference `unionEmpty` (UNION_EMPTY).
+    EmptyUnion,
+    /// Reference `unionSelectorRepeated` (UNION_SELECTOR_REPEATED).
+    UnionSelectorRepeated,
+    /// Reference `unionSelectorRange` (UNION_SELECTOR_RANGE).
+    UnionSelectorRange,
+    /// Reference `unionIncompatible` (UNION_INCOMPATIBLE).
+    UnionIncompatible,
 }
 
 /// A decoding refusal that returns ownership of every partially decoded value.
@@ -76,6 +96,22 @@ impl std::fmt::Display for CodecError {
             Self::EmptyEncoding => "SSZ bitlist encoding must contain a delimiter",
             Self::NoDelimiter => "SSZ bitlist encoding has no delimiter",
             Self::TrailingZeros => "SSZ bitlist encoding has bytes after its delimiter",
+            Self::EmptyContainer => "SSZ container declarations must contain at least one field",
+            Self::BadDeclaration => {
+                "SSZ declaration has duplicate names or mismatched selector counts"
+            }
+            Self::LayoutWidth => "SSZ progressive layouts must contain at least one position",
+            Self::LayoutTrailingGap => "SSZ progressive layouts must end on an active position",
+            Self::LayoutTooWide => "SSZ progressive layouts must not exceed 256 positions",
+            Self::LayoutFieldCount => {
+                "SSZ field names and active positions must match declared fields"
+            }
+            Self::EmptyUnion => "SSZ compatible unions must declare selectors and options",
+            Self::UnionSelectorRepeated => "SSZ compatible union selectors must be distinct",
+            Self::UnionSelectorRange => "SSZ compatible union selectors must be between 1 and 127",
+            Self::UnionIncompatible => {
+                "SSZ compatible union options must have pairwise compatible layouts"
+            }
         })
     }
 }

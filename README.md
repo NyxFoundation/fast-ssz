@@ -4,6 +4,13 @@ Rust SSZ: Aeneas/Lean proofs before optimization.
 **Verified baseline, not a complete SSZ library or production release.**
 Crate publishing is disabled; no performance superiority is claimed.
 
+**Native descriptor extension, formal integration pending:** all 13 pinned SSZ
+shapes now have static metadata and native behavior tests. The proof claims below
+describe baseline `155619d`; the enlarged descriptor implementation has not yet
+been re-extracted or reproved. The approved UTF-8-invariant, kernel-clean Aeneas
+repair and its final immutable pin are still required. This checkout must not be
+reported as passing the full formal gate. See [descriptor scope](docs/full-descriptors.md).
+
 Boolean, all six unsigned integer widths, Bitvector/Bitlist/ProgressiveBitlist and
 borrowed ByteVector/ByteList/ProgressiveByteList codecs are implemented and proved,
 including malformed inputs and illegal zero-length vector declarations.
@@ -107,10 +114,18 @@ widths, variable layouts (`Ok(None)`) or unrepresentable widths (`Err(SizeOverfl
 `codec::is_basic` derives packing classification; `codec::validate_type` checks the
 declaration without invoking a value codec. `codec::is_compatible` compares declared
 Merkle layouts but does not imply type validity. These are not independently overridable
-metadata constants. The descriptor covers Boolean, unsigned integers, dedicated opaque byte arrays, and recursively
-nested Vector/List/ProgressiveList declarations. Vector widths use checked multiplication;
-an outer zero count cancels even an unrepresentable fixed child width, whereas a variable
-child stays variable. `ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
+metadata constants. The native descriptor now covers all 13 pinned shapes: Boolean,
+unsigned integers, byte/bit vectors and lists, ProgressiveBitList, recursively nested
+Vector/List/ProgressiveList, Container, ProgressiveContainer and CompatibleUnion.
+Separate static arrays retain every name, mask, selector and child, including malformed
+counts; names retain full UTF-8 bytes without normalization. No allocation constructs
+metadata. All four internal implementations remain const functions. Vector widths use
+checked multiplication; an outer zero count cancels even an unrepresentable fixed child
+width, whereas a variable child stays variable. Containers sum declared field widths
+without adding bytes for gaps; any variable field cancels fixed overflow, in either order.
+Compatibility is distinct from equality and validity, with all-pairs union comparison.
+These extended metadata behaviors are native-tested, not yet formally integrated.
+`ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
 children using the same canonical list layout, and uses the Progressive tree with the element count.
 `CodecError` implements the standard error interfaces. The seven basic implementations
 and generic Vector/List/ProgressiveList, owned ByteVector/ByteList, and owned bitfield

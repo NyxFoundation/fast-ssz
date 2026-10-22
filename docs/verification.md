@@ -1,7 +1,7 @@
 ---
 title: Verification scope and trust boundary
-description: Exact native-output boundary for verified codecs; raw Container foundations, not complete value codecs.
 last_updated: 2026-10-22
+verification_status: full-descriptor-formal-integration-pending
 tags:
   - ssz
   - aeneas
@@ -9,6 +9,17 @@ tags:
   - bounded-progressive
 ---
 # Verification scope and trust boundary
+
+**Preparatory native change; formal integration pending.** The native descriptor
+now represents all 13 pinned constructors. Its const metadata implementations and
+tests have changed, but generated Aeneas artifacts and existing proofs/contracts
+are intentionally unchanged. The proof descriptions below record the `155619d`
+baseline, not a successful proof gate for this enlarged Rust implementation.
+The approved UTF-8-invariant/kernel-clean literal repair needs a final published
+immutable Aeneas revision and total `Str` → `String` observation before extraction,
+full metadata proofs, all ten dictionary laws and `scripts/verify.py check` can be
+rerun. No UTF-8/domain premise or temporary name observation has been added.
+See [native descriptor behavior and evidence](full-descriptors.md).
 
 **Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
@@ -368,23 +379,35 @@ not protocol proof targets; a non-Debug state/drop-counter test checks that forw
 and formatting do not invoke its destructor or expose it.
 
 `codec::fixed_size`, `is_basic`, `validate_type` and `is_compatible` derive metadata
-from `Ssz::TYPE` without invoking value codecs. The shared implementations refine
-`Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and `Ssz.isCompatible` over every
-represented finite declaration. The descriptor represents Boolean, machine-size integer
-widths and recursively nested Vector/List/ProgressiveList declarations and all three bitfield descriptors. All represented
-counts, bounds and widths, including zero, unsupported widths and `usize::MAX`, are covered. Validation rejects illegal widths, while width/classification remain separate
-metadata exactly as in the reference. Compatibility distinguishes Boolean from uint8
-and does not imply declaration validity. The descriptor view preserves the entire
-declaration; a negative fixture rejects a bool dictionary mislabeled uint8 despite their
-equal byte widths. Declaration variants for the other SSZ families remain to be added.
-Vector width arithmetic reports unrepresentable products without changing the natural-number
-specification. A zero outer count cancels an overflowing fixed child width; it does not
-make a variable child fixed. Zero vector counts fail validation before child faults;
-zero list capacities still validate the child. Progressive-list compatibility ignores
-capacities but recursively checks the child layout. These are metadata proofs, not
-collection value codecs. External declarations must satisfy the declaration law; cyclic
-static graphs have no finite descriptor view and are not certified. Static storage and
-no metadata-construction allocation are source/compiler properties, not runtime-cost theorems.
+from `Ssz::TYPE` without invoking value codecs. At baseline `155619d`, the shared
+implementations refined `Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and
+`Ssz.isCompatible` for Boolean, machine-size integer widths and recursively nested
+Vector/List/ProgressiveList declarations. Those artifacts are now stale relative to
+the native full-descriptor extension; extending the descriptor view and proofs over
+every finite declaration, including malformed declarations and all native bounds,
+is still required. The negative fixture rejecting a bool dictionary mislabeled
+uint8 and all existing `CodecLaw` contracts are preserved unchanged.
+
+Native metadata now additionally covers byte/bit vectors and lists,
+ProgressiveBitList, Container, ProgressiveContainer and CompatibleUnion. Separate
+static arrays preserve every name, mask, selector, child and mismatched count.
+Safe const byte comparison preserves complete UTF-8 names, including NUL and
+canonically distinct spellings, without hashing or normalization. Progressive
+bounds remain in declarations and equality; only compatibility ignores them.
+Compatibility follows structural equality's shortcut even for invalid declarations,
+checks progressive shared positions and distinct-name placement, and compares
+every union cross-pair without assuming transitivity or declaration validity.
+Validation follows the pinned executable's exact error categories and order.
+Vector width arithmetic reports unrepresentable products. Zero counts cancel
+fixed overflow, not variable width. Container gaps add no bytes, empty internal
+field lists have width zero, and a variable field before or after fixed overflow
+makes the entire container variable. These are descriptor behaviors, not Container,
+ProgressiveContainer, Union, derive or other missing value-codec completion.
+
+External declarations must still satisfy the declaration law; cyclic static graphs
+have no finite descriptor view and are not certified. Static storage and no
+metadata-construction allocation are source/compiler properties, not runtime-cost
+theorems. No new trust-boundary exception or well-formedness assumption is introduced.
 
 `codec::decode_elements` traverses validated body ranges with any explicitly lawful
 child dictionary. The actual Vec loop terminates and preserves element order, with

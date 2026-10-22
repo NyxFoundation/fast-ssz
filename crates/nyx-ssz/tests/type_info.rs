@@ -79,3 +79,67 @@ fn should_explain_invalid_integer_declarations_without_exposing_internals() {
         "SSZ unsigned integer width must be 1, 2, 4, 8, 16 or 32 bytes"
     );
 }
+
+const NEW_SHAPES: [TypeDescriptor; 8] = [
+    TypeDescriptor::ByteVector(2),
+    TypeDescriptor::ByteList(3),
+    TypeDescriptor::BitVector(9),
+    TypeDescriptor::BitList(3),
+    TypeDescriptor::ProgressiveBitList(Some(usize::MAX)),
+    TypeDescriptor::Container(&["字段🦀"], &[&TypeDescriptor::Uint(2)]),
+    TypeDescriptor::ProgressiveContainer(&[false, true], &["é\0"], &[&TypeDescriptor::Uint(2)]),
+    TypeDescriptor::CompatibleUnion(
+        &[1, 127],
+        &[
+            &TypeDescriptor::ByteVector(2),
+            &TypeDescriptor::Vector(&TypeDescriptor::Uint(1), 2),
+        ],
+    ),
+];
+
+// Deliberately metadata-only external dictionaries: no value operation is invoked.
+struct DeclaredShape<const INDEX: usize>;
+
+impl<const INDEX: usize> Ssz for DeclaredShape<INDEX> {
+    type DecodeState = ();
+    const TYPE: &'static TypeDescriptor = &NEW_SHAPES[INDEX];
+
+    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+        panic!("metadata inspection must not call encode")
+    }
+    fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
+        panic!("metadata inspection must not call decode")
+    }
+    fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
+        panic!("metadata inspection must not call hash_tree_root")
+    }
+}
+
+fn assert_composite<const INDEX: usize>(width: Option<usize>) {
+    assert_eq!(fixed_size::<DeclaredShape<INDEX>>(), Ok(width));
+    assert!(!is_basic::<DeclaredShape<INDEX>>());
+    assert_eq!(validate_type::<DeclaredShape<INDEX>>(), Ok(()));
+    assert!(is_compatible::<DeclaredShape<INDEX>, DeclaredShape<INDEX>>());
+    assert_eq!(*DeclaredShape::<INDEX>::TYPE, NEW_SHAPES[INDEX]);
+}
+
+#[test]
+fn all_new_families_use_the_same_existing_public_metadata_apis() {
+    assert_composite::<0>(Some(2));
+    assert_composite::<1>(None);
+    assert_composite::<2>(Some(2));
+    assert_composite::<3>(None);
+    assert_composite::<4>(None);
+    assert_composite::<5>(Some(2));
+    assert_composite::<6>(Some(2));
+    assert_composite::<7>(None);
+    assert!(is_compatible::<
+        DeclaredShape<0>,
+        nyx_ssz::collections::Vector<u8, 2>,
+    >());
+    assert!(is_compatible::<
+        DeclaredShape<1>,
+        nyx_ssz::collections::List<u8, 3>,
+    >());
+    assert!(!is_compatible::<DeclaredShape<5>, DeclaredShape<6>>());
+}
