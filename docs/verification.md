@@ -358,14 +358,15 @@ Both paths establish the existing immutable view invariant, so typed element tra
 and getters need no new assumptions. Element validity and collection codecs remain separate.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
-pinned source integrity. For the integrated owned byte/bit and raw Container proof slice,
-`python3 scripts/verify.py check` passes all 100 operations, 15 dictionaries and 3,412 source
+pinned source integrity. For the integrated owned byte/bit, multiproof and raw Container proof slice,
+`python3 scripts/verify.py check` passes all 103 operations, 15 dictionaries and 3,412 source
 cases, including the actual owned byte and bit dictionaries. All 103 Python regression tests
 also pass (`python3 -m unittest discover -s scripts -p 'test_*.py'`). The library-source
 coverage gate (`cargo llvm-cov --workspace --ignore-filename-regex '/tests/' --fail-under-lines 80`)
-reports 95.26% lines overall, 96.75% for `container.rs` and 100% for `container_wire.rs`.
+reports 95.51% lines overall, 96.75% for `container.rs` and 100% for `container_wire.rs`.
 This excludes integration-test files but includes in-module unit tests; coverage is not a
-formal branch or cost guarantee.
+formal branch or cost guarantee. The x86 CI job also executes the complete workspace tests
+on `i686-unknown-linux-musl` to exercise 32-bit native size boundaries.
 Generated declarations are partitioned into dependency-ordered
 modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction

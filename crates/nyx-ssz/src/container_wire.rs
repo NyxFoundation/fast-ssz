@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn should_guard_four_byte_budgets_when_native_lengths_cannot_be_allocated() {
         assert_eq!(
-            advance_size(0, 0, true, usize::MAX),
+            advance_size(1, 0, true, usize::MAX),
             Err(CodecError::SizeOverflow)
         );
         assert_eq!(
