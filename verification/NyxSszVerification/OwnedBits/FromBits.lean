@@ -8,13 +8,22 @@ set_option maxHeartbeats 2000000
 
 namespace NyxSszVerification
 
+/-- This builtin adapter retains the stronger exact encoding relation. -/
+def ownedMappedEncodingAgrees
+    (actual : core.result.Result (alloc.vec.Vec U8) NyxSszRust.error.CodecError)
+    (expected : Except Ssz.Err Ssz.Bytes) : Prop :=
+  match actual, expected with
+  | .Ok bytes, .ok data => bytesToSpec bytes.val = data
+  | .Err error, .error fault => codecFaultAgrees error fault
+  | _, _ => False
+
 @[step] theorem owned_map_fault_refines
     (result : core.result.Result (alloc.vec.Vec U8) NyxSszRust.bitfield.BitfieldError)
     (expected : Except Ssz.Err Ssz.Bytes) (agrees : bitEncodingAgrees result expected) :
     core.result.Result.map_err NyxSszRust.P.Insts.CoreOpsFunctionFnOnceTupleBitfieldErrorCodecError
-      result NyxSszRust.bit_storage.fault ⦃ actual => codecEncodingAgrees actual expected ⦄ := by
+      result NyxSszRust.bit_storage.fault ⦃ actual => ownedMappedEncodingAgrees actual expected ⦄ := by
   cases result <;> cases expected <;> simp_all [bitEncodingAgrees]
-  all_goals try simp_all [codecEncodingAgrees]
+  all_goals try simp_all [ownedMappedEncodingAgrees]
   all_goals simp only [NyxSszRust.P.Insts.CoreOpsFunctionFnOnceTupleBitfieldErrorCodecError.call_once]
   all_goals step*
 
@@ -31,7 +40,7 @@ namespace NyxSszVerification
   step*
   · cases r1 <;> simp_all
     cases encoded : checkedSerialize (.bitVector N.val) (.bits (bitsToSpec bits.val)) <;>
-      simp_all [codecEncodingAgrees]
+      simp_all [ownedMappedEncodingAgrees]
     have recovered := owned_vector_roundtrip N.val (bitsToSpec bits.val) _ encoded
     cases actual with
     | Ok value =>
@@ -42,7 +51,7 @@ namespace NyxSszVerification
       rcases actual_post with ⟨fault, failed, _⟩
       simp_all
   · cases r1 <;> cases encoded : checkedSerialize (.bitVector N.val) (.bits (bitsToSpec bits.val)) <;>
-      simp_all [codecEncodingAgrees]
+      simp_all [ownedMappedEncodingAgrees]
 
 theorem owned_list_serialize_alias (cap : Nat) (bits : _root_.Array Bool) :
     checkedSerialize (.bitList cap) (.bits bits) = checkedSerialize (.progressiveBitList (some cap)) (.bits bits) := by
@@ -67,7 +76,7 @@ theorem owned_list_deserialize_alias (cap : Nat) (bytes : Ssz.Bytes) :
   step*
   · cases r1 <;> simp_all
     cases encoded : checkedSerialize (.bitList MAX.val) (.bits (bitsToSpec bits.val)) <;>
-      simp_all [codecEncodingAgrees]
+      simp_all [ownedMappedEncodingAgrees]
     have recovered := owned_list_roundtrip (some MAX.val) (bitsToSpec bits.val) _
       (by simpa only [← owned_list_serialize_alias] using encoded)
     cases actual with
@@ -79,7 +88,7 @@ theorem owned_list_deserialize_alias (cap : Nat) (bytes : Ssz.Bytes) :
       rcases actual_post with ⟨fault, failed, _⟩
       simp_all [owned_list_deserialize_alias]
   · cases r1 <;> cases encoded : checkedSerialize (.bitList MAX.val) (.bits (bitsToSpec bits.val)) <;>
-      simp_all [codecEncodingAgrees]
+      simp_all [ownedMappedEncodingAgrees]
 
 attribute [local step] encode_progressive_bit_list_refines
 
@@ -96,7 +105,7 @@ attribute [local step] encode_progressive_bit_list_refines
   step*
   · cases r1 <;> simp_all
     cases encoded : checkedSerialize (.progressiveBitList none) (.bits (bitsToSpec bits.val)) <;>
-      simp_all [codecEncodingAgrees]
+      simp_all [ownedMappedEncodingAgrees]
     have recovered := owned_list_roundtrip none (bitsToSpec bits.val) _ encoded
     cases actual with
     | Ok value =>
@@ -107,6 +116,6 @@ attribute [local step] encode_progressive_bit_list_refines
       rcases actual_post with ⟨fault, failed, _⟩
       simp_all
   · cases r1 <;> cases encoded : checkedSerialize (.progressiveBitList none) (.bits (bitsToSpec bits.val)) <;>
-      simp_all [codecEncodingAgrees]
+      simp_all [ownedMappedEncodingAgrees]
 
 end NyxSszVerification

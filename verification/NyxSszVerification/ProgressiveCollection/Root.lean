@@ -47,25 +47,33 @@ theorem progressive_collection_root_finish (chunks : Slice RustNode) (count : Us
           core.result.Result.Insts.CoreOpsTry.branch,
           core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual,
           Bind.bind, Except.bind]
-    | Ok parts =>
-      have encoded : Ssz.serializeEach shape (values.val.map observe) =
-          .ok (parts.val.map fun part => bytesToSpec part.val) := by
-        cases encoded : Ssz.serializeEach shape (values.val.map observe) <;>
-          simp_all [collectionPartsAgrees]
-      have size := collection_basic_parts_bound shape basic _ parts.val encoded
-      simp only [List.length_map] at size
-      have widthBound := collection_basic_width_bound shape valid basic
-      have bodyBound : collectionBodySize parts.val ≤ Usize.max * 32 := by
-        rw [size]
-        exact Nat.mul_le_mul values.property widthBound
-      simp only [core.result.Result.Insts.CoreOpsTry.branch, bind_tc_ok]
-      apply spec_bind (collection_pack_parts_refines (alloc.vec.Vec.deref parts) bodyBound)
-      intro chunks packed
-      simp only [collection_deref_values] at packed
-      have packedList := congrArg _root_.Array.toList packed
-      simpa [progressiveCollectionRoot, basic, encoded, collection_pack_elements,
-        ← packedList, Bind.bind, Except.bind, Pure.pure, Except.pure] using
-          progressive_collection_root_finish (alloc.vec.Vec.deref chunks) (Slice.len values)
+    | Ok held =>
+      cases held with
+      | none =>
+        cases encoded : Ssz.serializeEach shape (values.val.map observe) with
+        | error fault => simp [collectionPartsAgrees, encoded] at partsAgrees
+        | ok data =>
+          simp only [encoded, collectionPartsAgrees] at partsAgrees
+          exact False.elim (collection_basic_parts_native shape valid basic _ data encoded partsAgrees)
+      | some parts =>
+        have encoded : Ssz.serializeEach shape (values.val.map observe) =
+            .ok (parts.val.map fun part => bytesToSpec part.val) := by
+          cases encoded : Ssz.serializeEach shape (values.val.map observe) <;>
+            simp_all [collectionPartsAgrees]
+        have size := collection_basic_parts_bound shape basic _ parts.val encoded
+        simp only [List.length_map] at size
+        have widthBound := collection_basic_width_bound shape valid basic
+        have bodyBound : collectionBodySize parts.val ≤ Usize.max * 32 := by
+          rw [size]
+          exact Nat.mul_le_mul values.property widthBound
+        simp only [core.result.Result.Insts.CoreOpsTry.branch, bind_tc_ok]
+        apply spec_bind (collection_pack_parts_refines (alloc.vec.Vec.deref parts) bodyBound)
+        intro chunks packed
+        simp only [collection_deref_values] at packed
+        have packedList := congrArg _root_.Array.toList packed
+        simpa [progressiveCollectionRoot, basic, encoded, collection_pack_elements,
+          ← packedList, Bind.bind, Except.bind, Pure.pure, Except.pure] using
+            progressive_collection_root_finish (alloc.vec.Vec.deref chunks) (Slice.len values)
   · rw [if_neg basic]
     apply spec_bind (collection_root_elements_refines child shape observe law valid values)
     intro rootsResult rootsAgrees

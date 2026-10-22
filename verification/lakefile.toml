@@ -1,6 +1,6 @@
 name = "NyxSszVerification"
 version = "0.1.0"
-defaultTargets = ["NyxSszVerification"]
+defaultTargets = ["NyxSszVerification.CurrentAudit"]
 
 [leanOptions]
 warningAsError = true

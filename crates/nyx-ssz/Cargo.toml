@@ -11,10 +11,16 @@ repository.workspace = true
 verification = []
 
 [dependencies]
+nyx-ssz-derive = { path = "../nyx-ssz-derive" }
 ruint = { version = "=1.20.1", default-features = false }
 
 [dev-dependencies]
+criterion = { version = "=0.7.0", default-features = false }
 sha2 = "=0.10.9"
+
+[[bench]]
+name = "codec"
+harness = false
 
 [lints]
 workspace = true

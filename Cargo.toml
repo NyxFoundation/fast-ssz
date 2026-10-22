@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/nyx-ssz"]
+members = ["crates/nyx-ssz", "crates/nyx-ssz-derive"]
 resolver = "2"
 
 [workspace.package]

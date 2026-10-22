@@ -83,7 +83,7 @@ def _closed_standard_type(value, table, types, structures, trail=frozenset()):
     if adt["builtin"] in ("Array", "Tuple"):
         return all(_closed_standard_type(arg, table, types, structures, trail) for arg in arguments)
     declaration = types.get(adt["id"])
-    if declaration is not None and _name(declaration) == "alloc::vec::Vec":
+    if declaration is not None and _name(declaration) in ("alloc::vec::Vec", "core::option::Option"):
         return len(arguments) == 1 and _closed_standard_type(arguments[0], table, types, structures, trail)
     key = ("structure", adt["id"])
     if adt["id"] not in structures or arguments or key in trail:

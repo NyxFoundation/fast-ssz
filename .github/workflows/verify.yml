@@ -25,17 +25,19 @@ jobs:
         run: |
           rustup target add --toolchain nightly-2026-08-18 i686-unknown-linux-musl
           cargo test --locked --workspace --all-features --target i686-unknown-linux-musl
-      - name: Check the current-version seven-family official vector slice
-        run: >-
-          python3 scripts/official_vectors.py check
-          --family boolean --family uints --family basic_vector
-          --family bitvector --family bitlist --family progressive_bitlist --family basic_progressive_list
+      - name: Install pinned reference decompressor
+        run: |
+          python3 -m venv "$RUNNER_TEMP/nyx-vector-env"
+          "$RUNNER_TEMP/nyx-vector-env/bin/pip" install -r tools/official-vectors/requirements.txt
+      - name: Check all nine official vector families
+        run: '"$RUNNER_TEMP/nyx-vector-env/bin/python" scripts/official_vectors.py check'
       - run: rustup component add llvm-tools --toolchain nightly-2026-08-18
       - run: cargo install cargo-llvm-cov --version 0.8.7 --locked
       - run: cargo llvm-cov --workspace --fail-under-lines 80
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
   refinement:
+    name: Current Aeneas slice and explicit unproved status
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -52,4 +54,4 @@ jobs:
           use-mathlib-cache: "true"
       - run: cargo install cargo-hax --version 0.4.0 --locked
       - run: python3 scripts/verify.py bootstrap
-      - run: python3 scripts/verify.py check
+      - run: python3 scripts/current_refinement.py check

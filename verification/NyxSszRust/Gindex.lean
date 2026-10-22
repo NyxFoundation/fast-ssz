@@ -18,7 +18,7 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::gindex::below]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 36:0-41:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 36:0-41:1
     Visibility: public -/
 def gindex.below (index : Std.U128) (depth : Std.U32) : RustM Std.U128 := do
   if depth >= 128#u32
@@ -27,7 +27,7 @@ def gindex.below (index : Std.U128) (depth : Std.U32) : RustM Std.U128 := do
        index % i
 
 /-- [nyx_ssz::gindex::bit]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 27:0-32:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 27:0-32:1
     Visibility: public -/
 def gindex.bit (index : Std.U128) (position : Std.U32) : RustM Bool := do
   if position >= 128#u32
@@ -38,7 +38,7 @@ def gindex.bit (index : Std.U128) (position : Std.U32) : RustM Bool := do
     ok (i1 = 1#u128)
 
 /-- [nyx_ssz::gindex::branch_indices]: loop body 0:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 108:4-111:5
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 108:4-111:5
     Visibility: public -/
 @[rust_loop_body]
 def gindex.branch_indices_loop.body
@@ -57,7 +57,7 @@ def gindex.branch_indices_loop.body
   else ok (done siblings)
 
 /-- [nyx_ssz::gindex::child]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 50:0-60:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 50:0-60:1
     Visibility: public -/
 def gindex.child
   (index : Std.U128) (right_side : Bool) :
@@ -76,7 +76,7 @@ def gindex.child
     | some value1 => ok (core.result.Result.Ok value1)
 
 /-- [nyx_ssz::gindex::depth]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 10:0-15:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 10:0-15:1
     Visibility: public -/
 def gindex.depth
   (index : Std.U128) :
@@ -90,13 +90,13 @@ def gindex.depth
     ok (core.result.Result.Ok i1)
 
 /-- [nyx_ssz::gindex::parent]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 64:0-66:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 64:0-66:1
     Visibility: public -/
 def gindex.parent (index : Std.U128) : RustM Std.U128 := do
   index / 2#u128
 
 /-- [nyx_ssz::gindex::path_indices]: loop body 0:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 96:4-99:5
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 96:4-99:5
     Visibility: public -/
 @[rust_loop_body]
 def gindex.path_indices_loop.body
@@ -114,13 +114,13 @@ def gindex.path_indices_loop.body
   else ok (done path)
 
 /-- [nyx_ssz::gindex::sibling]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 45:0-47:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 45:0-47:1
     Visibility: public -/
 def gindex.sibling (index : Std.U128) : RustM Std.U128 := do
   ok (index ^^^ 1#u128)
 
 /-- [nyx_ssz::gindex::branch_indices]: loop 0:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 108:4-111:5
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 108:4-111:5
     Visibility: public -/
 @[rust_loop]
 def gindex.branch_indices_loop
@@ -134,7 +134,7 @@ def gindex.branch_indices_loop
     (siblings, level)
 
 /-- [nyx_ssz::gindex::concat]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 69:0-81:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 69:0-81:1
     Visibility: public -/
 def gindex.concat
   (outer : Std.U128) (inner : Std.U128) :
@@ -166,7 +166,7 @@ def gindex.concat
       Std.U128 (core.convert.FromSame merkle.ProofError) residual
 
 /-- [nyx_ssz::gindex::length]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 18:0-23:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 18:0-23:1
     Visibility: public -/
 def gindex.length
   (index : Std.U128) :
@@ -177,7 +177,7 @@ def gindex.length
   else gindex.depth index
 
 /-- [nyx_ssz::gindex::path_indices]: loop 0:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 96:4-99:5
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 96:4-99:5
     Visibility: public -/
 @[rust_loop]
 def gindex.path_indices_loop
@@ -191,7 +191,7 @@ def gindex.path_indices_loop
     (path, level)
 
 /-- [nyx_ssz::gindex::rebase]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 84:0-89:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 84:0-89:1
     Visibility: public -/
 def gindex.rebase
   (index : Std.U128) (depth : Std.U32) :
@@ -206,7 +206,7 @@ def gindex.rebase
     ok (core.result.Result.Ok i2)
 
 /-- [nyx_ssz::gindex::branch_indices]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 104:0-113:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 104:0-113:1
     Visibility: public -/
 def gindex.branch_indices
   (index : Std.U128) :
@@ -225,7 +225,7 @@ def gindex.branch_indices
       residual
 
 /-- [nyx_ssz::gindex::path_indices]:
-    Source: 'crates/nyx-ssz/src/gindex.rs', lines 92:0-101:1
+    Source: 'verification/../crates/nyx-ssz/src/gindex.rs', lines 92:0-101:1
     Visibility: public -/
 def gindex.path_indices
   (index : Std.U128) :

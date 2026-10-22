@@ -13,6 +13,7 @@ import tomllib
 from extracted_modules import NAMESPACE, declared_names, split_model
 from llbc_drops import assert_safe_drops
 from generic_contract_fixtures import generic_contract_success, generic_rejection_cases
+from native_output_fixtures import native_output_success, native_output_rejection_cases
 from trait_contracts import load_contracts, validate_traits, assert_extracted_instances
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -222,14 +223,12 @@ def prepare_native_macros(target):
     metadata = json.loads(run([
         "cargo", "metadata", "--locked", "--format-version", "1",
     ], capture=True))
-    packages = [package["id"] for package in metadata["packages"]
-                if any("proc-macro" in item["kind"] for item in package["targets"])]
-    if not packages:
+    has_macros = any("proc-macro" in item["kind"] for package in metadata["packages"]
+                     for item in package["targets"])
+    if not has_macros:
         return
-    arguments = ["cargo", "build", "--locked", "--target-dir", target]
-    for package in packages:
-        arguments.extend(["--package", package])
-    run(arguments)
+    run(["cargo", "build", "--locked", "--target-dir", target,
+         "--package", "nyx-ssz", "--lib"])
 
 
 def generated_artifacts():
@@ -363,6 +362,7 @@ def rejection_cases():
         ),
         **trait_rejection_cases(),
         **generic_rejection_cases(),
+        **native_output_rejection_cases(),
     }
 
 
@@ -410,6 +410,9 @@ def check_generic_contract_success(directory):
     file = directory / "GenericContractSuccess.lean"
     file.write_text("import NyxSszVerification.Audit\n" + generic_contract_success())
     run(["lake", "env", "lean", file], cwd=VERIFICATION)
+    file = directory / "NativeOutputSuccess.lean"
+    file.write_text("import NyxSszVerification.Audit\n" + native_output_success())
+    run(["lake", "env", "lean", file], cwd=VERIFICATION)
 
 
 def check_rejection_guards(directory):
@@ -426,7 +429,9 @@ def check_rejection_guards(directory):
 
 def check_ownership_examples(pins, directory):
     source = VERIFICATION / "fixtures" / "drop_bookkeeping.rs"
-    cases = (("discard_bookkeeping", True), ("discard_nodes", True), ("discard_user_value", False))
+    cases = (("discard_bookkeeping", True), ("discard_nodes", True),
+             ("discard_optional_bytes", True), ("discard_optional_user", False),
+             ("discard_user_value", False))
     for function, accepted in cases:
         artifact = directory / f"{function}.llbc"
         run([tool_path("charon", pins), "rustc", "--preset=aeneas", "--precise-drops",

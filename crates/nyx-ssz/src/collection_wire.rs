@@ -6,14 +6,21 @@ use crate::{
     scalar,
 };
 
-pub(crate) fn encode_parts<T: Ssz>(values: &[T]) -> Result<Vec<Vec<u8>>, CodecError> {
+// None records reference success with an inaccessible oversized child, not
+// empty bytes. Later protocol faults must still precede parent assembly.
+pub(crate) fn encode_parts<T: Ssz>(values: &[T]) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
     let mut parts = Vec::new();
+    let mut oversized = false;
     let mut index = 0;
     while index < values.len() {
-        parts.push(values[index].encode()?);
+        match values[index].encode() {
+            Ok(part) => parts.push(part),
+            Err(CodecError::NativeOutputOverflow) => oversized = true,
+            Err(error) => return Err(error),
+        }
         index += 1;
     }
-    Ok(parts)
+    Ok(if oversized { None } else { Some(parts) })
 }
 
 pub(crate) fn append(output: &mut Vec<u8>, bytes: &[u8]) {
@@ -69,5 +76,10 @@ pub(crate) fn encode_sequence<T: Ssz>(values: &[T]) -> Result<Vec<u8>, CodecErro
         Ok(Some(_)) | Err(CodecError::SizeOverflow) => true,
         Err(error) => return Err(error),
     };
-    assemble(&parts, fixed)
+    match parts {
+        Some(parts) => assemble(&parts, fixed),
+        // Every sequence has a strict 2^32 assembly envelope, even fixed ones.
+        // A child larger than usize::MAX necessarily exceeds that envelope.
+        None => Err(CodecError::SizeOverflow),
+    }
 }

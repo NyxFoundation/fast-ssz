@@ -20,7 +20,7 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::multiproof::claim_path]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 47:4-54:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 47:4-54:1 -/
 @[rust_loop_body]
 def multiproof.claim_path_loop.body
   (candidate : Std.U128) (node : Std.U128) :
@@ -35,7 +35,7 @@ def multiproof.claim_path_loop.body
   else ok (done false)
 
 /-- [nyx_ssz::multiproof::node_at]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 112:4-119:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 112:4-119:1 -/
 @[rust_loop_body]
 def multiproof.node_at_loop.body
   (indices : Slice Std.U128) (nodes : Slice (Array Std.U8 32#usize))
@@ -54,7 +54,7 @@ def multiproof.node_at_loop.body
   else ok (done none)
 
 /-- [nyx_ssz::multiproof::reject_repeated]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 14:4-21:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 14:4-21:1 -/
 @[rust_loop_body]
 def multiproof.reject_repeated_loop.body
   (indices : Slice Std.U128) (offset : Std.Usize) :
@@ -76,7 +76,7 @@ def multiproof.reject_repeated_loop.body
   else ok (done (core.result.Result.Ok ()))
 
 /-- [nyx_ssz::multiproof::validate_claim]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 26:4-33:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 26:4-33:1 -/
 @[rust_loop_body]
 def multiproof.validate_claim_loop.body
   (indices : Slice Std.U128) (ancestor : Std.U128) :
@@ -92,7 +92,7 @@ def multiproof.validate_claim_loop.body
   else ok (done (core.result.Result.Ok ()))
 
 /-- [nyx_ssz::multiproof::claim_path]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 47:4-54:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 47:4-54:1 -/
 @[rust_loop]
 def multiproof.claim_path_loop
   (node : Std.U128) (candidate : Std.U128) : RustM Bool := do
@@ -101,7 +101,7 @@ def multiproof.claim_path_loop
     node
 
 /-- [nyx_ssz::multiproof::node_at]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 112:4-119:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 112:4-119:1 -/
 @[rust_loop]
 def multiproof.node_at_loop
   (indices : Slice Std.U128) (nodes : Slice (Array Std.U8 32#usize))
@@ -113,7 +113,7 @@ def multiproof.node_at_loop
     offset
 
 /-- [nyx_ssz::multiproof::reject_repeated]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 14:4-21:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 14:4-21:1 -/
 @[rust_loop]
 def multiproof.reject_repeated_loop
   (indices : Slice Std.U128) (offset : Std.Usize) :
@@ -124,7 +124,7 @@ def multiproof.reject_repeated_loop
     offset
 
 /-- [nyx_ssz::multiproof::validate_claim]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 26:4-33:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 26:4-33:1 -/
 @[rust_loop]
 def multiproof.validate_claim_loop
   (indices : Slice Std.U128) (ancestor : Std.U128) :
@@ -135,14 +135,14 @@ def multiproof.validate_claim_loop
     ancestor
 
 /-- [nyx_ssz::multiproof::claim_path]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 46:0-54:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 46:0-54:1 -/
 @[reducible]
 def multiproof.claim_path
   (node : Std.U128) (candidate : Std.U128) : RustM Bool := do
   multiproof.claim_path_loop node candidate
 
 /-- [nyx_ssz::multiproof::node_at]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 110:0-119:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 110:0-119:1 -/
 @[reducible]
 def multiproof.node_at
   (indices : Slice Std.U128) (nodes : Slice (Array Std.U8 32#usize))
@@ -152,7 +152,7 @@ def multiproof.node_at
   multiproof.node_at_loop indices nodes index 0#usize
 
 /-- [nyx_ssz::multiproof::reject_repeated]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 12:0-21:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 12:0-21:1 -/
 @[reducible]
 def multiproof.reject_repeated
   (indices : Slice Std.U128) :
@@ -161,7 +161,7 @@ def multiproof.reject_repeated
   multiproof.reject_repeated_loop indices 0#usize
 
 /-- [nyx_ssz::multiproof::validate_claim]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 23:0-33:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 23:0-33:1 -/
 def multiproof.validate_claim
   (indices : Slice Std.U128) (index : Std.U128) :
   RustM (core.result.Result Unit merkle.ProofError)
@@ -177,7 +177,7 @@ def multiproof.validate_claim
       Unit (core.convert.FromSame merkle.ProofError) residual
 
 /-- [nyx_ssz::multiproof::on_path]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 57:4-63:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 57:4-63:1 -/
 @[rust_loop_body]
 def multiproof.on_path_loop.body
   (candidate : Std.U128) (iter : core.slice.iter.Iter Std.U128) :
@@ -193,7 +193,7 @@ def multiproof.on_path_loop.body
     else ok (cont iter1)
 
 /-- [nyx_ssz::multiproof::rebuild]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 121:0-145:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 121:0-145:1 -/
 def multiproof.rebuild
   (leaves : Slice (Array Std.U8 32#usize))
   (proof : Slice (Array Std.U8 32#usize)) (indices : Slice Std.U128)
@@ -250,7 +250,7 @@ def multiproof.rebuild
 partial_fixpoint
 
 /-- [nyx_ssz::multiproof::validate]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 40:4-44:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 40:4-44:1 -/
 @[rust_loop_body]
 def multiproof.validate_loop.body
   (indices : Slice Std.U128) (iter : core.slice.iter.Iter Std.U128) :
@@ -272,7 +272,7 @@ def multiproof.validate_loop.body
       ok (done r1)
 
 /-- [nyx_ssz::multiproof::on_path]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 57:4-63:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 57:4-63:1 -/
 @[rust_loop]
 def multiproof.on_path_loop
   (iter : core.slice.iter.Iter Std.U128) (candidate : Std.U128) :
@@ -283,7 +283,7 @@ def multiproof.on_path_loop
     iter
 
 /-- [nyx_ssz::multiproof::validate]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 40:4-44:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 40:4-44:1 -/
 @[rust_loop]
 def multiproof.validate_loop
   (iter : core.slice.iter.Iter Std.U128) (indices : Slice Std.U128) :
@@ -294,7 +294,7 @@ def multiproof.validate_loop
     iter
 
 /-- [nyx_ssz::multiproof::on_path]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 56:0-63:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 56:0-63:1 -/
 def multiproof.on_path
   (indices : Slice Std.U128) (candidate : Std.U128) : RustM Bool := do
   let iter ←
@@ -303,7 +303,7 @@ def multiproof.on_path
   multiproof.on_path_loop iter candidate
 
 /-- [nyx_ssz::multiproof::validate]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 35:0-44:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 35:0-44:1 -/
 def multiproof.validate
   (indices : Slice Std.U128) :
   RustM (core.result.Result Unit merkle.ProofError)
@@ -325,7 +325,7 @@ def multiproof.validate
         Unit (core.convert.FromSame merkle.ProofError) residual
 
 /-- [nyx_ssz::multiproof::next_helper]: loop body 1:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 69:8-75:9 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 69:8-75:9 -/
 @[rust_loop_body]
 def multiproof.next_helper_loop0_loop0.body
   (indices : Slice Std.U128) (upper : Std.U128) (best : Std.U128)
@@ -352,7 +352,7 @@ def multiproof.next_helper_loop0_loop0.body
   else ok (done best)
 
 /-- [nyx_ssz::multiproof::next_helper]: loop 1:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 69:8-75:9 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 69:8-75:9 -/
 @[rust_loop]
 def multiproof.next_helper_loop0_loop0
   (indices : Slice Std.U128) (upper : Std.U128) (best : Std.U128)
@@ -365,7 +365,7 @@ def multiproof.next_helper_loop0_loop0
     (best, node)
 
 /-- [nyx_ssz::multiproof::next_helper]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 67:4-76:5 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 67:4-76:5 -/
 @[rust_loop_body]
 def multiproof.next_helper_loop0.body
   (indices : Slice Std.U128) (upper : Std.U128)
@@ -380,7 +380,7 @@ def multiproof.next_helper_loop0.body
     ok (cont (iter1, best1))
 
 /-- [nyx_ssz::multiproof::next_helper]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 67:4-76:5 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 67:4-76:5 -/
 @[rust_loop]
 def multiproof.next_helper_loop0
   (iter : core.slice.iter.Iter Std.U128) (indices : Slice Std.U128)
@@ -393,7 +393,7 @@ def multiproof.next_helper_loop0
     (iter, best)
 
 /-- [nyx_ssz::multiproof::next_helper]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 65:0-78:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 65:0-78:1 -/
 def multiproof.next_helper
   (indices : Slice Std.U128) (upper : Std.U128) : RustM Std.U128 := do
   let iter ←
@@ -402,7 +402,7 @@ def multiproof.next_helper
   multiproof.next_helper_loop0 iter indices upper 0#u128
 
 /-- [nyx_ssz::multiproof::collect_helpers]: loop body 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 88:4-98:5 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 88:4-98:5 -/
 @[rust_loop_body]
 def multiproof.collect_helpers_loop.body
   (indices : Slice Std.U128) (capacity : Std.Usize)
@@ -424,7 +424,7 @@ def multiproof.collect_helpers_loop.body
       ok (cont (helpers1, upper1))
 
 /-- [nyx_ssz::multiproof::collect_helpers]: loop 0:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 88:4-98:5 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 88:4-98:5 -/
 @[rust_loop]
 def multiproof.collect_helpers_loop
   (indices : Slice Std.U128) (capacity : Std.Usize)
@@ -439,7 +439,7 @@ def multiproof.collect_helpers_loop
     (helpers, upper)
 
 /-- [nyx_ssz::multiproof::collect_helpers]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 80:0-99:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 80:0-99:1 -/
 def multiproof.collect_helpers
   (indices : Slice Std.U128) (capacity : Std.Usize)
   (overflow : merkle.ProofError) :
@@ -461,7 +461,7 @@ def multiproof.collect_helpers
       residual
 
 /-- [nyx_ssz::multiproof::calculate_merkle_root]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 152:0-165:1
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 152:0-165:1
     Visibility: public -/
 def multiproof.calculate_merkle_root
   (leaves : Slice (Array Std.U8 32#usize))
@@ -493,7 +493,7 @@ def multiproof.calculate_merkle_root
         residual
 
 /-- [nyx_ssz::multiproof::helper_indices]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 106:0-108:1
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 106:0-108:1
     Visibility: public -/
 def multiproof.helper_indices
   (indices : Slice Std.U128) :
@@ -503,7 +503,7 @@ def multiproof.helper_indices
     merkle.ProofError.SizeOverflow
 
 /-- [nyx_ssz::multiproof::verify_merkle_proof]:
-    Source: 'crates/nyx-ssz/src/multiproof.rs', lines 168:0-178:1
+    Source: 'verification/../crates/nyx-ssz/src/multiproof.rs', lines 168:0-178:1
     Visibility: public -/
 def multiproof.verify_merkle_proof
   (leaves : Slice (Array Std.U8 32#usize))
@@ -517,7 +517,7 @@ def multiproof.verify_merkle_proof
     let b ←
       core.array.equality.PartialEqArray.eq core.cmp.PartialEqU8 actual root
     ok (core.result.Result.Ok b)
-  | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
+  | core.result.Result.Err error => ok (core.result.Result.Err error)
 
 
 end NyxSszRust

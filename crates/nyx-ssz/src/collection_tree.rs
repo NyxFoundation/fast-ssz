@@ -53,7 +53,11 @@ fn basic_capacity<T: Ssz>(positions: usize) -> Result<usize, CodecError> {
 
 pub(crate) fn root_progressive_sequence<T: Ssz>(values: &[T]) -> Result<Node, CodecError> {
     let chunks = if is_basic::<T>() {
-        pack_parts(&encode_parts(values)?)
+        let Some(parts) = encode_parts(values)? else {
+            // Impossible for lawful basic children: each serializes to ≤32 bytes.
+            return Err(CodecError::InvalidLength);
+        };
+        pack_parts(&parts)
     } else {
         root_elements(values)?
     };
@@ -70,7 +74,10 @@ pub(crate) fn root_sequence<T: Ssz>(
     mix_length: bool,
 ) -> Result<Node, CodecError> {
     let (chunks, capacity) = if is_basic::<T>() {
-        let parts = encode_parts(values)?;
+        let Some(parts) = encode_parts(values)? else {
+            // Impossible for lawful basic children, not a root native refusal.
+            return Err(CodecError::InvalidLength);
+        };
         (pack_parts(&parts), basic_capacity::<T>(positions)?)
     } else {
         (root_elements(values)?, positions)

@@ -9,13 +9,17 @@ use crate::{
 
 /// An owned SSZ type with canonical encoding, decoding and tree hashing.
 ///
-/// The library proves its own implementations. Implementing this trait outside
-/// this crate does not automatically establish SSZ conformance.
+/// Native conformance tests and formal proof coverage are tracked separately.
+/// Implementing or deriving this trait does not automatically certify its laws.
 pub trait Ssz: Sized {
     /// Owned partial values returned on failure; never discarded inside decode.
     type DecodeState;
     /// Immutable declaration used for type validation and layout metadata.
     const TYPE: &'static TypeDescriptor;
+    /// Exact reference bytes, its protocol error, or `NativeOutputOverflow` iff
+    /// successful natural reference bytes have length greater than `usize::MAX`.
+    /// Representable successes cannot use the native refusal; protocol faults
+    /// retain their distinct errors and precedence, including through parents.
     fn encode(&self) -> Result<Vec<u8>, CodecError>;
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>>;
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError>;

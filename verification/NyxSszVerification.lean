@@ -5,6 +5,8 @@ import NyxSszVerification.Collections
 import NyxSszVerification.Collection.Law
 import NyxSszVerification.ContainerWire.Assemble
 import NyxSszVerification.ProgressiveCollection.Law
+import NyxSszVerification.BoundedProgressiveCollection.Law
+import NyxSszVerification.BoundedProgressiveBits.Law
 import NyxSszVerification.OwnedBits.Law
 import NyxSszVerification.Sequence
 import NyxSszVerification.Sequence.Vector
@@ -12,6 +14,7 @@ import NyxSszVerification.Sequence.List
 import NyxSszVerification.Sequence.FixedList
 import NyxSszVerification.Container
 import NyxSszVerification.Codec.Basic
+import NyxSszVerification.Codec.Native
 import NyxSszVerification.Codec.Metadata
 import NyxSszVerification.Codec.Elements
 import NyxSszVerification.ProgressiveBytes
@@ -19,6 +22,7 @@ import NyxSszVerification.Sha256
 import NyxSszVerification.Merkle
 import NyxSszVerification.Multiproof
 import NyxSszVerification.Gindex
+import NyxSszVerification.CurrentAudit
 import NyxSszVerification.Merkleize
 import NyxSszVerification.Unsigned
 import NyxSszVerification.Unsigned.U256

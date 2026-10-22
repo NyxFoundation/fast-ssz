@@ -1,36 +1,104 @@
 ---
 title: Verification scope and trust boundary
-description: Verified owned codecs, multiproofs and raw Container layout/assembly, not complete Container value codecs.
 last_updated: 2026-10-22
+verification_status: current-18-operation-slice-explicit-issue-linked-skips
 tags:
   - ssz
   - aeneas
   - formal-verification
+  - bounded-progressive
 ---
 # Verification scope and trust boundary
 
-**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
+**Native implementation complete; current-source formal integration pending.**
+All 13 shapes have codecs, including generated heterogeneous ownership state.
+Typed paths, sparse node access and proof construction are native-tested.
+All 4,601 pinned official corpus cases pass with preserved source/version-alignment checks.
+
+The current gate freshly extracts and kernel-checks 18 SHA-256/gindex/Merkle operations.
+It explicitly reports the remaining 97 documented APIs, 17 codec dictionaries and derive
+transformations as unproved with linked Issues. Actual metadata extraction is rejected for
+nested-loop returns. See [exact current scope and reproduction](current-verification.md).
+Aeneas itself is unchanged; no axiom or input-domain assumption is added.
+The broader proof descriptions below are historical registrations, not certification of the
+enlarged current program. See [native API](native-api.md) and [descriptor evidence](full-descriptors.md).
+
+**Historical proof suite, not current-source certification:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links one hundred and three registered operations to proofs over actual
-Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
+`verification/targets.json` links 109 registered operations to proofs over actual
+Aeneas output: the thirty-nine existing codec/hash/view operations, eight owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list and mixed Container layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
-seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections, four owned
+seven packed byte/bit root entrypoints, nineteen owned-bitfield constructors/projections, four owned
 byte-array methods, three multiproof operations and shared mixed-slot Container wire assembly.
-`verification/traits.json` separately registers every public `Ssz` declaration member and its fifteen
-library dictionaries: seven basic instances, three generic sequence constructors, three owned bitfields
+`verification/traits.json` separately registers every public `Ssz` declaration member and its seventeen
+library dictionaries: seven basic instances, four generic sequence constructors, four owned bitfields
 and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
-methods are not silently excluded. The three generic laws compose with the law of their actual
+methods are not silently excluded. The four generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
-Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
+Every slice/bound yields `RustM.ok`. Encoding has exactly three semantic outcomes:
+representable reference success returns exact bytes/order/length; reference protocol error
+retains the existing exact fault relation; successful reference bytes longer than
+`usize::MAX` permit only the distinct `CodecError::NativeOutputOverflow` refusal.
+No representable success or reference error may use that marker. This is the sole
+approved extension to `codecEncodingAgrees`, not a resource-failure policy, input-domain
+premise, offset-envelope relaxation or additional `CodecLaw` field. Decoder, root,
+metadata and fault relations remain unchanged and exclude the new variant.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
 Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
 OverLimit/overLimit; other outcomes are false. Boolean errors classify scope/non-bit
 faults. Bounds cover `usize`, not all naturals. Zero-copy is source/test evidence,
 not a cost theorem. Derived error traits are not protocol proof targets.
+
+## Exact native-output boundary
+
+Pinned `Ssz.serialize` for CompatibleUnion returns the selector prefix followed by the
+child bytes without a union-level offset envelope. A lawful single-option union with
+a `usize::MAX`-byte opaque ByteVector body therefore reference-succeeds with
+`usize::MAX + 1` bytes. `compatible_union_prefix_size`,
+`compatible_union_native_boundary` and `compatible_union_native_exists` prove this
+symbolically with natural array-size lemmas, not native evaluation or a giant allocation.
+`codec_encoding_representable`, `codec_encoding_oversized` and
+`codec_encoding_reference_error` prove exact success/refusal/error correspondence.
+Only `propext`, `Classical.choice` and `Quot.sound` remain permitted axioms.
+
+The internal collector interface is
+`collection_wire::encode_parts<T: Ssz>(&[T]) -> Result<Option<Vec<Vec<u8>>>, CodecError>`.
+`Ok(Some(parts))` contains every exact stored part. `Ok(None)` means every child
+reference-succeeded but at least one body exceeds native capacity; it is not a fake
+empty byte buffer. `Err(error)` is the first genuine child protocol error.
+The loop keeps checking subsequent child encoders after a native marker, so a later
+protocol refusal wins. An earlier genuine `SizeOverflow` stops immediately. Only after
+all children succeed and fixed/variable metadata is checked does `encode_sequence`
+turn `None` into the reference's existing `SizeOverflow`/`offsetOverflow`: every
+sequence's total must be strictly less than 2^32, even for fixed children. Overflowing
+fixed metadata still means fixed, not variable. No combined working-budget or `n*width`
+refusal is introduced. Basic root paths prove `None` impossible (each child ≤32 bytes);
+they do not gain native-error permission. Encoded temporaries may be discarded, never
+owned user input or decoder prefixes/states. The precise-drop gate now also checks
+closed standard `Option` temporaries recursively, retaining rejection of user drops.
+
+All fifteen current dictionaries are reproved; generic Vector/List/ProgressiveList
+compose solely with the true child's `CodecLaw`, over the full existing domain.
+Scripted Rust dictionaries test both fixed and variable layouts and all three parents,
+including deferred-marker/later-error precedence; they are not claimed certified.
+The kernel fixture gate rejects an actual dictionary claiming native overflow for
+one-byte Boolean success, protocol faults hidden by the marker, and native decoder/root
+faults. Positive fixtures exercise the symbolic union boundary and representable
+exclusion. The registry stays at 103 operations / 15 dictionaries.
+Future typed unions and Container/derive codecs will consume this policy; none is
+implemented or declared complete by this boundary change.
+
+Boundary validation (2026-10-22): `python3 scripts/verify.py check` passes 103/15,
+including fresh extraction/API/trait/import/axiom and positive/negative kernel gates,
+all 3,412 unchanged source cases, fmt/clippy/workspace tests and doctests. The complete
+`cargo test --locked --workspace --all-features --target i686-unknown-linux-musl`
+suite passes, including all four new scripted runtime regressions. All 104 Python
+regressions pass. `cargo llvm-cov --workspace --fail-under-lines 80` reports 95.44%
+library line coverage.
 
 `container_view_refines` connects the actual extracted `container::container_view` to
 pinned `Ssz.structSlices` (the reference's Container layout executable). Its pointwise
@@ -232,9 +300,35 @@ canonical fixed/variable serialization, exact decode observations and owned part
 Progressive root over packed basic elements or complete child roots. Roots mix the element count,
 not packed-byte length. Declaration failures and overflowing fixed child widths retain existing error
 precedence, including successful empty lists. No context bound is silently encoded in this type;
-bounded generic Progressive contexts and other Progressive value families remain separate work.
+explicitly bounded Progressive contexts use the separate types below.
 
-Owned `BitVector<N>`, `BitList<MAX>` and unbounded `ProgressiveBitList` retain packed bytes.
+`collections::BoundedProgressiveList<T, MAX>` preserves the exact
+`.progressiveList child (some MAX)` declaration and private immutable owned storage.
+Its constructor returns every input owner on both success and `LengthError` rejection; projections
+retain the complete ordered vector. Every native capacity is covered, including zero and machine
+maximum; `Some(MAX)` is never a sentinel for `None`. The full dictionary law requires only the actual
+child `CodecLaw`, including malformed child declarations and overflowing fixed widths. Existing list
+layout proofs establish capacity rejection at the exact reference stage before child callbacks;
+declaration/layout errors carry empty state and callback errors retain the exact completed prefix
+and failing child's owned state. Serialization retains the unchanged four-byte sequence envelope.
+Root proofs reuse the Progressive spine over packed basic values or child roots, not ordinary bounded
+List Merkleization. As in the unchanged reference, rooting ignores the context cap even for arbitrary
+over-cap private states; encoding still refuses those states. No constructor-validity assumption is added.
+
+`bitcollections::BoundedProgressiveBitList<MAX>` retains the exact
+`.progressiveBitList (some MAX)` declaration, canonical accepted byte allocation and unit decode state.
+Its four public methods and complete dictionary are proved for every native bound and arbitrary packed
+private storage. Logical observations preserve every bit, order and the full widened count; getters
+cover every `u128` index without count truncation. Existing normalization proofs handle malformed
+private bytes, while wire decoding retains all delimiter fault categories and capacity precedence.
+Encoding checks capacity in `u128`; rooting normalizes logical bits without imposing the context cap,
+matching the pinned reference's complete Progressive-root behavior. Neither path expands Boolean arrays.
+Runtime tests compare both new dictionaries with independent accepted unbounded values and exercise
+nested fixed/variable children, zero/one/maximum bounds, allocation retention and exact failure states.
+There is no distinct bounded family in the pinned source corpus: all unchanged 3,412 source cases
+continue exercising their existing real dictionaries. This completion is not full SSZ release completion.
+
+Owned `BitVector<N>`, `BitList<MAX>`, `BoundedProgressiveBitList<MAX>` and unbounded `ProgressiveBitList` retain packed bytes.
 Byte constructors establish exact canonical decoder invariants and retain the entire accepted Vec;
 Boolean constructors prove the corresponding serialization and decoded logical bits. Immutable byte
 projections preserve storage exactly. List counts/getters cover every u128 index and their full widened
@@ -242,7 +336,7 @@ logical count; vector logical getters use the canonical invariant established by
 No progressive bit-count-to-usize assumption is added. Type declarations and all four distinct
 padding/delimiter fault categories are preserved. Debug omits zero-sized const markers.
 
-All three complete dictionary laws quantify over every extracted struct value, not only canonical
+All four complete dictionary laws quantify over every extracted struct value, not only canonical
 storage. Their observation retains every logical data bit: vector storage uses its final declared bit
 width, and delimited storage uses every byte before the highest final bit. Empty private storage
 observes empty bits. Canonical re-encoding masks vector padding and supplies a missing logical delimiter
@@ -287,23 +381,35 @@ not protocol proof targets; a non-Debug state/drop-counter test checks that forw
 and formatting do not invoke its destructor or expose it.
 
 `codec::fixed_size`, `is_basic`, `validate_type` and `is_compatible` derive metadata
-from `Ssz::TYPE` without invoking value codecs. The shared implementations refine
-`Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and `Ssz.isCompatible` over every
-represented finite declaration. The descriptor represents Boolean, machine-size integer
-widths and recursively nested Vector/List/ProgressiveList declarations and all three bitfield descriptors. All represented
-counts, bounds and widths, including zero, unsupported widths and `usize::MAX`, are covered. Validation rejects illegal widths, while width/classification remain separate
-metadata exactly as in the reference. Compatibility distinguishes Boolean from uint8
-and does not imply declaration validity. The descriptor view preserves the entire
-declaration; a negative fixture rejects a bool dictionary mislabeled uint8 despite their
-equal byte widths. Declaration variants for the other SSZ families remain to be added.
-Vector width arithmetic reports unrepresentable products without changing the natural-number
-specification. A zero outer count cancels an overflowing fixed child width; it does not
-make a variable child fixed. Zero vector counts fail validation before child faults;
-zero list capacities still validate the child. Progressive-list compatibility ignores
-capacities but recursively checks the child layout. These are metadata proofs, not
-collection value codecs. External declarations must satisfy the declaration law; cyclic
-static graphs have no finite descriptor view and are not certified. Static storage and
-no metadata-construction allocation are source/compiler properties, not runtime-cost theorems.
+from `Ssz::TYPE` without invoking value codecs. At baseline `155619d`, the shared
+implementations refined `Desc.fixedSize`, `Desc.isBasic`, `Desc.wellFormed` and
+`Ssz.isCompatible` for Boolean, machine-size integer widths and recursively nested
+Vector/List/ProgressiveList declarations. Those artifacts are now stale relative to
+the native full-descriptor extension; extending the descriptor view and proofs over
+every finite declaration, including malformed declarations and all native bounds,
+is still required. The negative fixture rejecting a bool dictionary mislabeled
+uint8 and all existing `CodecLaw` contracts are preserved unchanged.
+
+Native metadata now additionally covers byte/bit vectors and lists,
+ProgressiveBitList, Container, ProgressiveContainer and CompatibleUnion. Separate
+static arrays preserve every name, mask, selector, child and mismatched count.
+Safe const byte comparison preserves complete UTF-8 names, including NUL and
+canonically distinct spellings, without hashing or normalization. Progressive
+bounds remain in declarations and equality; only compatibility ignores them.
+Compatibility follows structural equality's shortcut even for invalid declarations,
+checks progressive shared positions and distinct-name placement, and compares
+every union cross-pair without assuming transitivity or declaration validity.
+Validation follows the pinned executable's exact error categories and order.
+Vector width arithmetic reports unrepresentable products. Zero counts cancel
+fixed overflow, not variable width. Container gaps add no bytes, empty internal
+field lists have width zero, and a variable field before or after fixed overflow
+makes the entire container variable. These are descriptor behaviors, not Container,
+ProgressiveContainer, Union, derive or other missing value-codec completion.
+
+External declarations must still satisfy the declaration law; cyclic static graphs
+have no finite descriptor view and are not certified. Static storage and no
+metadata-construction allocation are source/compiler properties, not runtime-cost
+theorems. No new trust-boundary exception or well-formedness assumption is introduced.
 
 `codec::decode_elements` traverses validated body ranges with any explicitly lawful
 child dictionary. The actual Vec loop terminates and preserves element order, with
@@ -437,7 +543,7 @@ storage, and typed decode errors retain partial ownership rather than silently d
 arbitrary elements inside the operation. The element traversal now proves exact retention
 of values and nested state, separately from wire conformance. Before backend translation,
 `llbc_drops.py` checks successful precise, undesugared LLBC and rejects local normal-flow
-Drop statements except closed standard scalar/reference/array/tuple/Vec types and transparent
+Drop statements except closed standard scalar/reference/array/tuple/Vec/Option types and transparent
 local non-generic records with recursively safe fields and no user destructor. Real freshly emitted
 LLBC fixtures accept closed bookkeeping and node arrays while rejecting an actual user `Drop`.
 It resolves interned types, rejects unknown/generic owned types and

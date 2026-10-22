@@ -76,15 +76,15 @@ class VerificationGateTests(unittest.TestCase):
 
     def test_should_prebuild_only_host_proc_macros_from_locked_metadata(self):
         packages = [
-            {"id": "library@1.0", "targets": [{"kind": ["lib"]}]},
-            {"id": "derive@1.0", "targets": [{"kind": ["proc-macro"]}]},
+            {"id": "registry+https://github.com/rust-lang/crates.io-index#library@1.0", "name": "library", "version": "1.0", "targets": [{"kind": ["lib"]}]},
+            {"id": "registry+https://github.com/rust-lang/crates.io-index#derive@1.0", "name": "derive", "version": "1.0", "targets": [{"kind": ["proc-macro"]}]},
         ]
         with patch.object(verify, "run", side_effect=[json.dumps({"packages": packages}), None]) as run:
             verify.prepare_native_macros(Path("target"))
         self.assertEqual(run.call_count, 2)
         self.assertEqual(run.call_args.args[0], [
             "cargo", "build", "--locked", "--target-dir", Path("target"),
-            "--package", "derive@1.0",
+            "--package", "nyx-ssz", "--lib",
         ])
 
     def test_should_skip_host_build_when_no_proc_macros_are_present(self):

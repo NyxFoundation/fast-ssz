@@ -116,7 +116,7 @@ def extract_reference(data, revision, directory):
 
 
 def regenerate(pins, corpus, families, temporary):
-    progressive = sorted(set(families) & {"progressive_bitlist", "basic_progressive_list"})
+    progressive = sorted(set(families) & {"progressive_bitlist", "basic_progressive_list", "containers", "progressive_containers"})
     if not progressive:
         return None
     revision, _ = reference_source(pins)

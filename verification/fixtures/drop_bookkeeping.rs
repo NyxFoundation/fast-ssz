@@ -22,6 +22,14 @@ pub fn discard_nodes(values: Vec<[u8; 32]>) -> usize {
     values.len()
 }
 
+pub fn discard_optional_bytes(value: Option<Vec<Vec<u8>>>) -> bool {
+    value.is_some()
+}
+
+pub fn discard_optional_user(value: Option<UserDrop>) -> bool {
+    value.is_some()
+}
+
 pub fn discard_user_value(value: UserDrop) -> usize {
     value.bytes.len()
 }

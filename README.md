@@ -1,63 +1,27 @@
 # nyx-ssz
 
-Rust SSZ: Aeneas/Lean proofs before optimization.
-**Verified baseline, not a complete SSZ library or production release.**
-Crate publishing is disabled; no performance superiority is claimed.
+Rust SSZ with canonical codecs, sparse tree access and Merkle proofs.
 
-Boolean, all six unsigned integer widths, Bitvector/Bitlist/ProgressiveBitlist and
-borrowed ByteVector/ByteList/ProgressiveByteList codecs are implemented and proved,
-including malformed inputs and illegal zero-length vector declarations.
-ProgressiveBitlist decoding returns a validated zero-copy `BitListView`, exposing
-its canonical SSZ bytes and a widened bit count without Boolean expansion.
-All seven basic types also have proved `hash_tree_root` operations. Borrowed byte/bit
-vectors, lists, Progressive lists and canonical `BitListView` inputs now have proved packed roots.
-SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
-32-byte nodes. Generic node Merkleization supports optional capacities and zero padding
-without allocating a padded tree. Single-branch root reconstruction and verification are implemented
-and proved across the full `u128` index domain, including malformed requests.
-The `gindex` module also provides proved raw tree arithmetic, depth/branch lengths,
-path concatenation/rebasing and bottom-up path/sibling indices over the full `u128`
-domain. Unrepresentable natural-number results return `ProofError::IndexOverflow`;
-bit queries and truncation explicitly handle positions beyond the word width.
-These numeric helpers do not yet resolve typed field/element paths.
-The `multiproof` module provides proved descending helper indices, multi-leaf root
-reconstruction and verification, including malformed requests and full-depth indices.
-Helper output overflow is distinguished from proof-length refusal; neither path imposes
-a combined-frontier or accumulated-path size budget.
-RustCrypto `sha2` is a test oracle only, not a runtime dependency.
-`U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
-and proved, not assumed correct. Other `ruint` operations are outside these proofs.
-See [verification scope and trust](docs/verification.md).
+**Native implementation complete for the pinned 13-shape SSZ specification; formal verification is a separate, unfinished stage.**
+Crate publishing remains disabled. This is not a security audit or a claim of performance superiority.
 
-Owned `collections::Vector<T, N>` and `collections::List<T, MAX>` now enforce
-exact/nonzero vector lengths and list capacities. Constructors and immutable projections
-are proved for arbitrary element types; rejected inputs return their original storage.
-Their `Ssz` implementations additionally compose encoding, decoding and roots with
-any explicitly lawful child codec, including nested fixed- and variable-width collections.
+- Boolean and all six unsigned integer widths; owned and borrowed byte/bit collections.
+- Vector/List, unbounded and bounded Progressive collections.
+- Container, sparse ProgressiveContainer and CompatibleUnion through `#[derive(nyx_ssz::Ssz)]`.
+- Type-level field/element paths, packed-element locations, node access and single/multiproof construction.
+- All **4,601 cases in all nine families** of the immutable official corpus, with explicit current-version Progressive root alignment and preserved original metadata.
+- Host and 32-bit tests; 95.57% workspace line coverage; reproducible Criterion benchmarks.
 
-The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
-widths, generic Vector/List/ProgressiveList, dedicated owned ByteVector/ByteList, and owned
-BitVector/BitList/ProgressiveBitList. Its fifteen library implementations have proved declaration
-metadata, encoding, decoding and roots. External implementations are not
-implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
-Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
-partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `CodecError`.
-The shared offset-span validator and fixed- or inferred-count layout parsers for
-both fixed- and variable-width elements are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
-headers, four-byte size envelope and body ranges. It does not decode element values.
-`container::container_view` also proves mixed fixed/variable field slicing in declaration
-order, including interspersed fixed fields. This is shared layout only, not a Container codec.
-`codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
-values, fault classes, and retention of both the completed prefix and nested failure state.
+[Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
+[Verification scope](docs/verification.md)
 
-The shared `container_wire::assemble` helper is proved against the unchanged reference
-assembler for every paired inline/variable byte-slot slice, including empty parts and
-exact four-byte overflow errors. This is raw internal-layout assembly, not a Container
-value codec; it does not yet provide struct derive or generated ownership/conversions.
+**Current-source Aeneas/Lean verification:** 18 SHA-256/gindex/Merkle operations are freshly extracted and kernel checked.
+The remaining 97 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25).
+Aeneas rejects the actual metadata's nested-loop returns. No tool fork, extra axiom or domain restriction was added.
+Historical broader artifacts are not current-source certification. See [exact current proof scope](docs/current-verification.md).
 
-Container value codecs, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
-typed index/path APIs, proof generation, the complete official corpus and
-benchmarks remain unfinished. The agreed release condition is not met.
+`U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 is implemented locally;
+RustCrypto `sha2` is an independent test oracle only.
 
 ## Example
 
@@ -100,14 +64,22 @@ widths, variable layouts (`Ok(None)`) or unrepresentable widths (`Err(SizeOverfl
 `codec::is_basic` derives packing classification; `codec::validate_type` checks the
 declaration without invoking a value codec. `codec::is_compatible` compares declared
 Merkle layouts but does not imply type validity. These are not independently overridable
-metadata constants. The descriptor covers Boolean, unsigned integers, dedicated opaque byte arrays, and recursively
-nested Vector/List/ProgressiveList declarations. Vector widths use checked multiplication;
-an outer zero count cancels even an unrepresentable fixed child width, whereas a variable
-child stays variable. `ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
+metadata constants. The native descriptor now covers all 13 pinned shapes: Boolean,
+unsigned integers, byte/bit vectors and lists, ProgressiveBitList, recursively nested
+Vector/List/ProgressiveList, Container, ProgressiveContainer and CompatibleUnion.
+Separate static arrays retain every name, mask, selector and child, including malformed
+counts; names retain full UTF-8 bytes without normalization. No allocation constructs
+metadata. All four internal implementations remain const functions. Vector widths use
+checked multiplication; an outer zero count cancels even an unrepresentable fixed child
+width, whereas a variable child stays variable. Containers sum declared field widths
+without adding bytes for gaps; any variable field cancels fixed overflow, in either order.
+Compatibility is distinct from equality and validity, with all-pairs union comparison.
+These extended metadata behaviors are native-tested, not yet formally integrated.
+`ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
 children using the same canonical list layout, and uses the Progressive tree with the element count.
 `CodecError` implements the standard error interfaces. The seven basic implementations
 and generic Vector/List/ProgressiveList, owned ByteVector/ByteList, and owned bitfield
-implementations are certified. Borrowed byte/bit codecs remain separately available.
+implementations have historical proofs; current-source proof status is separate. Borrowed byte/bit codecs remain separately available.
 
 ```rust
 use nyx_ssz::{codec::decode, error::CodecError};
@@ -135,6 +107,26 @@ assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
 Construction moves the original allocation without a context bound. Codec calls validate the
 child declaration, including for empty values. Nested Progressive/bounded collections compose;
 failed decoding retains every completed value and the exact nested child state.
+
+Explicitly bounded Progressive contexts use distinct types; existing unbounded types are unchanged:
+
+```rust
+use nyx_ssz::{collections::{bounded_progressive_list, BoundedProgressiveList},
+    bitcollections::BoundedProgressiveBitList, codec::{decode, Ssz}};
+let values = bounded_progressive_list::<_, 3>(vec![1_u16, 2]).unwrap();
+let decoded = decode::<BoundedProgressiveList<u16, 3>>(&values.encode().unwrap()).unwrap();
+assert_eq!(decoded.as_slice(), &[1, 2]);
+let bits = BoundedProgressiveBitList::<3>::from_ssz_bytes(vec![13]).unwrap();
+assert_eq!(bits.len_bits(), 3_u128);
+assert_eq!(bits.get(3), None);
+```
+
+Both declarations retain `Some(MAX)` for every `MAX`, including zero and `usize::MAX`.
+The list constructor returns rejected allocations in `LengthError<T>` without dropping elements.
+Bounded decoding checks capacity during layout validation, before child callbacks. Accepted values
+have the same bytes and Progressive roots as their unbounded counterparts, never ordinary List roots.
+Full dictionary laws also cover arbitrary private storage: encoding enforces capacity, while rooting
+matches the pinned reference's cap-independent Progressive layout even on over-cap states.
 
 ## Owned packed bitfields
 
@@ -222,9 +214,9 @@ variable fields are `Ok(None)`, and a fixed natural width exceeding `usize` is
 and offset-check order. Internal zero fields/widths and empty variable bodies are
 supported. Bytes are borrowed, not copied; only range/offset metadata is allocated.
 The parent codec must validate field names, type declarations and field values.
-Ordinary named structs with `#[derive(Ssz)]`, generated conversions/ownership proofs,
-Container encoding/decoding and roots remain future work; this helper is not full
-Container conformance or an `Ssz` dictionary.
+Ordinary named structs use `#[derive(nyx_ssz::Ssz)]` for complete typed encoding,
+decoding and roots. This lower-level helper alone is not an `Ssz` dictionary.
+Generated conversions/ownership equivalence remains explicitly unproved; see the current scope.
 
 ## Typed element decoding
 
@@ -304,22 +296,22 @@ an external cache, not vendored. Its independently pinned SHA-256 inventory and 
 hashes authenticate the fixtures without trusting cached Git metadata or filters.
 
 ```sh
-python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector \
-  --family bitvector --family bitlist --family progressive_bitlist --family basic_progressive_list
+python3 -m venv .venv-vectors
+.venv-vectors/bin/pip install -r tools/official-vectors/requirements.txt
+.venv-vectors/bin/python scripts/official_vectors.py check
 ```
 
-The selected seven families contain 3,412 source cases. Wire bytes and YAML values remain the original
+All nine families contain 4,601 source cases. Wire bytes and YAML values remain the original
 published data. The 2025 corpus predates the official 2026 Progressive-tree orientation fix;
-1,020 Progressive root expectations are therefore regenerated from an independently pinned,
+1,744 Progressive and Container root expectations are therefore regenerated from an independently pinned,
 authenticated current official reference implementation, not silently compared to obsolete roots.
 Original metadata is preserved and paired exactly with each generated expectation. The old corpus
 also labels 237 same-type, byte-identical copies of valid Progressive-list values as invalid
 (including 30 empty cases). Each is explicitly linked to its published valid witness and tested
 for exact value, bytes and current root; no case is skipped and no original file is changed.
 
-Two families remain unsupported. Omitting `--family` requests the entire corpus and fails on
-unsupported schemas rather than skipping them. Both native Rust CI architectures run this
-explicit slice. See [runner provenance and version details](tools/official-vectors/README.md).
+Omitting `--family` checks the complete corpus, including both Container families.
+Both native Rust CI architectures run the complete selection; unknown schemas fail rather than skip. See [runner provenance and version details](tools/official-vectors/README.md).
 
 ## Reproduce
 
@@ -337,12 +329,13 @@ cargo test --workspace
 cargo install cargo-hax --version 0.4.0 --locked
 python3 scripts/verify.py bootstrap
 python3 -m unittest discover -s scripts -p 'test_*.py'
-python3 scripts/verify.py check
+python3 scripts/current_refinement.py check
 ```
 
-After Rust edits, run `python3 scripts/verify.py extract`, review the generated diff,
-update proofs, then rerun `check`. Never hand-edit `verification/NyxSszRust.lean`
+After edits affecting the current proof slice, run `python3 scripts/current_refinement.py extract`,
+review the generated diff, update proofs, then rerun its `check`. Never hand-edit `verification/NyxSszRust.lean`
 or the generated `verification/NyxSszRust/` modules.
-Success covers the implemented slice only.
+Success proves only the explicit 18-operation current slice and validates the issue-linked
+unproved status of the rest. The legacy full `verify.py check` is not claimed to pass.
 
 MIT; see [third-party notices](THIRD_PARTY_NOTICES.md).

@@ -33,8 +33,15 @@ structure bitcollections.BitVector (N : Std.Usize) where
   encoded : alloc.vec.Vec Std.U8
   _bound : Array Unit N
 
+/-- [nyx_ssz::bitcollections::BoundedProgressiveBitList]
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 98:0-101:1
+    Visibility: public -/
+structure bitcollections.BoundedProgressiveBitList (MAX : Std.Usize) where
+  encoded : alloc.vec.Vec Std.U8
+  _bound : Array Unit MAX
+
 /-- [nyx_ssz::bitcollections::ProgressiveBitList]
-    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 98:0-100:1
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 143:0-145:1
     Visibility: public -/
 structure bitcollections.ProgressiveBitList where
   encoded : alloc.vec.Vec Std.U8
@@ -133,15 +140,65 @@ def bitcollections.BitVector.len_bits
   {N : Std.Usize} (self : bitcollections.BitVector N) : RustM Std.U128 := do
   ok (UScalar.cast .U128 N)
 
+/-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::as_ssz_bytes]:
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 116:4-118:5
+    Visibility: public -/
+def bitcollections.BoundedProgressiveBitList.as_ssz_bytes
+  {MAX : Std.Usize} (self : bitcollections.BoundedProgressiveBitList MAX) :
+  RustM (Slice Std.U8)
+  := do
+  ok (alloc.vec.Vec.deref self.encoded)
+
+/-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::from_ssz_bytes]:
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 106:4-112:5
+    Visibility: public -/
+def bitcollections.BoundedProgressiveBitList.from_ssz_bytes
+  (MAX : Std.Usize) (encoded : alloc.vec.Vec Std.U8) :
+  RustM (core.result.Result (bitcollections.BoundedProgressiveBitList MAX)
+    error.CodecError)
+  := do
+  let s := alloc.vec.Vec.deref encoded
+  let r ← bit_storage.validate_list s (some MAX)
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue _ =>
+    let a := Array.repeat MAX ()
+    ok (core.result.Result.Ok { encoded, _bound := a })
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (bitcollections.BoundedProgressiveBitList MAX) (core.convert.FromSame
+      error.CodecError) residual
+
+/-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::get]:
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 128:4-130:5
+    Visibility: public -/
+def bitcollections.BoundedProgressiveBitList.get
+  {MAX : Std.Usize} (self : bitcollections.BoundedProgressiveBitList MAX)
+  (index : Std.U128) :
+  RustM (Option Bool)
+  := do
+  let s := alloc.vec.Vec.deref self.encoded
+  bit_storage.get_list_bit s index
+
+/-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::len_bits]:
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 122:4-124:5
+    Visibility: public -/
+def bitcollections.BoundedProgressiveBitList.len_bits
+  {MAX : Std.Usize} (self : bitcollections.BoundedProgressiveBitList MAX) :
+  RustM Std.U128
+  := do
+  let s := alloc.vec.Vec.deref self.encoded
+  bit_storage.delimited_len s
+
 /-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::ProgressiveBitList}::as_ssz_bytes]:
-    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 120:4-122:5
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 165:4-167:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.as_ssz_bytes
   (self : bitcollections.ProgressiveBitList) : RustM (Slice Std.U8) := do
   ok (alloc.vec.Vec.deref self.encoded)
 
 /-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::ProgressiveBitList}::from_ssz_bytes]:
-    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 105:4-108:5
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 150:4-153:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.from_ssz_bytes
   (encoded : alloc.vec.Vec Std.U8) :
@@ -159,7 +216,7 @@ def bitcollections.ProgressiveBitList.from_ssz_bytes
       error.CodecError) residual
 
 /-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::ProgressiveBitList}::get]:
-    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 132:4-134:5
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 177:4-179:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.get
   (self : bitcollections.ProgressiveBitList) (index : Std.U128) :
@@ -169,7 +226,7 @@ def bitcollections.ProgressiveBitList.get
   bit_storage.get_list_bit s index
 
 /-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::ProgressiveBitList}::len_bits]:
-    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 126:4-128:5
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 171:4-173:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.len_bits
   (self : bitcollections.ProgressiveBitList) : RustM Std.U128 := do
@@ -219,7 +276,7 @@ def bitcollections.BitVector.from_bits
       residual
 
 /-- [nyx_ssz::bitcollections::{nyx_ssz::bitcollections::ProgressiveBitList}::from_bits]:
-    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 112:4-116:5
+    Source: 'crates/nyx-ssz/src/bitcollections.rs', lines 157:4-161:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.from_bits
   (bits : Slice Bool) :

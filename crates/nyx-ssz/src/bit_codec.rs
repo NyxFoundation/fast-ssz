@@ -5,7 +5,7 @@
 
 use crate::{
     bit_storage,
-    bitcollections::{BitList, BitVector, ProgressiveBitList},
+    bitcollections::{BitList, BitVector, BoundedProgressiveBitList, ProgressiveBitList},
     bitfield,
     codec::Ssz,
     error::{CodecError, DecodeFailure},
@@ -52,6 +52,33 @@ impl<const MAX: usize> Ssz for BitList<MAX> {
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
         let encoded = self.encode()?;
         bit_storage::root_bounded_list(&encoded, MAX)
+    }
+}
+
+impl<const MAX: usize> Ssz for BoundedProgressiveBitList<MAX> {
+    type DecodeState = ();
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::ProgressiveBitList(Some(MAX));
+
+    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+        bit_storage::normalize_list(self.as_ssz_bytes(), Some(MAX))
+    }
+
+    fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
+        match Self::from_ssz_bytes(bit_storage::copy_bytes(bytes)) {
+            Ok(value) => Ok(value),
+            Err(kind) => Err(DecodeFailure { kind, state: () }),
+        }
+    }
+
+    fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
+        // Rooting ignores context caps in the pinned reference. Normalize every
+        // private logical state without imposing the serialization capacity.
+        let encoded = bit_storage::normalize_list(self.as_ssz_bytes(), None)?;
+        let view = match bitfield::decode_progressive_bit_list(&encoded, None) {
+            Ok(view) => view,
+            Err(error) => return Err(bit_storage::fault(error)),
+        };
+        tree_hash::hash_tree_root_progressive_bit_list_view(&view, None)
     }
 }
 

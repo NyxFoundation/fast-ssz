@@ -8,7 +8,7 @@ import re
 import sys
 
 MAX_METADATA_BYTES = 1024 * 1024
-PROGRESSIVE_FAMILIES = {"progressive_bitlist", "basic_progressive_list"}
+PROGRESSIVE_FAMILIES = {"progressive_bitlist", "basic_progressive_list", "containers", "progressive_containers"}
 
 
 def read_text(path):
@@ -135,10 +135,30 @@ def generate(corpus, reference_revision, corpus_revision, handlers):
             "reference_revision": reference_revision, "roots": roots}
 
 
+def container_case(directory, shapes):
+    import snappy
+    schema = directory.name.partition("_")[0]
+    if schema not in shapes:
+        raise ValueError("unknown pinned container schema")
+    encoded = snappy.decompress(fixture_blob(directory))
+    if len(encoded) > 64 * 1024 * 1024:
+        raise ValueError("container fixture exceeds its size limit")
+    return root_record(directory, shapes[schema].decode_bytes, encoded)
+
+
 def reference_handlers(families):
     if not families or len(set(families)) != len(families) or not set(families) <= PROGRESSIVE_FAMILIES:
         raise ValueError("unknown or repeated progressive reference family")
     handlers = {}
+    containers = set(families) & {"containers", "progressive_containers"}
+    if containers:
+        import importlib.util
+        path = Path(__file__).with_name("reference_container_oracle.py")
+        spec = importlib.util.spec_from_file_location("reference_container_oracle", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        shapes = module.schemas()
+        handlers.update({family: partial(container_case, shapes=shapes) for family in containers})
     if "progressive_bitlist" in families:
         from remerkleable.progressive import ProgressiveBitlist
         handlers["progressive_bitlist"] = partial(bitlist_case, decoder=ProgressiveBitlist.decode_bytes)

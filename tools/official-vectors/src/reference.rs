@@ -39,13 +39,18 @@ fn revision(value: &Value, key: &str, expected: &str) -> TestResult {
 }
 
 pub(crate) fn is_progressive_family(family: &str) -> bool {
-    matches!(family, "progressive_bitlist" | "basic_progressive_list")
+    matches!(
+        family,
+        "progressive_bitlist" | "basic_progressive_list" | "containers" | "progressive_containers"
+    )
 }
 
 fn case_key(key: &Value) -> TestResult<(&str, bool)> {
     let key = key.as_str().ok_or("invalid reference case name")?;
     let alias = key.starts_with("basic_progressive_list/invalid/");
     let name = [
+        "containers/valid/",
+        "progressive_containers/valid/",
         "progressive_bitlist/valid/",
         "basic_progressive_list/valid/",
         "basic_progressive_list/invalid/",
