@@ -16,6 +16,13 @@ set_option maxHeartbeats 1000000
 set_option maxRecDepth 2048
 
 namespace NyxSszRust
+/-- [nyx_ssz::collections::BoundedProgressiveList]
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 123:0-126:1
+    Visibility: public -/
+structure collections.BoundedProgressiveList (T : Type) (MAX : Std.Usize) where
+  values : alloc.vec.Vec T
+  _bound : Array Unit MAX
+
 /-- [nyx_ssz::collections::LengthErrorKind]
     Source: 'crates/nyx-ssz/src/collections.rs', lines 22:0-26:1
     Visibility: public -/
@@ -33,7 +40,7 @@ structure collections.List (T : Type) (MAX : Std.Usize) where
   _bound : Array Unit MAX
 
 /-- [nyx_ssz::collections::ProgressiveList]
-    Source: 'crates/nyx-ssz/src/collections.rs', lines 124:0-126:1
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 165:0-167:1
     Visibility: public -/
 structure collections.ProgressiveList (T : Type) where
   values : alloc.vec.Vec T
@@ -44,6 +51,16 @@ structure collections.ProgressiveList (T : Type) where
 structure collections.Vector (T : Type) (N : Std.Usize) where
   values : alloc.vec.Vec T
   _bound : Array Unit N
+
+/-- [nyx_ssz::collections::{nyx_ssz::collections::BoundedProgressiveList<T, MAX>}::as_slice]:
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 130:4-132:5
+    Visibility: public -/
+def collections.BoundedProgressiveList.as_slice
+  {T : Type} {MAX : Std.Usize}
+  (self : collections.BoundedProgressiveList T MAX) :
+  RustM (Slice T)
+  := do
+  ok (alloc.vec.Vec.deref self.values)
 
 /-- [nyx_ssz::collections::LengthError]
     Source: 'crates/nyx-ssz/src/collections.rs', lines 32:0-35:1
@@ -62,7 +79,7 @@ def collections.List.as_slice
   ok (alloc.vec.Vec.deref self.values)
 
 /-- [nyx_ssz::collections::{nyx_ssz::collections::ProgressiveList<T>}::as_slice]:
-    Source: 'crates/nyx-ssz/src/collections.rs', lines 130:4-132:5
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 171:4-173:5
     Visibility: public -/
 def collections.ProgressiveList.as_slice
   {T : Type} (self : collections.ProgressiveList T) : RustM (Slice T) := do
@@ -78,13 +95,30 @@ def collections.Vector.as_slice
   ok (alloc.vec.Vec.deref self.values)
 
 /-- [nyx_ssz::collections::progressive_list]:
-    Source: 'crates/nyx-ssz/src/collections.rs', lines 145:0-147:1
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 186:0-188:1
     Visibility: public -/
 def collections.progressive_list
   {T : Type} (values : alloc.vec.Vec T) :
   RustM (collections.ProgressiveList T)
   := do
   ok { values }
+
+/-- [nyx_ssz::collections::bounded_progressive_list]:
+    Source: 'crates/nyx-ssz/src/collections.rs', lines 145:0-159:1
+    Visibility: public -/
+def collections.bounded_progressive_list
+  {T : Type} (MAX : Std.Usize) (values : alloc.vec.Vec T) :
+  RustM (core.result.Result (collections.BoundedProgressiveList T MAX)
+    (collections.LengthError T))
+  := do
+  let a := Array.repeat MAX ()
+  let s ← collections.BoundedProgressiveList.as_slice { values, _bound := a }
+  let i := Slice.len s
+  if i > MAX
+  then
+    ok (core.result.Result.Err
+      { kind := collections.LengthErrorKind.OverLimit, values })
+  else ok (core.result.Result.Ok { values, _bound := a })
 
 /-- [nyx_ssz::collections::list]:
     Source: 'crates/nyx-ssz/src/collections.rs', lines 106:0-118:1

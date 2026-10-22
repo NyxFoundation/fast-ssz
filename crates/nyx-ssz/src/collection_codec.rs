@@ -22,7 +22,9 @@ pub(crate) fn empty_failure<T: Ssz>(kind: CodecError) -> DecodeFailure<SequenceD
     }
 }
 
-fn storage_failure<T: Ssz>(error: LengthError<T>) -> DecodeFailure<SequenceDecodeState<T>> {
+pub(crate) fn storage_failure<T: Ssz>(
+    error: LengthError<T>,
+) -> DecodeFailure<SequenceDecodeState<T>> {
     let kind = match error.kind {
         LengthErrorKind::EmptyVector => CodecError::EmptyVector,
         LengthErrorKind::InvalidLength => CodecError::InvalidLength,

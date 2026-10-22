@@ -23,8 +23,62 @@ set_option maxHeartbeats 1000000
 set_option maxRecDepth 2048
 
 namespace NyxSszRust
+/-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::BoundedProgressiveList<T, MAX>}::TYPE]
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 48:4-48:95
+    Visibility: public -/
+@[global_simps, irreducible]
+def
+  collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE
+  {T : Type} {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst :
+  codec.Ssz T Clause0_DecodeState) : RustM type_info.TypeDescriptor := do
+  let td ← codecSszInst.TYPE
+  ok (type_info.TypeDescriptor.ProgressiveList td (some MAX))
+
+/-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::BoundedProgressiveList<T, MAX>}::encode]:
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 50:4-57:5
+    Visibility: public -/
+def
+  collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
+  {T : Type} {Clause0_DecodeState : Type} {MAX : Std.Usize} (codecSszInst :
+  codec.Ssz T Clause0_DecodeState)
+  (self : collections.BoundedProgressiveList T MAX) :
+  RustM (core.result.Result (alloc.vec.Vec Std.U8) error.CodecError)
+  := do
+  let r ← codec.validate_type codecSszInst
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue _ =>
+    let values ← collections.BoundedProgressiveList.as_slice self
+    let i := Slice.len values
+    if i > MAX
+    then ok (core.result.Result.Err error.CodecError.OverLimit)
+    else collection_wire.encode_sequence codecSszInst values
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (alloc.vec.Vec Std.U8) (core.convert.FromSame error.CodecError) residual
+
+/-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::BoundedProgressiveList<T, MAX>}::hash_tree_root]:
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 63:4-67:5
+    Visibility: public -/
+def
+  collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
+  {T : Type} {Clause0_DecodeState : Type} {MAX : Std.Usize} (codecSszInst :
+  codec.Ssz T Clause0_DecodeState)
+  (self : collections.BoundedProgressiveList T MAX) :
+  RustM (core.result.Result (Array Std.U8 32#usize) error.CodecError)
+  := do
+  let r ← codec.validate_type codecSszInst
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue _ =>
+    let s ← collections.BoundedProgressiveList.as_slice self
+    collection_tree.root_progressive_sequence codecSszInst s
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError) residual
+
 /-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::ProgressiveList<T>}::TYPE]
-    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 29:4-29:90
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 72:4-72:90
     Visibility: public -/
 @[global_simps, irreducible]
 def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE
@@ -34,7 +88,7 @@ def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE
   ok (type_info.TypeDescriptor.ProgressiveList td none)
 
 /-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::ProgressiveList<T>}::encode]:
-    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 31:4-34:5
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 74:4-77:5
     Visibility: public -/
 def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
@@ -52,7 +106,7 @@ def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
       (alloc.vec.Vec Std.U8) (core.convert.FromSame error.CodecError) residual
 
 /-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::ProgressiveList<T>}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 40:4-43:5
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 83:4-86:5
     Visibility: public -/
 def
   collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
@@ -70,8 +124,44 @@ def
     core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
       (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError) residual
 
+/-- [nyx_ssz::progressive_codec::decode_bounded_progressive]:
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 29:0-44:1 -/
+def progressive_codec.decode_bounded_progressive
+  {T : Type} {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst :
+  codec.Ssz T Clause0_DecodeState) (input : Slice Std.U8) :
+  RustM (core.result.Result (collections.BoundedProgressiveList T MAX)
+    (error.DecodeFailure (codec.SequenceDecodeState T Clause0_DecodeState)))
+  := do
+  let r ← codec.validate_type codecSszInst
+  match r with
+  | core.result.Result.Ok _ =>
+    let r1 ← collection_codec.list_layout codecSszInst input (some MAX)
+    match r1 with
+    | core.result.Result.Ok sv =>
+      let r2 ← codec.decode_elements codecSszInst sv
+      let cf ← core.result.Result.Insts.CoreOpsTry.branch r2
+      match cf with
+      | core.ops.control_flow.ControlFlow.Continue val =>
+        let r3 ← collections.bounded_progressive_list MAX val
+        match r3 with
+        | core.result.Result.Ok value => ok (core.result.Result.Ok value)
+        | core.result.Result.Err error1 =>
+          let df ← collection_codec.storage_failure codecSszInst error1
+          ok (core.result.Result.Err df)
+      | core.ops.control_flow.ControlFlow.Break residual =>
+        core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+          (collections.BoundedProgressiveList T MAX) (core.convert.FromSame
+          (error.DecodeFailure (codec.SequenceDecodeState T
+          Clause0_DecodeState))) residual
+    | core.result.Result.Err kind =>
+      let df ← collection_codec.empty_failure codecSszInst kind
+      ok (core.result.Result.Err df)
+  | core.result.Result.Err kind =>
+    let df ← collection_codec.empty_failure codecSszInst kind
+    ok (core.result.Result.Err df)
+
 /-- [nyx_ssz::progressive_codec::decode_progressive]:
-    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 13:0-25:1 -/
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 15:0-27:1 -/
 def progressive_codec.decode_progressive
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
   Clause0_DecodeState) (input : Slice Std.U8) :
@@ -102,8 +192,20 @@ def progressive_codec.decode_progressive
     let df ← collection_codec.empty_failure codecSszInst kind
     ok (core.result.Result.Err df)
 
+/-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::BoundedProgressiveList<T, MAX>}::decode]:
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 59:4-61:5
+    Visibility: public -/
+def
+  collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
+  {T : Type} {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst :
+  codec.Ssz T Clause0_DecodeState) (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result (collections.BoundedProgressiveList T MAX)
+    (error.DecodeFailure (codec.SequenceDecodeState T Clause0_DecodeState)))
+  := do
+  progressive_codec.decode_bounded_progressive MAX codecSszInst bytes1
+
 /-- [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::ProgressiveList<T>}::decode]:
-    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 36:4-38:5
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 79:4-81:5
     Visibility: public -/
 def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
   {T : Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T
@@ -113,8 +215,30 @@ def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
   := do
   progressive_codec.decode_progressive codecSszInst bytes1
 
+/-- Trait implementation: [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::BoundedProgressiveList<T, MAX>}]
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 46:0-68:1 -/
+@[reducible]
+def collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState
+  {T : Type} {Clause0_DecodeState : Type} (MAX : Std.Usize) (codecSszInst :
+  codec.Ssz T Clause0_DecodeState) : codec.Ssz
+  (collections.BoundedProgressiveList T MAX) (codec.SequenceDecodeState T
+  Clause0_DecodeState) := {
+  TYPE :=
+    collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.TYPE
+    MAX codecSszInst
+  encode :=
+    collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.encode
+    codecSszInst
+  decode :=
+    collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.decode
+    MAX codecSszInst
+  hash_tree_root :=
+    collections.BoundedProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState.hash_tree_root
+    codecSszInst
+}
+
 /-- Trait implementation: [nyx_ssz::progressive_codec::{impl nyx_ssz::codec::Ssz<nyx_ssz::codec::SequenceDecodeState<T, Clause0_DecodeState>> for nyx_ssz::collections::ProgressiveList<T>}]
-    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 27:0-44:1 -/
+    Source: 'crates/nyx-ssz/src/progressive_codec.rs', lines 70:0-87:1 -/
 @[reducible]
 def collections.ProgressiveList.Insts.Nyx_sszCodecSszSequenceDecodeState {T :
   Type} {Clause0_DecodeState : Type} (codecSszInst : codec.Ssz T

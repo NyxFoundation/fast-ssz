@@ -513,5 +513,35 @@
     "rust": "nyx_ssz::container_wire::assemble",
     "lean": "NyxSszRust.container_wire.assemble",
     "proof": "NyxSszVerification.container_assemble_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::bounded_progressive_list",
+    "lean": "NyxSszRust.collections.bounded_progressive_list",
+    "proof": "NyxSszVerification.bounded_progressive_list_storage_refines"
+  },
+  {
+    "rust": "nyx_ssz::collections::BoundedProgressiveList::as_slice",
+    "lean": "NyxSszRust.collections.BoundedProgressiveList.as_slice",
+    "proof": "NyxSszVerification.bounded_progressive_list_as_slice_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BoundedProgressiveBitList::from_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.BoundedProgressiveBitList.from_ssz_bytes",
+    "proof": "NyxSszVerification.owned_bounded_progressive_bit_list_from_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BoundedProgressiveBitList::as_ssz_bytes",
+    "lean": "NyxSszRust.bitcollections.BoundedProgressiveBitList.as_ssz_bytes",
+    "proof": "NyxSszVerification.owned_bounded_progressive_bit_list_as_ssz_bytes_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BoundedProgressiveBitList::len_bits",
+    "lean": "NyxSszRust.bitcollections.BoundedProgressiveBitList.len_bits",
+    "proof": "NyxSszVerification.owned_bounded_progressive_bit_list_len_bits_refines"
+  },
+  {
+    "rust": "nyx_ssz::bitcollections::BoundedProgressiveBitList::get",
+    "lean": "NyxSszRust.bitcollections.BoundedProgressiveBitList.get",
+    "proof": "NyxSszVerification.owned_bounded_progressive_bit_list_get_refines"
   }
 ]

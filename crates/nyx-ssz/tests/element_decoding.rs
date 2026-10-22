@@ -1,6 +1,6 @@
 use nyx_ssz::{
     codec::{decode, decode_elements, Ssz},
-    collections::{List, Vector},
+    collections::{BoundedProgressiveList, List, Vector},
     error::{CodecError, DecodeFailure},
     sequence::variable_vector_view,
     type_info::TypeDescriptor,
@@ -157,6 +157,38 @@ fn should_preserve_every_nested_owner_when_a_typed_list_child_fails() {
     let mut actual = drops();
     actual.sort();
     assert_eq!(actual, [7, 8, 200]);
+}
+
+#[test]
+fn bounded_progressive_failure_retains_every_nested_owner_without_running_destructors() {
+    reset();
+    let bytes = [8, 0, 0, 0, 9, 0, 0, 0, 7, 8, 255];
+    let Err(failure) = decode::<BoundedProgressiveList<List<TracedByte, 2>, 2>>(&bytes) else {
+        panic!("expected refusal")
+    };
+    assert_eq!(failure.state.values[0].as_slice()[0].0, 7);
+    let child = failure.state.child.as_ref().unwrap();
+    assert_eq!(child.values[0].0, 8);
+    assert_eq!(child.child.as_ref().map(|state| state.0), Some(200));
+    assert_eq!(calls(), 3);
+    assert!(drops().is_empty());
+    drop(failure);
+    let mut actual = drops();
+    actual.sort();
+    assert_eq!(actual, [7, 8, 200]);
+}
+
+#[test]
+fn bounded_progressive_capacity_refusal_invokes_no_callbacks_or_destructors() {
+    reset();
+    let Err(failure) = decode::<BoundedProgressiveList<TracedByte, 1>>(&[7, 255]) else {
+        panic!("expected refusal")
+    };
+    assert_eq!(failure.kind, CodecError::OverLimit);
+    assert!(failure.state.values.is_empty());
+    assert!(failure.state.child.is_none());
+    assert_eq!(calls(), 0);
+    assert!(drops().is_empty());
 }
 
 #[test]

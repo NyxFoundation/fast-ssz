@@ -36,8 +36,8 @@ Their `Ssz` implementations additionally compose encoding, decoding and roots wi
 any explicitly lawful child codec, including nested fixed- and variable-width collections.
 
 The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
-widths, generic Vector/List/ProgressiveList, dedicated owned ByteVector/ByteList, and owned
-BitVector/BitList/ProgressiveBitList. Its fifteen library implementations have proved declaration
+widths, generic Vector/List/ProgressiveList/BoundedProgressiveList, dedicated owned ByteVector/ByteList,
+and owned BitVector/BitList/ProgressiveBitList/BoundedProgressiveBitList. Its seventeen library implementations have proved declaration
 metadata, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
@@ -55,7 +55,7 @@ assembler for every paired inline/variable byte-slot slice, including empty part
 exact four-byte overflow errors. This is raw internal-layout assembly, not a Container
 value codec; it does not yet provide struct derive or generated ownership/conversions.
 
-Container value codecs, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
+Container value codecs, ProgressiveContainer, CompatibleUnion, derive,
 typed index/path APIs, proof generation, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 
@@ -135,6 +135,26 @@ assert_eq!(hash_tree_root(&decoded), hash_tree_root(&value));
 Construction moves the original allocation without a context bound. Codec calls validate the
 child declaration, including for empty values. Nested Progressive/bounded collections compose;
 failed decoding retains every completed value and the exact nested child state.
+
+Explicitly bounded Progressive contexts use distinct types; existing unbounded types are unchanged:
+
+```rust
+use nyx_ssz::{collections::{bounded_progressive_list, BoundedProgressiveList},
+    bitcollections::BoundedProgressiveBitList, codec::{decode, Ssz}};
+let values = bounded_progressive_list::<_, 3>(vec![1_u16, 2]).unwrap();
+let decoded = decode::<BoundedProgressiveList<u16, 3>>(&values.encode().unwrap()).unwrap();
+assert_eq!(decoded.as_slice(), &[1, 2]);
+let bits = BoundedProgressiveBitList::<3>::from_ssz_bytes(vec![13]).unwrap();
+assert_eq!(bits.len_bits(), 3_u128);
+assert_eq!(bits.get(3), None);
+```
+
+Both declarations retain `Some(MAX)` for every `MAX`, including zero and `usize::MAX`.
+The list constructor returns rejected allocations in `LengthError<T>` without dropping elements.
+Bounded decoding checks capacity during layout validation, before child callbacks. Accepted values
+have the same bytes and Progressive roots as their unbounded counterparts, never ordinary List roots.
+Full dictionary laws also cover arbitrary private storage: encoding enforces capacity, while rooting
+matches the pinned reference's cap-independent Progressive layout even on over-cap states.
 
 ## Owned packed bitfields
 

@@ -6,6 +6,7 @@ tags:
   - ssz
   - aeneas
   - formal-verification
+  - bounded-progressive
 ---
 # Verification scope and trust boundary
 
@@ -13,17 +14,17 @@ tags:
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links one hundred and three registered operations to proofs over actual
-Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
+`verification/targets.json` links 109 registered operations to proofs over actual
+Aeneas output: the thirty-nine existing codec/hash/view operations, eight owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
 fixed/variable-vector/list and mixed Container layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
-seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections, four owned
+seven packed byte/bit root entrypoints, nineteen owned-bitfield constructors/projections, four owned
 byte-array methods, three multiproof operations and shared mixed-slot Container wire assembly.
-`verification/traits.json` separately registers every public `Ssz` declaration member and its fifteen
-library dictionaries: seven basic instances, three generic sequence constructors, three owned bitfields
+`verification/traits.json` separately registers every public `Ssz` declaration member and its seventeen
+library dictionaries: seven basic instances, four generic sequence constructors, four owned bitfields
 and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
-methods are not silently excluded. The three generic laws compose with the law of their actual
+methods are not silently excluded. The four generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
 Conversion preserves bits, order and length. Byte codecs validate `Desc.wellFormed`.
@@ -232,9 +233,35 @@ canonical fixed/variable serialization, exact decode observations and owned part
 Progressive root over packed basic elements or complete child roots. Roots mix the element count,
 not packed-byte length. Declaration failures and overflowing fixed child widths retain existing error
 precedence, including successful empty lists. No context bound is silently encoded in this type;
-bounded generic Progressive contexts and other Progressive value families remain separate work.
+explicitly bounded Progressive contexts use the separate types below.
 
-Owned `BitVector<N>`, `BitList<MAX>` and unbounded `ProgressiveBitList` retain packed bytes.
+`collections::BoundedProgressiveList<T, MAX>` preserves the exact
+`.progressiveList child (some MAX)` declaration and private immutable owned storage.
+Its constructor returns every input owner on both success and `LengthError` rejection; projections
+retain the complete ordered vector. Every native capacity is covered, including zero and machine
+maximum; `Some(MAX)` is never a sentinel for `None`. The full dictionary law requires only the actual
+child `CodecLaw`, including malformed child declarations and overflowing fixed widths. Existing list
+layout proofs establish capacity rejection at the exact reference stage before child callbacks;
+declaration/layout errors carry empty state and callback errors retain the exact completed prefix
+and failing child's owned state. Serialization retains the unchanged four-byte sequence envelope.
+Root proofs reuse the Progressive spine over packed basic values or child roots, not ordinary bounded
+List Merkleization. As in the unchanged reference, rooting ignores the context cap even for arbitrary
+over-cap private states; encoding still refuses those states. No constructor-validity assumption is added.
+
+`bitcollections::BoundedProgressiveBitList<MAX>` retains the exact
+`.progressiveBitList (some MAX)` declaration, canonical accepted byte allocation and unit decode state.
+Its four public methods and complete dictionary are proved for every native bound and arbitrary packed
+private storage. Logical observations preserve every bit, order and the full widened count; getters
+cover every `u128` index without count truncation. Existing normalization proofs handle malformed
+private bytes, while wire decoding retains all delimiter fault categories and capacity precedence.
+Encoding checks capacity in `u128`; rooting normalizes logical bits without imposing the context cap,
+matching the pinned reference's complete Progressive-root behavior. Neither path expands Boolean arrays.
+Runtime tests compare both new dictionaries with independent accepted unbounded values and exercise
+nested fixed/variable children, zero/one/maximum bounds, allocation retention and exact failure states.
+There is no distinct bounded family in the pinned source corpus: all unchanged 3,412 source cases
+continue exercising their existing real dictionaries. This completion is not full SSZ release completion.
+
+Owned `BitVector<N>`, `BitList<MAX>`, `BoundedProgressiveBitList<MAX>` and unbounded `ProgressiveBitList` retain packed bytes.
 Byte constructors establish exact canonical decoder invariants and retain the entire accepted Vec;
 Boolean constructors prove the corresponding serialization and decoded logical bits. Immutable byte
 projections preserve storage exactly. List counts/getters cover every u128 index and their full widened
@@ -242,7 +269,7 @@ logical count; vector logical getters use the canonical invariant established by
 No progressive bit-count-to-usize assumption is added. Type declarations and all four distinct
 padding/delimiter fault categories are preserved. Debug omits zero-sized const markers.
 
-All three complete dictionary laws quantify over every extracted struct value, not only canonical
+All four complete dictionary laws quantify over every extracted struct value, not only canonical
 storage. Their observation retains every logical data bit: vector storage uses its final declared bit
 width, and delimited storage uses every byte before the highest final bit. Empty private storage
 observes empty bits. Canonical re-encoding masks vector padding and supplies a missing logical delimiter

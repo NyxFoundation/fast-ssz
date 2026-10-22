@@ -94,6 +94,51 @@ impl<const MAX: usize> BitList<MAX> {
     }
 }
 
+/// A Progressive bitlist with an explicit maximum logical bit count.
+pub struct BoundedProgressiveBitList<const MAX: usize> {
+    encoded: Vec<u8>,
+    _bound: [(); MAX],
+}
+
+impl<const MAX: usize> BoundedProgressiveBitList<MAX> {
+    /// Retain canonical delimited bytes without expanding the logical bits.
+    #[cfg_attr(feature = "verification", verify::start_from)]
+    pub fn from_ssz_bytes(encoded: Vec<u8>) -> Result<Self, CodecError> {
+        bit_storage::validate_list(&encoded, Some(MAX))?;
+        Ok(Self {
+            encoded,
+            _bound: [(); MAX],
+        })
+    }
+
+    /// Borrow the original packed encoding, including its delimiter.
+    #[cfg_attr(feature = "verification", verify::start_from)]
+    pub fn as_ssz_bytes(&self) -> &[u8] {
+        &self.encoded
+    }
+
+    /// Return the full logical count without narrowing to a machine word.
+    #[cfg_attr(feature = "verification", verify::start_from)]
+    pub fn len_bits(&self) -> u128 {
+        bit_storage::delimited_len(&self.encoded)
+    }
+
+    /// Read one logical bit, excluding the delimiter and out-of-range indices.
+    #[cfg_attr(feature = "verification", verify::start_from)]
+    pub fn get(&self, index: u128) -> Option<bool> {
+        bit_storage::get_list_bit(&self.encoded, index)
+    }
+}
+
+impl<const MAX: usize> std::fmt::Debug for BoundedProgressiveBitList<MAX> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("BoundedProgressiveBitList")
+            .field("encoded", &self.encoded)
+            .finish()
+    }
+}
+
 /// An unbounded Progressive bitlist retaining its packed, delimited encoding.
 pub struct ProgressiveBitList {
     encoded: Vec<u8>,
@@ -165,6 +210,32 @@ impl std::fmt::Debug for ProgressiveBitList {
 mod tests {
     use super::*;
     use crate::{codec::Ssz, tree_hash};
+
+    #[test]
+    fn bounded_progressive_private_states_normalize_all_logical_bits_and_ignore_root_caps() {
+        for encoded in [vec![], vec![0], vec![255, 0], vec![255, 2]] {
+            let value = BoundedProgressiveBitList::<0> {
+                encoded: encoded.clone(),
+                _bound: [],
+            };
+            let reference = ProgressiveBitList { encoded };
+            assert_eq!(value.hash_tree_root(), reference.hash_tree_root());
+            assert_eq!(value.len_bits(), reference.len_bits());
+            for index in [0, 7, 8, 9, usize::MAX as u128 + 1, u128::MAX] {
+                assert_eq!(value.get(index), reference.get(index));
+            }
+            if value.len_bits() == 0 {
+                assert_eq!(value.encode(), Ok(vec![1]));
+            } else {
+                assert_eq!(value.encode(), Err(CodecError::OverLimit));
+            }
+        }
+        let value = BoundedProgressiveBitList::<8> {
+            encoded: vec![255, 0],
+            _bound: [(); 8],
+        };
+        assert_eq!(value.encode(), Ok(vec![255, 1]));
+    }
 
     #[test]
     fn should_preserve_type_and_count_faults_when_symbolic_storage_violates_its_declaration() {

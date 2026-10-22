@@ -90,8 +90,66 @@ def bitcollections.BitVector.Insts.Nyx_sszCodecSszTuple.encode
   let s ← bitcollections.BitVector.as_ssz_bytes self
   bit_storage.normalize_vector s N
 
+/-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::TYPE]
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 60:4-60:89
+    Visibility: public -/
+@[global_simps, irreducible]
+def bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.TYPE
+  (MAX : Std.Usize) : type_info.TypeDescriptor :=
+  type_info.TypeDescriptor.ProgressiveBitList (some MAX)
+
+/-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::decode]:
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 66:4-71:5
+    Visibility: public -/
+def bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.decode
+  (MAX : Std.Usize) (bytes1 : Slice Std.U8) :
+  RustM (core.result.Result (bitcollections.BoundedProgressiveBitList MAX)
+    (error.DecodeFailure Unit))
+  := do
+  let v ← bit_storage.copy_bytes bytes1
+  let r ← bitcollections.BoundedProgressiveBitList.from_ssz_bytes MAX v
+  match r with
+  | core.result.Result.Ok value => ok (core.result.Result.Ok value)
+  | core.result.Result.Err kind =>
+    ok (core.result.Result.Err { kind, state := () })
+
+/-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::encode]:
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 62:4-64:5
+    Visibility: public -/
+def bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.encode
+  {MAX : Std.Usize} (self : bitcollections.BoundedProgressiveBitList MAX) :
+  RustM (core.result.Result (alloc.vec.Vec Std.U8) error.CodecError)
+  := do
+  let s ← bitcollections.BoundedProgressiveBitList.as_ssz_bytes self
+  bit_storage.normalize_list s (some MAX)
+
+/-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}::hash_tree_root]:
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 73:4-82:5
+    Visibility: public -/
+def
+  bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.hash_tree_root
+  {MAX : Std.Usize} (self : bitcollections.BoundedProgressiveBitList MAX) :
+  RustM (core.result.Result (Array Std.U8 32#usize) error.CodecError)
+  := do
+  let s ← bitcollections.BoundedProgressiveBitList.as_ssz_bytes self
+  let r ← bit_storage.normalize_list s none
+  let cf ← core.result.Result.Insts.CoreOpsTry.branch r
+  match cf with
+  | core.ops.control_flow.ControlFlow.Continue val =>
+    let s1 := alloc.vec.Vec.deref val
+    let r1 ← bitfield.decode_progressive_bit_list s1 none
+    match r1 with
+    | core.result.Result.Ok blv =>
+      tree_hash.hash_tree_root_progressive_bit_list_view blv none
+    | core.result.Result.Err error1 =>
+      let ce ← bit_storage.fault error1
+      ok (core.result.Result.Err ce)
+  | core.ops.control_flow.ControlFlow.Break residual =>
+    core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
+      (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError) residual
+
 /-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::ProgressiveBitList}::TYPE]
-    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 60:4-60:84
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 87:4-87:84
     Visibility: public -/
 @[global_simps, irreducible]
 def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple.TYPE
@@ -99,7 +157,7 @@ def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple.TYPE
   type_info.TypeDescriptor.ProgressiveBitList none
 
 /-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::ProgressiveBitList}::decode]:
-    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 66:4-71:5
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 93:4-98:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple.decode
   (bytes1 : Slice Std.U8) :
@@ -114,7 +172,7 @@ def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple.decode
     ok (core.result.Result.Err { kind, state := () })
 
 /-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::ProgressiveBitList}::encode]:
-    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 62:4-64:5
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 89:4-91:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple.encode
   (self : bitcollections.ProgressiveBitList) :
@@ -158,8 +216,26 @@ def bitcollections.BitVector.Insts.Nyx_sszCodecSszTuple.hash_tree_root
     core.result.Result.Insts.CoreOpsTryTraitFromResidualResultInfallible.from_residual
       (Array Std.U8 32#usize) (core.convert.FromSame error.CodecError) residual
 
+/-- Trait implementation: [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::BoundedProgressiveBitList<MAX>}]
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 58:0-83:1 -/
+@[reducible]
+def bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple (MAX :
+  Std.Usize) : codec.Ssz (bitcollections.BoundedProgressiveBitList MAX) Unit
+  := {
+  TYPE := ok
+    (bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.TYPE
+    MAX)
+  encode :=
+    bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.encode
+  decode :=
+    bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.decode
+    MAX
+  hash_tree_root :=
+    bitcollections.BoundedProgressiveBitList.Insts.Nyx_sszCodecSszTuple.hash_tree_root
+}
+
 /-- [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::ProgressiveBitList}::hash_tree_root]:
-    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 73:4-80:5
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 100:4-107:5
     Visibility: public -/
 def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple.hash_tree_root
   (self : bitcollections.ProgressiveBitList) :
@@ -207,7 +283,7 @@ def bitcollections.BitVector.Insts.Nyx_sszCodecSszTuple (N : Std.Usize) :
 }
 
 /-- Trait implementation: [nyx_ssz::bit_codec::{impl nyx_ssz::codec::Ssz<()> for nyx_ssz::bitcollections::ProgressiveBitList}]
-    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 58:0-81:1 -/
+    Source: 'crates/nyx-ssz/src/bit_codec.rs', lines 85:0-108:1 -/
 @[reducible]
 def bitcollections.ProgressiveBitList.Insts.Nyx_sszCodecSszTuple : codec.Ssz
   bitcollections.ProgressiveBitList Unit := {

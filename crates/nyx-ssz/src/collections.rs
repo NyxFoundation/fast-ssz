@@ -117,6 +117,47 @@ pub fn list<T, const MAX: usize>(values: Vec<T>) -> Result<List<T, MAX>, LengthE
     Ok(output)
 }
 
+/// An owned Progressive sequence with an explicit maximum element count.
+///
+/// Zero and `usize::MAX` are real bounds, never unbounded sentinels.
+pub struct BoundedProgressiveList<T, const MAX: usize> {
+    values: Vec<T>,
+    _bound: [(); MAX],
+}
+
+impl<T, const MAX: usize> BoundedProgressiveList<T, MAX> {
+    /// Borrow all elements without changing the length or allocation.
+    pub fn as_slice(&self) -> &[T] {
+        &self.values
+    }
+}
+
+impl<T: std::fmt::Debug, const MAX: usize> std::fmt::Debug for BoundedProgressiveList<T, MAX> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("BoundedProgressiveList")
+            .field("values", &self.values)
+            .finish()
+    }
+}
+
+/// Validate a Progressive bound, preserving every owner and the allocation.
+pub fn bounded_progressive_list<T, const MAX: usize>(
+    values: Vec<T>,
+) -> Result<BoundedProgressiveList<T, MAX>, LengthError<T>> {
+    let output = BoundedProgressiveList {
+        values,
+        _bound: [(); MAX],
+    };
+    if output.as_slice().len() > MAX {
+        return Err(LengthError {
+            kind: LengthErrorKind::OverLimit,
+            values: output.values,
+        });
+    }
+    Ok(output)
+}
+
 /// An owned Progressive sequence without a declared maximum length.
 ///
 /// Construction preserves the input allocation; element validity is checked by
@@ -144,4 +185,30 @@ impl<T: std::fmt::Debug> std::fmt::Debug for ProgressiveList<T> {
 /// Retain a complete Progressive sequence without imposing a context bound.
 pub fn progressive_list<T>(values: Vec<T>) -> ProgressiveList<T> {
     ProgressiveList { values }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{codec::Ssz, error::CodecError};
+
+    #[test]
+    fn bounded_progressive_private_states_follow_reference_root_and_encode_rules() {
+        let value = BoundedProgressiveList::<_, 0> {
+            values: vec![true],
+            _bound: [],
+        };
+        assert_eq!(value.encode(), Err(CodecError::OverLimit));
+        assert_eq!(
+            value.hash_tree_root(),
+            progressive_list(vec![true]).hash_tree_root()
+        );
+        let child = vector::<_, 1>(vec![7_u8]).unwrap();
+        let value = BoundedProgressiveList::<_, 0> {
+            values: vec![child],
+            _bound: [],
+        };
+        assert_eq!(value.encode(), Err(CodecError::OverLimit));
+        assert!(value.hash_tree_root().is_ok());
+    }
 }
