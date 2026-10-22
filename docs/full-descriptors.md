@@ -1,6 +1,6 @@
 ---
 title: Full descriptor native implementation
-last_updated: 2026-10-21
+last_updated: 2026-10-22
 status: native-tested-formal-integration-pending
 ---
 # Full descriptor metadata
@@ -102,19 +102,11 @@ uncovered metadata line is the Boolean compatibility match arm, already handled
 by the preceding exact structural-equality shortcut. No coverage threshold was
 lowered or source region excluded.
 
-## Exact outstanding formal dependency
+## Formal handoff
 
-The approved Aeneas repair is being prepared separately. The first private bridge
-revision is insufficient: `Str` must enforce valid UTF-8, literal construction
-must avoid native-decision axioms, and the final published immutable toolchain
-must supply the faithful total `Str` → `String` observation. No candidate pin,
-foreign axiom, temporary name observation or UTF-8 premise is introduced here.
-
-Once that immutable repair is supplied, the next stage must re-extract the real
-Rust functions, extend `typeDescriptorToSpec` with every name/mask/selector/child
-and optional bound, extend only the strict new fault pairs, and prove metadata
-for every finite declaration and native bound without validity assumptions.
-Then the unchanged 79-operation/10-dictionary proof gate, exact-artifact checks,
-all dictionary laws and 3,412 official source cases must be rerun. Existing
-proofs/generated artifacts are preserved but stale; no full formal gate is claimed.
-The existing cyclic external-static-graph trust boundary is unchanged.
+Native implementation is complete; proof work follows it rather than blocking it.
+Re-extract the actual Rust implementation and attempt equivalence with the pinned Lean specification.
+Keep unsupported targets explicitly unproved and link concrete reproductions in GitHub Issues.
+Do not repair Aeneas, adopt a private fork, weaken fault relations or silently add domain assumptions.
+Historical artifacts are retained as historical evidence, not current-source certification.
+The existing cyclic external-static-graph boundary is unchanged.

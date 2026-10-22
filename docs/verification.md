@@ -10,18 +10,18 @@ tags:
 ---
 # Verification scope and trust boundary
 
-**Preparatory native change; formal integration pending.** The native descriptor
-now represents all 13 pinned constructors. Its const metadata implementations and
-tests have changed, but generated Aeneas artifacts and existing proofs/contracts
-are intentionally unchanged. The proof descriptions below record the `155619d`
-baseline, not a successful proof gate for this enlarged Rust implementation.
-The approved UTF-8-invariant/kernel-clean literal repair needs a final published
-immutable Aeneas revision and total `Str` → `String` observation before extraction,
-full metadata proofs, all ten dictionary laws and `scripts/verify.py check` can be
-rerun. No UTF-8/domain premise or temporary name observation has been added.
-See [native descriptor behavior and evidence](full-descriptors.md).
+**Native implementation complete; current-source formal integration pending.**
+All 13 shapes have codecs, including generated heterogeneous ownership state.
+Typed paths, sparse node access and proof construction are native-tested.
+All 4,601 pinned official corpus cases pass with preserved source/version-alignment checks.
 
-**Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
+The descriptions and generated artifacts below are historical proof evidence, not a
+successful re-extraction of the enlarged program. The next stage attempts actual-source
+equivalence. Unsupported Aeneas targets must be explicitly marked unproved with a linked Issue;
+Aeneas itself is not changed, and no axiom or input-domain assumption is added.
+See [native API](native-api.md) and [descriptor evidence](full-descriptors.md).
+
+**Historical proof suite, not current-source certification:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
 single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.

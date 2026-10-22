@@ -9,8 +9,8 @@ use crate::{
 
 /// An owned SSZ type with canonical encoding, decoding and tree hashing.
 ///
-/// The library proves its own implementations. Implementing this trait outside
-/// this crate does not automatically establish SSZ conformance.
+/// Native conformance tests and formal proof coverage are tracked separately.
+/// Implementing or deriving this trait does not automatically certify its laws.
 pub trait Ssz: Sized {
     /// Owned partial values returned on failure; never discarded inside decode.
     type DecodeState;

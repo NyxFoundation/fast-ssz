@@ -15,7 +15,8 @@ fn should_accept_the_exact_supported_vector_lengths_when_the_name_is_canonical()
 
 #[test]
 fn should_reject_unknown_schemas_instead_of_skipping_them() {
-    assert!(Schema::parse("containers", "SmallTestStruct_zero").is_err());
+    assert!(Schema::parse("containers", "UnknownStruct_zero").is_err());
+    assert!(Schema::parse("containers", "SmallTestStruct_zero").is_ok());
     assert!(Schema::parse("uints", "uint_512_max").is_err());
     assert!(Schema::parse("basic_vector", "vec_bool_511_zero").is_err());
     assert!(Schema::parse("basic_vector", "vec_uint9_1_zero").is_err());

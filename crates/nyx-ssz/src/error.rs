@@ -5,6 +5,8 @@
 pub enum CodecError {
     InvalidLength,
     InvalidBoolean,
+    NoSelector,
+    UnknownSelector,
     InvalidIntegerWidth,
     EmptyVector,
     SizeOverflow,
@@ -77,6 +79,8 @@ impl std::fmt::Display for CodecError {
         formatter.write_str(match self {
             Self::InvalidLength => "SSZ input has an invalid byte length",
             Self::InvalidBoolean => "SSZ boolean must be encoded as zero or one",
+            Self::NoSelector => "SSZ union encoding must contain a selector",
+            Self::UnknownSelector => "SSZ union selector is not declared",
             Self::InvalidIntegerWidth => {
                 "SSZ unsigned integer width must be 1, 2, 4, 8, 16 or 32 bytes"
             }

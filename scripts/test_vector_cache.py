@@ -89,6 +89,7 @@ class VectorCacheFlowTests(unittest.TestCase):
             for name in ("boolean", "uints", "containers"):
                 (root / name).mkdir()
             with patch.object(vectors, "ensure_checkout", return_value=root), \
+                    patch.object(vectors, "regenerate", return_value=None), \
                     patch.object(vectors.subprocess, "run", return_value=None) as run:
                 vectors.check(PINS, [])
                 self.assertEqual(run.call_args.args[0][-3:], ["boolean", "containers", "uints"])

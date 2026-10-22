@@ -359,13 +359,6 @@ pub(crate) const fn validate(declaration: &TypeDescriptor) -> Result<(), CodecEr
             1 | 2 | 4 | 8 | 16 | 32 => Ok(()),
             _ => Err(CodecError::InvalidIntegerWidth),
         },
-        TypeDescriptor::BitVector(count) => {
-            if *count == 0 {
-                Err(CodecError::EmptyVector)
-            } else {
-                Ok(())
-            }
-        }
         TypeDescriptor::BitList(_) | TypeDescriptor::ProgressiveBitList(_) => Ok(()),
         TypeDescriptor::Vector(element, count) => {
             if *count == 0 {

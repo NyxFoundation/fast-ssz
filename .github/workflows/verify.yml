@@ -25,11 +25,10 @@ jobs:
         run: |
           rustup target add --toolchain nightly-2026-08-18 i686-unknown-linux-musl
           cargo test --locked --workspace --all-features --target i686-unknown-linux-musl
-      - name: Check the current-version seven-family official vector slice
-        run: >-
-          python3 scripts/official_vectors.py check
-          --family boolean --family uints --family basic_vector
-          --family bitvector --family bitlist --family progressive_bitlist --family basic_progressive_list
+      - name: Install pinned reference decompressor
+        run: python3 -m pip install -r tools/official-vectors/requirements.txt
+      - name: Check all nine official vector families
+        run: python3 scripts/official_vectors.py check
       - run: rustup component add llvm-tools --toolchain nightly-2026-08-18
       - run: cargo install cargo-llvm-cov --version 0.8.7 --locked
       - run: cargo llvm-cov --workspace --fail-under-lines 80

@@ -165,7 +165,7 @@ def check(pins, families):
         subprocess.run(["cargo", *arguments], cwd=ROOT, check=True)
     with tempfile.TemporaryDirectory(prefix="nyx-current-reference-") as temporary:
         reference = regenerate(pins, directory, selected, Path(temporary))
-        arguments = ["cargo", "run", "--locked", "--manifest-path", str(MANIFEST), "--", str(directory), *selected]
+        arguments = ["cargo", "run", "--release", "--locked", "--manifest-path", str(MANIFEST), "--", str(directory), *selected]
         if reference is not None:
             revision, _ = reference_source(pins)
             arguments.extend(["--reference-roots", str(reference), "--reference-revision", revision,

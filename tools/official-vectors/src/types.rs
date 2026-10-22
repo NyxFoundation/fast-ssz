@@ -14,7 +14,9 @@ use crate::{
     TestResult,
 };
 
-const FAMILIES: [&str; 7] = [
+const FAMILIES: [&str; 9] = [
+    "containers",
+    "progressive_containers",
     "boolean",
     "uints",
     "basic_vector",
@@ -86,6 +88,13 @@ macro_rules! unsigned_fixture {
 unsigned_fixture!(u8, u16, u32, u64, u128, U256);
 
 fn byte_sequence(value: &Value) -> TestResult<Vec<u8>> {
+    if let Some(text) = value.as_str() {
+        return hex::decode(
+            text.strip_prefix("0x")
+                .ok_or("expected hexadecimal bytes")?,
+        )
+        .map_err(|_| "invalid hexadecimal bytes".into());
+    }
     value
         .as_sequence()
         .ok_or("expected YAML byte sequence")?
@@ -256,6 +265,7 @@ impl Primitive {
 
 #[derive(Debug)]
 enum SchemaKind {
+    Container(String),
     Basic {
         primitive: Primitive,
         count: Option<usize>,
@@ -283,6 +293,11 @@ fn progressive_schema(name: &str) -> TestResult<SchemaKind> {
 
 impl Schema {
     pub(crate) fn parse(family: &str, name: &str) -> TestResult<Self> {
+        if matches!(family, "containers" | "progressive_containers") {
+            return Ok(Self {
+                kind: SchemaKind::Container(crate::containers::parse(family, name)?),
+            });
+        }
         if matches!(family, "bitvector" | "bitlist" | "progressive_bitlist") {
             return Ok(Self {
                 kind: SchemaKind::Bits(BitSchema::parse(family, name)?),
@@ -325,6 +340,7 @@ impl Schema {
 
     pub(crate) fn verify(&self, case: &Case) -> TestResult {
         let (primitive, count) = match &self.kind {
+            SchemaKind::Container(schema) => return crate::containers::check(schema, case),
             SchemaKind::Bits(schema) => return schema.verify(case),
             SchemaKind::Progressive(primitive) => return primitive.progressive(case),
             SchemaKind::Basic { primitive, count } => (primitive, count),

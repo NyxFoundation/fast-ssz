@@ -1,77 +1,27 @@
 # nyx-ssz
 
-Rust SSZ: Aeneas/Lean proofs before optimization.
-**Verified baseline, not a complete SSZ library or production release.**
-Crate publishing is disabled; no performance superiority is claimed.
+Rust SSZ with canonical codecs, sparse tree access and Merkle proofs.
 
-**Native descriptor extension, formal integration pending:** all 13 pinned SSZ
-shapes now have static metadata and native behavior tests. The proof claims below
-describe baseline `155619d`; the enlarged descriptor implementation has not yet
-been re-extracted or reproved. The approved UTF-8-invariant, kernel-clean Aeneas
-repair and its final immutable pin are still required. This checkout must not be
-reported as passing the full formal gate. See [descriptor scope](docs/full-descriptors.md).
+**Native implementation complete for the pinned 13-shape SSZ specification; formal verification is a separate, unfinished stage.**
+Crate publishing remains disabled. This is not a security audit or a claim of performance superiority.
 
-Boolean, all six unsigned integer widths, Bitvector/Bitlist/ProgressiveBitlist and
-borrowed ByteVector/ByteList/ProgressiveByteList codecs are implemented and proved,
-including malformed inputs and illegal zero-length vector declarations.
-ProgressiveBitlist decoding returns a validated zero-copy `BitListView`, exposing
-its canonical SSZ bytes and a widened bit count without Boolean expansion.
-All seven basic types also have proved `hash_tree_root` operations. Borrowed byte/bit
-vectors, lists, Progressive lists and canonical `BitListView` inputs now have proved packed roots.
-SHA-256 Merkle-parent hashing is also implemented and proved for every pair of
-32-byte nodes. Generic node Merkleization supports optional capacities and zero padding
-without allocating a padded tree. Single-branch root reconstruction and verification are implemented
-and proved across the full `u128` index domain, including malformed requests.
-The `gindex` module also provides proved raw tree arithmetic, depth/branch lengths,
-path concatenation/rebasing and bottom-up path/sibling indices over the full `u128`
-domain. Unrepresentable natural-number results return `ProofError::IndexOverflow`;
-bit queries and truncation explicitly handle positions beyond the word width.
-These numeric helpers do not yet resolve typed field/element paths.
-The `multiproof` module provides proved descending helper indices, multi-leaf root
-reconstruction and verification, including malformed requests and full-depth indices.
-Helper output overflow is distinguished from proof-length refusal; neither path imposes
-a combined-frontier or accumulated-path size budget.
-RustCrypto `sha2` is a test oracle only, not a runtime dependency.
-`U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
-and proved, not assumed correct. Other `ruint` operations are outside these proofs.
-See [verification scope and trust](docs/verification.md).
+- Boolean and all six unsigned integer widths; owned and borrowed byte/bit collections.
+- Vector/List, unbounded and bounded Progressive collections.
+- Container, sparse ProgressiveContainer and CompatibleUnion through `#[derive(nyx_ssz::Ssz)]`.
+- Type-level field/element paths, packed-element locations, node access and single/multiproof construction.
+- All **4,601 cases in all nine families** of the immutable official corpus, with explicit current-version Progressive root alignment and preserved original metadata.
+- Host and 32-bit tests; 95.57% workspace line coverage; reproducible Criterion benchmarks.
 
-Owned `collections::Vector<T, N>` and `collections::List<T, MAX>` now enforce
-exact/nonzero vector lengths and list capacities. Constructors and immutable projections
-are proved for arbitrary element types; rejected inputs return their original storage.
-Their `Ssz` implementations additionally compose encoding, decoding and roots with
-any explicitly lawful child codec, including nested fixed- and variable-width collections.
+[Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
+[Verification scope](docs/verification.md)
 
-The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
-widths, generic Vector/List/ProgressiveList/BoundedProgressiveList, dedicated owned ByteVector/ByteList,
-and owned BitVector/BitList/ProgressiveBitList/BoundedProgressiveBitList. Its seventeen library implementations have proved declaration
-metadata, encoding, decoding and roots. External implementations are not
-implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
-Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
-partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `CodecError`.
-Encoding keeps `Vec<u8>` and exactly three outcomes: exact representable reference bytes,
-the original protocol fault, or distinct `NativeOutputOverflow` **iff** successful natural
-reference output exceeds `usize::MAX`. It cannot reject representable output or replace a
-protocol fault. Parent collectors defer native markers so later child protocol faults keep
-precedence; sequence assembly still enforces the unchanged strict 2^32 envelope.
-Decoder/root/metadata laws do not permit native refusals. This full-domain rule prepares
-future typed unions/derive; those codecs remain unimplemented.
-The shared offset-span validator and fixed- or inferred-count layout parsers for
-both fixed- and variable-width elements are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
-headers, four-byte size envelope and body ranges. It does not decode element values.
-`container::container_view` also proves mixed fixed/variable field slicing in declaration
-order, including interspersed fixed fields. This is shared layout only, not a Container codec.
-`codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
-values, fault classes, and retention of both the completed prefix and nested failure state.
+Historical Aeneas/Lean proofs are retained, but must not be read as certification of the current enlarged Rust program.
+The current 13-shape metadata and newly generated codecs/path/proof constructors have not yet been re-extracted and proved.
+The next stage attempts current-source equivalence; unsupported Aeneas targets are explicitly recorded as unproved with linked Issues.
+Aeneas itself is not modified.
 
-The shared `container_wire::assemble` helper is proved against the unchanged reference
-assembler for every paired inline/variable byte-slot slice, including empty parts and
-exact four-byte overflow errors. This is raw internal-layout assembly, not a Container
-value codec; it does not yet provide struct derive or generated ownership/conversions.
-
-Container value codecs, ProgressiveContainer, CompatibleUnion, derive,
-typed index/path APIs, proof generation, the complete official corpus and
-benchmarks remain unfinished. The agreed release condition is not met.
+`U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 is implemented locally;
+RustCrypto `sha2` is an independent test oracle only.
 
 ## Example
 
@@ -129,7 +79,7 @@ These extended metadata behaviors are native-tested, not yet formally integrated
 children using the same canonical list layout, and uses the Progressive tree with the element count.
 `CodecError` implements the standard error interfaces. The seven basic implementations
 and generic Vector/List/ProgressiveList, owned ByteVector/ByteList, and owned bitfield
-implementations are certified. Borrowed byte/bit codecs remain separately available.
+implementations have historical proofs; current-source proof status is separate. Borrowed byte/bit codecs remain separately available.
 
 ```rust
 use nyx_ssz::{codec::decode, error::CodecError};
