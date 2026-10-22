@@ -15,10 +15,10 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
 [Verification scope](docs/verification.md)
 
-Historical Aeneas/Lean proofs are retained, but must not be read as certification of the current enlarged Rust program.
-The current 13-shape metadata and newly generated codecs/path/proof constructors have not yet been re-extracted and proved.
-The next stage attempts current-source equivalence; unsupported Aeneas targets are explicitly recorded as unproved with linked Issues.
-Aeneas itself is not modified.
+**Current-source Aeneas/Lean verification:** 18 SHA-256/gindex/Merkle operations are freshly extracted and kernel checked.
+The remaining 97 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25).
+Aeneas rejects the actual metadata's nested-loop returns. No tool fork, extra axiom or domain restriction was added.
+Historical broader artifacts are not current-source certification. See [exact current proof scope](docs/current-verification.md).
 
 `U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 is implemented locally;
 RustCrypto `sha2` is an independent test oracle only.
@@ -214,9 +214,9 @@ variable fields are `Ok(None)`, and a fixed natural width exceeding `usize` is
 and offset-check order. Internal zero fields/widths and empty variable bodies are
 supported. Bytes are borrowed, not copied; only range/offset metadata is allocated.
 The parent codec must validate field names, type declarations and field values.
-Ordinary named structs with `#[derive(Ssz)]`, generated conversions/ownership proofs,
-Container encoding/decoding and roots remain future work; this helper is not full
-Container conformance or an `Ssz` dictionary.
+Ordinary named structs use `#[derive(nyx_ssz::Ssz)]` for complete typed encoding,
+decoding and roots. This lower-level helper alone is not an `Ssz` dictionary.
+Generated conversions/ownership equivalence remains explicitly unproved; see the current scope.
 
 ## Typed element decoding
 
@@ -296,22 +296,22 @@ an external cache, not vendored. Its independently pinned SHA-256 inventory and 
 hashes authenticate the fixtures without trusting cached Git metadata or filters.
 
 ```sh
-python3 scripts/official_vectors.py check --family boolean --family uints --family basic_vector \
-  --family bitvector --family bitlist --family progressive_bitlist --family basic_progressive_list
+python3 -m venv .venv-vectors
+.venv-vectors/bin/pip install -r tools/official-vectors/requirements.txt
+.venv-vectors/bin/python scripts/official_vectors.py check
 ```
 
-The selected seven families contain 3,412 source cases. Wire bytes and YAML values remain the original
+All nine families contain 4,601 source cases. Wire bytes and YAML values remain the original
 published data. The 2025 corpus predates the official 2026 Progressive-tree orientation fix;
-1,020 Progressive root expectations are therefore regenerated from an independently pinned,
+1,744 Progressive and Container root expectations are therefore regenerated from an independently pinned,
 authenticated current official reference implementation, not silently compared to obsolete roots.
 Original metadata is preserved and paired exactly with each generated expectation. The old corpus
 also labels 237 same-type, byte-identical copies of valid Progressive-list values as invalid
 (including 30 empty cases). Each is explicitly linked to its published valid witness and tested
 for exact value, bytes and current root; no case is skipped and no original file is changed.
 
-Two families remain unsupported. Omitting `--family` requests the entire corpus and fails on
-unsupported schemas rather than skipping them. Both native Rust CI architectures run this
-explicit slice. See [runner provenance and version details](tools/official-vectors/README.md).
+Omitting `--family` checks the complete corpus, including both Container families.
+Both native Rust CI architectures run the complete selection; unknown schemas fail rather than skip. See [runner provenance and version details](tools/official-vectors/README.md).
 
 ## Reproduce
 
@@ -329,12 +329,13 @@ cargo test --workspace
 cargo install cargo-hax --version 0.4.0 --locked
 python3 scripts/verify.py bootstrap
 python3 -m unittest discover -s scripts -p 'test_*.py'
-python3 scripts/verify.py check
+python3 scripts/current_refinement.py check
 ```
 
-After Rust edits, run `python3 scripts/verify.py extract`, review the generated diff,
-update proofs, then rerun `check`. Never hand-edit `verification/NyxSszRust.lean`
+After edits affecting the current proof slice, run `python3 scripts/current_refinement.py extract`,
+review the generated diff, update proofs, then rerun its `check`. Never hand-edit `verification/NyxSszRust.lean`
 or the generated `verification/NyxSszRust/` modules.
-Success covers the implemented slice only.
+Success proves only the explicit 18-operation current slice and validates the issue-linked
+unproved status of the rest. The legacy full `verify.py check` is not claimed to pass.
 
 MIT; see [third-party notices](THIRD_PARTY_NOTICES.md).

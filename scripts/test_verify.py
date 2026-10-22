@@ -84,7 +84,7 @@ class VerificationGateTests(unittest.TestCase):
         self.assertEqual(run.call_count, 2)
         self.assertEqual(run.call_args.args[0], [
             "cargo", "build", "--locked", "--target-dir", Path("target"),
-            "--package", "derive@1.0",
+            "--package", "nyx-ssz", "--lib",
         ])
 
     def test_should_skip_host_build_when_no_proc_macros_are_present(self):

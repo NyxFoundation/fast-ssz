@@ -17,7 +17,7 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::sha256::ROUND_CONSTANTS]
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 4:0-13:2 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 4:0-13:2 -/
 @[global_simps, irreducible]
 def sha256.ROUND_CONSTANTS : Array Std.U32 64#usize :=
   Array.make 64#usize [
@@ -40,7 +40,7 @@ def sha256.ROUND_CONSTANTS : Array Std.U32 64#usize :=
     ]
 
 /-- [nyx_ssz::sha256::State]
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 16:0-25:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 16:0-25:1 -/
 structure sha256.State where
   a : Std.U32
   b : Std.U32
@@ -52,7 +52,7 @@ structure sha256.State where
   h : Std.U32
 
 /-- [nyx_ssz::sha256::big_sigma0]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 45:0-47:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 45:0-47:1 -/
 def sha256.big_sigma0 (x : Std.U32) : RustM Std.U32 := do
   let i ← x >>> 2#u32
   let i1 ← x <<< 30#u32
@@ -67,7 +67,7 @@ def sha256.big_sigma0 (x : Std.U32) : RustM Std.U32 := do
   ok (i6 ^^^ i9)
 
 /-- [nyx_ssz::sha256::big_sigma1]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 50:0-52:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 50:0-52:1 -/
 def sha256.big_sigma1 (x : Std.U32) : RustM Std.U32 := do
   let i ← x >>> 6#u32
   let i1 ← x <<< 26#u32
@@ -82,7 +82,7 @@ def sha256.big_sigma1 (x : Std.U32) : RustM Std.U32 := do
   ok (i6 ^^^ i9)
 
 /-- [nyx_ssz::sha256::choose]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 54:0-56:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 54:0-56:1 -/
 def sha256.choose
   (x : Std.U32) (y : Std.U32) (z : Std.U32) : RustM Std.U32 := do
   let i ← lift (x &&& y)
@@ -91,7 +91,7 @@ def sha256.choose
   ok (i ^^^ i2)
 
 /-- [nyx_ssz::sha256::initial_schedule]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 76:0-83:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 76:0-83:1 -/
 def sha256.initial_schedule
   (initial : Array Std.U32 16#usize) : RustM (Array Std.U32 64#usize) := do
   let words := Array.repeat 64#usize 0#u32
@@ -129,7 +129,7 @@ def sha256.initial_schedule
   Array.update words15 15#usize i15
 
 /-- [nyx_ssz::sha256::majority]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 58:0-60:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 58:0-60:1 -/
 def sha256.majority
   (x : Std.U32) (y : Std.U32) (z : Std.U32) : RustM Std.U32 := do
   let i ← lift (x &&& y)
@@ -139,7 +139,7 @@ def sha256.majority
   ok (i2 ^^^ i3)
 
 /-- [nyx_ssz::sha256::sigma0]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 35:0-37:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 35:0-37:1 -/
 def sha256.sigma0 (x : Std.U32) : RustM Std.U32 := do
   let i ← x >>> 7#u32
   let i1 ← x <<< 25#u32
@@ -152,7 +152,7 @@ def sha256.sigma0 (x : Std.U32) : RustM Std.U32 := do
   ok (i6 ^^^ i7)
 
 /-- [nyx_ssz::sha256::sigma1]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 40:0-42:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 40:0-42:1 -/
 def sha256.sigma1 (x : Std.U32) : RustM Std.U32 := do
   let i ← x >>> 17#u32
   let i1 ← x <<< 15#u32
@@ -165,7 +165,7 @@ def sha256.sigma1 (x : Std.U32) : RustM Std.U32 := do
   ok (i6 ^^^ i7)
 
 /-- [nyx_ssz::sha256::word]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 62:0-64:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 62:0-64:1 -/
 def sha256.word
   (a : Std.U8) (b : Std.U8) (c : Std.U8) (d : Std.U8) : RustM Std.U32 := do
   let i ← lift (UScalar.cast .U32 a)
@@ -180,7 +180,7 @@ def sha256.word
   ok (i7 ||| i8)
 
 /-- [nyx_ssz::sha256::digest]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 158:0-166:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 158:0-166:1 -/
 def sha256.digest (state : sha256.State) : RustM (Array Std.U8 32#usize) := do
   let i ← state.a >>> 24#i32
   let i1 ← lift (UScalar.cast .U8 i)
@@ -246,7 +246,7 @@ def sha256.digest (state : sha256.State) : RustM (Array Std.U8 32#usize) := do
       ])
 
 /-- [nyx_ssz::sha256::extend_schedule]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 85:0-90:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 85:0-90:1 -/
 def sha256.extend_schedule
   (words : Array Std.U32 64#usize) (index : Std.Usize) :
   RustM (Array Std.U32 64#usize)
@@ -267,7 +267,7 @@ def sha256.extend_schedule
   Array.update words index i12
 
 /-- [nyx_ssz::sha256::input_words]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 66:0-74:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 66:0-74:1 -/
 def sha256.input_words
   (left : Array Std.U8 32#usize) (right : Array Std.U8 32#usize) :
   RustM (Array Std.U32 16#usize)
@@ -383,7 +383,7 @@ def sha256.input_words
       ])
 
 /-- [nyx_ssz::sha256::round]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 105:0-123:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 105:0-123:1 -/
 def sha256.round
   (state : sha256.State) (constant : Std.U32) (message : Std.U32) :
   RustM sha256.State
@@ -412,7 +412,7 @@ def sha256.round
     }
 
 /-- [nyx_ssz::sha256::round_at]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 125:0-127:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 125:0-127:1 -/
 def sha256.round_at
   (state : sha256.State) (words : Array Std.U32 64#usize) (index : Std.Usize) :
   RustM sha256.State
@@ -422,7 +422,7 @@ def sha256.round_at
   sha256.round state i i1
 
 /-- [nyx_ssz::sha256::schedule]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 92:0-103:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 92:0-103:1 -/
 def sha256.schedule
   (initial : Array Std.U32 16#usize) : RustM (Array Std.U32 64#usize) := do
   let words ← sha256.initial_schedule initial
@@ -476,7 +476,7 @@ def sha256.schedule
   sha256.extend_schedule words47 63#usize
 
 /-- [nyx_ssz::sha256::rounds]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 129:0-141:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 129:0-141:1 -/
 def sha256.rounds
   (state : sha256.State) (words : Array Std.U32 64#usize) :
   RustM sha256.State
@@ -547,7 +547,7 @@ def sha256.rounds
   sha256.round_at state63 words 63#usize
 
 /-- [nyx_ssz::sha256::compress]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 143:0-156:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 143:0-156:1 -/
 def sha256.compress
   (initial : sha256.State) (message : Array Std.U32 16#usize) :
   RustM sha256.State
@@ -565,7 +565,7 @@ def sha256.compress
   ok { a := i, b := i1, c := i2, d := i3, e := i4, f := i5, g := i6, h := i7 }
 
 /-- [nyx_ssz::sha256::hash_pair]:
-    Source: 'crates/nyx-ssz/src/sha256.rs', lines 169:0-184:1
+    Source: 'verification/../crates/nyx-ssz/src/sha256.rs', lines 169:0-184:1
     Visibility: public -/
 def sha256.hash_pair
   (left : Array Std.U8 32#usize) (right : Array Std.U8 32#usize) :

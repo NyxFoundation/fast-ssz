@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Prove the current extractable slice and explicitly report issue-linked skips."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+import verify as legacy
+from extracted_modules import split_model
+
+ROOT = legacy.ROOT
+VERIFICATION = legacy.VERIFICATION
+SCOPE = VERIFICATION / "current-scope.json"
+MODULES = {f"NyxSszRust/{name}.lean" for name in ("Gindex", "Merkle", "Multiproof", "Sha256")}
+
+
+def load_scope(path=SCOPE):
+    scope = json.loads(path.read_text())
+    if type(scope.get("format_version")) is not int or scope["format_version"] != 1:
+        raise ValueError("unsupported current proof scope")
+    for key in ("proven", "skipped", "skipped_traits"):
+        values = scope.get(key)
+        if not isinstance(values, list) or not values or not all(isinstance(v, str) for v in values):
+            raise ValueError("proof scope requires explicit nonempty identifiers")
+        if len(values) != len(set(values)):
+            raise ValueError("duplicate proof scope identifiers")
+    if set(scope["proven"]) & set(scope["skipped"]):
+        raise ValueError("proved and skipped scopes overlap")
+    for url in scope.get("issues", {}).values():
+        if not re.fullmatch(r"https://github\.com/NyxFoundation/nyx-ssz/issues/[1-9][0-9]*", url):
+            raise ValueError("proof skips require canonical issue links")
+    if set(scope.get("issues", {})) != {"metadata", "remaining"}:
+        raise ValueError("proof skip issues are missing")
+    if set(scope.get("tool_revisions", {})) != {"aeneas_revision", "charon_revision"}:
+        raise ValueError("proof skip tool revisions are missing")
+    if not isinstance(scope.get("derive_status"), str) or not scope["derive_status"].startswith("unproved;"):
+        raise ValueError("derive transformation proof status must be explicit")
+    return scope
+
+
+def validate_roots():
+    roots = {
+        "current_merkle.rs": ("//! Proof extraction root: includes current production files without copying them.\n", ["gindex", "merkle", "multiproof", "sha256"]),
+        "current_metadata.rs": ("//! Extract the actual shared metadata implementation without Cargo host tools.\n", ["error", "type_info"]),
+    }
+    for name, (header, modules) in roots.items():
+        expected = header + "".join(f'#[path = "../crates/nyx-ssz/src/{module}.rs"]\npub mod {module};\n' for module in modules)
+        if (VERIFICATION / name).read_text() != expected:
+            raise ValueError("extraction roots must include the actual production files only")
+
+
+def current_targets(scope):
+    registered = {row["rust"]: row for row in legacy.load_targets()}
+    if set(scope["proven"]) - registered.keys():
+        raise ValueError("current proof target lacks a registered theorem")
+    return [registered[name] for name in scope["proven"]]
+
+
+def check_scope(scope, pins):
+    if scope["tool_revisions"] != {key: pins["tools"][key] for key in scope["tool_revisions"]}:
+        raise ValueError("proof skip tool pins changed")
+    digest = hashlib.sha256((ROOT / "crates/nyx-ssz/src/type_info.rs").read_bytes()).hexdigest()
+    if digest != scope["metadata_source_sha256"]:
+        raise ValueError("metadata changed; reassess the known unsupported skip")
+    contracts = legacy.load_contracts(VERIFICATION / "traits.json")
+    directory = ROOT / "target" / "api-coverage"
+    legacy.run(["cargo", "rustdoc", "--lib", "--package", "nyx-ssz", "--target-dir", directory,
+                "--", "--output-format", "json", "-Z", "unstable-options"])
+    document = json.loads((directory / "doc" / "nyx_ssz.json").read_text())
+    actual = legacy.api_functions(document, contracts)
+    if actual != set(scope["proven"]) | set(scope["skipped"]):
+        raise ValueError("public APIs must be exactly proved or explicitly issue-linked skipped")
+    instances = {instance["lean"] for contract in contracts for instance in contract["instances"]}
+    if instances != set(scope["skipped_traits"]):
+        raise ValueError("trait dictionary proof status is incomplete")
+    return current_targets(scope)
+
+
+def charon_root(pins, destination, source, names):
+    destination.mkdir(parents=True, exist_ok=True)
+    llbc = destination / "nyx_ssz.llbc"
+    arguments = [legacy.tool_path("charon", pins), "rustc", "--preset=aeneas", "--precise-drops",
+                 "--sysroot", legacy.miri_sysroot(pins)]
+    for name in names:
+        arguments.extend(["--start-from", name])
+    arguments.extend(["--dest-file", llbc, "--", source, "--crate-name", "nyx_ssz",
+                      "--crate-type", "lib", "-A", "dead_code"])
+    legacy.run(arguments)
+    return llbc
+
+
+def aeneas_command(pins, destination, llbc):
+    return [str(item) for item in [legacy.tool_path("aeneas", pins), "-backend", "lean",
+            "-namespace", "NyxSszRust", "-checks", "-abort-on-error", "-warnings-as-errors",
+            "-no-progress-bar", "-dest", destination, llbc]]
+
+
+def extract_core(pins, targets, destination):
+    names = [row["rust"] for row in targets] + ["nyx_ssz::merkle::merkleize_progressive"]
+    llbc = charon_root(pins, destination, "verification/current_merkle.rs", names)
+    legacy.assert_safe_drops(json.loads(llbc.read_text()))
+    legacy.run(aeneas_command(pins, destination, llbc))
+    artifacts = split_model((destination / "NyxSsz.lean").read_text())
+    legacy.assert_extracted_targets(artifacts, targets)
+    selected = {name: text.encode() for name, text in artifacts.items() if name != "NyxSszRust.lean"}
+    if selected.keys() != MODULES:
+        raise ValueError("current extraction dependency closure changed")
+    return selected
+
+
+def probe_metadata(pins, scope, destination):
+    names = [f"nyx_ssz::type_info::{name}" for name in ("fixed_size", "is_basic", "is_compatible", "validate")]
+    llbc = charon_root(pins, destination, "verification/current_metadata.rs", names)
+    result = subprocess.run(aeneas_command(pins, destination, llbc), cwd=ROOT,
+                            text=True, capture_output=True, check=False)
+    output = result.stdout + result.stderr
+    (destination / "aeneas.log").write_text(output)
+    if result.returncode == 0:
+        raise ValueError("metadata extraction now succeeds; remove skip and prove its laws")
+    expected = ("Returns inside of nested loops are not supported yet",
+                "type_info.rs", "PrePasses.ml, line 662")
+    if result.returncode != 2 or not all(message in output for message in expected):
+        raise ValueError("unexpected metadata extraction failure; not an approved skip")
+    print(f"SKIPPED metadata equivalence (not proved): {scope['issues']['metadata']}")
+
+
+def check_proofs(targets, directory):
+    legacy.run(["lake", "build", "NyxSszVerification.CurrentAudit"], cwd=VERIFICATION)
+    lines = ["import NyxSszVerification.CurrentAudit"]
+    lines.extend(f"check_current_refinement {row['lean']} via {row['proof']}" for row in targets)
+    path = directory / "CurrentTargets.lean"
+    path.write_text("\n".join(lines) + "\n")
+    legacy.run(["lake", "env", "lean", path], cwd=VERIFICATION)
+    guards = {
+        "Unrelated": (f"check_current_refinement {targets[0]['lean']} via {targets[1]['proof']}\n", "does not mention"),
+        "ForeignAxiom": ("namespace NyxSszVerification\naxiom current_forbidden : False\nend NyxSszVerification\naudit_current_refinements\n", "forbidden axiom"),
+        "NativeEvaluation": ("namespace NyxSszVerification\ntheorem nativeCurrent : (List.range 100).length = 100 := by native_decide\nend NyxSszVerification\naudit_current_refinements\n", "forbidden axiom"),
+    }
+    for name, (source, expected) in guards.items():
+        path = directory / f"{name}.lean"
+        path.write_text("import NyxSszVerification.CurrentAudit\n" + source)
+        result = subprocess.run(["lake", "env", "lean", str(path)], cwd=VERIFICATION,
+                                text=True, capture_output=True, check=False)
+        if result.returncode == 0 or expected not in result.stdout + result.stderr:
+            raise ValueError("current proof rejection guard failed")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("extract", "check", "probe-metadata"))
+    arguments = parser.parse_args()
+    pins, scope = legacy.load_pins(), load_scope()
+    legacy.validate_pins(pins)
+    legacy.validate_tools(pins)
+    validate_roots()
+    targets = check_scope(scope, pins)
+    with tempfile.TemporaryDirectory(prefix="nyx-current-proof-") as temporary:
+        directory = Path(temporary)
+        if arguments.command == "probe-metadata":
+            probe_metadata(pins, scope, directory / "metadata")
+            return
+        artifacts = extract_core(pins, targets, directory / "core")
+        if arguments.command == "extract":
+            for relative, content in artifacts.items():
+                (VERIFICATION / relative).write_bytes(content)
+            return
+        expected = {name: (VERIFICATION / name).read_bytes() for name in MODULES}
+        legacy.assert_same_artifact(artifacts, expected)
+        probe_metadata(pins, scope, directory / "metadata")
+        check_proofs(targets, directory)
+        legacy.validate_dependencies(pins)
+    print(f"PROVED current-source slice: {len(targets)} operations (not full-library equivalence).")
+    print(f"UNPROVED/SKIPPED: {len(scope['skipped'])} APIs, {len(scope['skipped_traits'])} dictionaries and derive transformations. {scope['issues']['remaining']}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, KeyError, subprocess.CalledProcessError):
+        print("current-source refinement failed; no new proof success is claimed", file=sys.stderr)
+        sys.exit(1)

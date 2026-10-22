@@ -22,6 +22,7 @@ import NyxSszVerification.Sha256
 import NyxSszVerification.Merkle
 import NyxSszVerification.Multiproof
 import NyxSszVerification.Gindex
+import NyxSszVerification.CurrentAudit
 import NyxSszVerification.Merkleize
 import NyxSszVerification.Unsigned
 import NyxSszVerification.Unsigned.U256

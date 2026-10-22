@@ -223,14 +223,12 @@ def prepare_native_macros(target):
     metadata = json.loads(run([
         "cargo", "metadata", "--locked", "--format-version", "1",
     ], capture=True))
-    packages = [f"{package['name']}@{package['version']}" for package in metadata["packages"]
-                if any("proc-macro" in item["kind"] for item in package["targets"])]
-    if not packages:
+    has_macros = any("proc-macro" in item["kind"] for package in metadata["packages"]
+                     for item in package["targets"])
+    if not has_macros:
         return
-    arguments = ["cargo", "build", "--locked", "--target-dir", target]
-    for package in packages:
-        arguments.extend(["--package", package])
-    run(arguments)
+    run(["cargo", "build", "--locked", "--target-dir", target,
+         "--package", "nyx-ssz", "--lib"])
 
 
 def generated_artifacts():

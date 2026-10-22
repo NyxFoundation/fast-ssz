@@ -18,14 +18,14 @@ set_option maxRecDepth 2048
 
 namespace NyxSszRust
 /-- [nyx_ssz::merkle::MerkleizeError]
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 26:0-28:1
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 26:0-28:1
     Visibility: public -/
 @[discriminant isize]
 inductive merkle.MerkleizeError where
 | LimitTooSmall : merkle.MerkleizeError
 
 /-- [nyx_ssz::merkle::ProofError]
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 11:0-22:1
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 11:0-22:1
     Visibility: public -/
 @[discriminant isize]
 inductive merkle.ProofError where
@@ -41,7 +41,7 @@ inductive merkle.ProofError where
 | SizeOverflow : merkle.ProofError
 
 /-- [nyx_ssz::merkle::climb]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 105:0-116:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 105:0-116:1 -/
 def merkle.climb
   (current : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
   (index : Std.U128) :
@@ -66,7 +66,7 @@ def merkle.climb
 partial_fixpoint
 
 /-- [nyx_ssz::merkle::depth_for]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 30:0-35:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 30:0-35:1 -/
 def merkle.depth_for (count : Std.Usize) : RustM Std.Usize := do
   if count <= 1#usize
   then ok 0#usize
@@ -79,7 +79,7 @@ def merkle.depth_for (count : Std.Usize) : RustM Std.Usize := do
 partial_fixpoint
 
 /-- [nyx_ssz::merkle::zero_root]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 37:0-43:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 37:0-43:1 -/
 def merkle.zero_root (depth : Std.Usize) : RustM (Array Std.U8 32#usize) := do
   if depth = 0#usize
   then ok (Array.repeat 32#usize 0#u8)
@@ -90,7 +90,7 @@ def merkle.zero_root (depth : Std.Usize) : RustM (Array Std.U8 32#usize) := do
 partial_fixpoint
 
 /-- [nyx_ssz::merkle::calculate_merkle_root]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 123:0-138:1
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 123:0-138:1
     Visibility: public -/
 def merkle.calculate_merkle_root
   (leaf : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
@@ -115,7 +115,7 @@ def merkle.calculate_merkle_root
           ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::merkle::subtree_root]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 45:0-63:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 45:0-63:1 -/
 def merkle.subtree_root
   (chunks : Slice (Array Std.U8 32#usize)) (depth : Std.Usize) :
   RustM (Array Std.U8 32#usize)
@@ -154,7 +154,7 @@ def merkle.subtree_root
 partial_fixpoint
 
 /-- [nyx_ssz::merkle::merkleize]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 70:0-81:1
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 70:0-81:1
     Visibility: public -/
 def merkle.merkleize
   (chunks : Slice (Array Std.U8 32#usize)) (limit : Option Std.Usize) :
@@ -176,7 +176,7 @@ def merkle.merkleize
       ok (core.result.Result.Ok a)
 
 /-- [nyx_ssz::merkle::progressive_subtree_root]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 83:0-99:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 83:0-99:1 -/
 def merkle.progressive_subtree_root
   (chunks : Slice (Array Std.U8 32#usize)) (depth : Std.Usize)
   (width : Std.U128) :
@@ -214,7 +214,7 @@ def merkle.progressive_subtree_root
 partial_fixpoint
 
 /-- [nyx_ssz::merkle::verify_merkle_proof]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 141:0-151:1
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 141:0-151:1
     Visibility: public -/
 def merkle.verify_merkle_proof
   (leaf : Array Std.U8 32#usize) (proof : Slice (Array Std.U8 32#usize))
@@ -227,10 +227,10 @@ def merkle.verify_merkle_proof
     let b ←
       core.array.equality.PartialEqArray.eq core.cmp.PartialEqU8 actual root
     ok (core.result.Result.Ok b)
-  | core.result.Result.Err error1 => ok (core.result.Result.Err error1)
+  | core.result.Result.Err error => ok (core.result.Result.Err error)
 
 /-- [nyx_ssz::merkle::merkleize_progressive]:
-    Source: 'crates/nyx-ssz/src/merkle.rs', lines 101:0-103:1 -/
+    Source: 'verification/../crates/nyx-ssz/src/merkle.rs', lines 101:0-103:1 -/
 def merkle.merkleize_progressive
   (chunks : Slice (Array Std.U8 32#usize)) :
   RustM (Array Std.U8 32#usize)

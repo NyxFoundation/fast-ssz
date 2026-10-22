@@ -104,9 +104,11 @@ lowered or source region excluded.
 
 ## Formal handoff
 
-Native implementation is complete; proof work follows it rather than blocking it.
-Re-extract the actual Rust implementation and attempt equivalence with the pinned Lean specification.
-Keep unsupported targets explicitly unproved and link concrete reproductions in GitHub Issues.
-Do not repair Aeneas, adopt a private fork, weaken fault relations or silently add domain assumptions.
-Historical artifacts are retained as historical evidence, not current-source certification.
-The existing cyclic external-static-graph boundary is unchanged.
+Native implementation is complete. Actual-source extraction of the four shared metadata
+functions produces LLBC, then pinned Aeneas refuses returns inside nested loops in
+`union_options_agree` (`PrePasses.ml`, line 662). This is explicitly unproved/skipped in
+[Issue #24](https://github.com/NyxFoundation/nyx-ssz/issues/24), not a native implementation failure.
+The gate requires the exact source fingerprint and diagnostic; a different failure fails,
+and successful extraction invalidates the skip. Aeneas is unchanged and no axiom/domain
+restriction is added. [Current proof scope](current-verification.md) separately checks 18
+extractable Merkle operations. The cyclic external-static-graph boundary is unchanged.

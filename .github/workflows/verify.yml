@@ -37,6 +37,7 @@ jobs:
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
   refinement:
+    name: Current Aeneas slice and explicit unproved status
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -53,4 +54,4 @@ jobs:
           use-mathlib-cache: "true"
       - run: cargo install cargo-hax --version 0.4.0 --locked
       - run: python3 scripts/verify.py bootstrap
-      - run: python3 scripts/verify.py check
+      - run: python3 scripts/current_refinement.py check

@@ -1,7 +1,7 @@
 ---
 title: Verification scope and trust boundary
 last_updated: 2026-10-22
-verification_status: full-descriptor-formal-integration-pending
+verification_status: current-18-operation-slice-explicit-issue-linked-skips
 tags:
   - ssz
   - aeneas
@@ -15,11 +15,13 @@ All 13 shapes have codecs, including generated heterogeneous ownership state.
 Typed paths, sparse node access and proof construction are native-tested.
 All 4,601 pinned official corpus cases pass with preserved source/version-alignment checks.
 
-The descriptions and generated artifacts below are historical proof evidence, not a
-successful re-extraction of the enlarged program. The next stage attempts actual-source
-equivalence. Unsupported Aeneas targets must be explicitly marked unproved with a linked Issue;
-Aeneas itself is not changed, and no axiom or input-domain assumption is added.
-See [native API](native-api.md) and [descriptor evidence](full-descriptors.md).
+The current gate freshly extracts and kernel-checks 18 SHA-256/gindex/Merkle operations.
+It explicitly reports the remaining 97 documented APIs, 17 codec dictionaries and derive
+transformations as unproved with linked Issues. Actual metadata extraction is rejected for
+nested-loop returns. See [exact current scope and reproduction](current-verification.md).
+Aeneas itself is unchanged; no axiom or input-domain assumption is added.
+The broader proof descriptions below are historical registrations, not certification of the
+enlarged current program. See [native API](native-api.md) and [descriptor evidence](full-descriptors.md).
 
 **Historical proof suite, not current-source certification:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
