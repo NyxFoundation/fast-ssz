@@ -1,11 +1,13 @@
 # Version-aligned official SSZ vector runner
 
 Requires the repository's pinned Rust toolchain, Python 3.11+, Git and network access on the first run.
-Install the pinned oracle decompressor with `python3 -m pip install -r tools/official-vectors/requirements.txt`.
+Use a virtual environment: the isolated oracle intentionally ignores user-site packages.
 From the repository root:
 
 ```sh
-python3 scripts/official_vectors.py check
+python3 -m venv .venv-vectors
+.venv-vectors/bin/pip install -r tools/official-vectors/requirements.txt
+.venv-vectors/bin/python scripts/official_vectors.py check
 ```
 
 The wrapper checks formatting, lints, unit tests and all 4,601 source cases in all nine families. It compares

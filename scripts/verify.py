@@ -223,7 +223,7 @@ def prepare_native_macros(target):
     metadata = json.loads(run([
         "cargo", "metadata", "--locked", "--format-version", "1",
     ], capture=True))
-    packages = [package["id"] for package in metadata["packages"]
+    packages = [f"{package['name']}@{package['version']}" for package in metadata["packages"]
                 if any("proc-macro" in item["kind"] for item in package["targets"])]
     if not packages:
         return

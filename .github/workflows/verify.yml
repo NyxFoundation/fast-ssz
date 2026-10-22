@@ -26,9 +26,11 @@ jobs:
           rustup target add --toolchain nightly-2026-08-18 i686-unknown-linux-musl
           cargo test --locked --workspace --all-features --target i686-unknown-linux-musl
       - name: Install pinned reference decompressor
-        run: python3 -m pip install -r tools/official-vectors/requirements.txt
+        run: |
+          python3 -m venv "$RUNNER_TEMP/nyx-vector-env"
+          "$RUNNER_TEMP/nyx-vector-env/bin/pip" install -r tools/official-vectors/requirements.txt
       - name: Check all nine official vector families
-        run: python3 scripts/official_vectors.py check
+        run: '"$RUNNER_TEMP/nyx-vector-env/bin/python" scripts/official_vectors.py check'
       - run: rustup component add llvm-tools --toolchain nightly-2026-08-18
       - run: cargo install cargo-llvm-cov --version 0.8.7 --locked
       - run: cargo llvm-cov --workspace --fail-under-lines 80
