@@ -456,6 +456,7 @@ def check(pins, targets, contracts, directory):
     assert_same_artifact(extract(pins, targets, directory, contracts), generated_artifacts())
     assert_import_closure(VERIFICATION)
     run(["lake", "build", "NyxSszVerification"], cwd=VERIFICATION)
+    run(["lake", "env", "lean", "--run", ROOT / "tools" / "multiproof-oracle.lean"], cwd=VERIFICATION)
     validate_dependencies(pins)
     check_proof_targets(targets, contracts, directory)
     check_generic_contract_success(directory)

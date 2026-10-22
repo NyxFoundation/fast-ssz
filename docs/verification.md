@@ -1,6 +1,7 @@
 ---
 title: Verification scope and trust boundary
-last_updated: 2026-10-21
+description: Verified owned codecs, multiproofs and raw Container layout/assembly, not complete Container value codecs.
+last_updated: 2026-10-22
 tags:
   - ssz
   - aeneas
@@ -10,17 +11,18 @@ tags:
 
 **Not release complete:** Boolean, uint8/16/32/64/128/256, Bitvector/Bitlist/ProgressiveBitlist and borrowed
 ByteVector/ByteList/ProgressiveByteList codecs, SHA-256 node combination and
-single-branch Merkle verification, generic node Merkleization and all basic-type
+single-/multi-claim Merkle verification, generic node Merkleization and all basic-type
 roots, plus borrowed packed byte/bit and Progressive/view roots, are implemented.
-`verification/targets.json` links ninety-eight registered operations to proofs over actual
+`verification/targets.json` links one hundred and three registered operations to proofs over actual
 Aeneas output: the thirty-nine existing codec/hash/view operations, six owned collection
 storage operations, three generic codec dispatchers, numeric offset-span validation,
-fixed/variable-vector/list layout validation, three immutable layout-view projections and typed
+fixed/variable-vector/list and mixed Container layout validation, three immutable layout-view projections and typed
 body-range decoding, four declaration-derived metadata APIs, eleven generalized-index operations and
-seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections and four owned
-byte-array methods. `verification/traits.json` separately registers every public `Ssz` declaration member
-and its fifteen library dictionaries: seven basic instances, three generic sequence constructors,
-three owned bitfields and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
+seven packed byte/bit root entrypoints, fifteen owned-bitfield constructors/projections, four owned
+byte-array methods, three multiproof operations and shared mixed-slot Container wire assembly.
+`verification/traits.json` separately registers every public `Ssz` declaration member and its fifteen
+library dictionaries: seven basic instances, three generic sequence constructors, three owned bitfields
+and two dedicated owned byte arrays. Each proves the full `CodecLaw`;
 methods are not silently excluded. The three generic laws compose with the law of their actual
 child dictionary, at every machine-size bound and arbitrary nesting depth.
 Every slice/bound yields `RustM.ok`; success contains exact reference bytes/values.
@@ -29,6 +31,23 @@ Their relation permits only EmptyVector/vectorEmpty, InvalidLength/scope and
 OverLimit/overLimit; other outcomes are false. Boolean errors classify scope/non-bit
 faults. Bounds cover `usize`, not all naturals. Zero-copy is source/test evidence,
 not a cost theorem. Derived error traits are not protocol proof targets.
+
+`container_view_refines` connects the actual extracted `container::container_view` to
+pinned `Ssz.structSlices` (the reference's Container layout executable). Its pointwise
+`containerMetadata` relation uses each supplied `Desc.fixedSize` exactly: `Ok(None)`
+for variable fields, `Ok(Some(width))` for representable fixed widths, and
+`Err(SizeOverflow)` for fixed natural widths above `usize::MAX`. It assumes no parent
+validity, desired output, representable child-width domain or reduced field/input bound.
+The size envelope precedes the all-fixed exact budget or mixed header minimum; budget
+faults precede first-offset, offset-order and final-scope faults. Natural sums exceeding
+the machine word are handled without arithmetic overflow. Zero fields/widths, repeated
+offsets, empty bodies and interspersed fixed fields retain exact field-order bytes.
+Success includes the existing `sequenceViewValid` range invariant, permitting immutable
+`SequenceView` projections without rechecking each range. The ≥2^32 input branch is
+proved symbolically, not exercised by allocating multi-gigabyte test inputs.
+This primitive validates layout only. No Container trait dictionary, derive macro,
+field-name/type validation, generated conversion/ownership proof or Container root is
+claimed here; all remain required for the future ordinary-named-struct codec.
 
 ProgressiveByteList is checked against `.progressiveList (.uint 1) limit`, not
 an opaque-byte descriptor. Its injective value view maps every byte to a uint8,
@@ -119,7 +138,7 @@ index and incorrect branch lengths return the corresponding error category;
 a well-formed nonmatching proof returns false. Proofs cover index guards, sibling
 order, recursive termination, SHA-256 composition and bytewise root comparison.
 Error relations classify reasons, not the reference error's numeric diagnostics.
-Typed paths, multiproofs and full-library conformance are not yet proved.
+Typed paths, proof generation and full-library conformance are not yet proved.
 
 `gindex` implements raw numeric tree operations, not typed path resolution. Depth and
 branch length refine `Ssz.gindexDepth`/`gindexLength`, distinguishing zero, root and
@@ -133,7 +152,39 @@ all nodes and their order. Their real Vec loops terminate with bounded shifts, i
 and pushes. Positions/depths use `u32`; indices use every `u128` value. The leading-zero
 primitive is the pinned Aeneas standard model, with its exact log2 arithmetic proved here.
 Native overflow checks and error precedence are part of these proofs. Typed field/element
-paths, progressive chunk positions and multiproof helper-set construction remain separate.
+paths and progressive chunk positions remain separate.
+
+`multiproof::{helper_indices, calculate_merkle_root, verify_merkle_proof}` refine
+`Ssz.getHelperIndices`, `Ssz.calculateMultiMerkleRoot` and `Ssz.verifyMerkleMultiproof`.
+Their unconditional kernel theorems cover all native slices and every `u128` index,
+including depth 127. Leaf-count refusal precedes helper validation. Empty/repeated
+requests, per-claim zero/root/path validation, related claims and proof-length errors
+preserve the reference order and error categories. Descending helper order is exact;
+complete frontiers reconstruct a root and well-formed mismatches return false.
+
+Helper selection scans sibling candidates, excludes all claim paths, and selects the
+next distinct greatest helper before pushing. It never accumulates flattened paths.
+`SizeOverflow` is allowed exactly when the mathematical helper list exceeds `usize::MAX`;
+there is no input, path-count or working-set restriction. The verifier validates first
+and stops helper collection once another helper exceeds the supplied proof length.
+Its refusal is therefore exact `proofLength`, even for an unrepresentable helper list,
+not `SizeOverflow`. The checked pushes depend only on actual output length.
+
+Root reconstruction borrows leaves and helpers separately and recursively hashes the
+finite frontier tree, using at most 128 frames. No combined `leaves + helpers` vector,
+count addition or machine-size budget is needed. Checked child arithmetic and decreasing
+depth cover top-bit indices. Antichain, uniqueness and complete-frontier lemmas connect
+this traversal to the unchanged reference level fold. Existing `hash_pair` proofs
+supply every parent hash. Allocation failure and finite stack/runtime resources remain
+trust boundaries, not excuses for machine-index overflow or weakened contracts.
+
+`Multiproof/{Frontier,Antichain,Fold,Cut}.lean` adapt relevant pinned SSZ proof lemmas
+under the project's Lean version; they prove statements about the unchanged executable
+specification. The upstream proof-module dependency tree requires its newer toolchain,
+so these kernel-checked compatibility proofs avoid importing it. No pinned source or
+old fault cases are changed. The full gate also runs `tools/multiproof-oracle.lean`
+against the actual pinned executable definitions, checking precedence, explicit trees,
+wrong roots/order and every supported depth. This baseline makes no performance claim.
 
 `bytecollections::ByteVector<N>` and `bytecollections::ByteList<MAX>` are dedicated owned
 opaque-byte types with private `Vec<u8>` storage, not aliases for generic uint8 sequences.
@@ -201,6 +252,21 @@ Roots prove exact byte/vector capacity equivalence, delimiter masking, length mi
 spine. Runtime encode/root paths allocate packed byte/node buffers, never Boolean expansions; pointer
 identity and allocation behavior remain source/test evidence rather than cost theorems. Official bit
 families now exercise the actual owned dictionaries in addition to the existing borrowed operations.
+
+`container_wire::assemble` is a proved raw internal-layout assembler over paired
+`(inline, Vec<u8>)` slots. `container_assemble_refines` relates the actual extracted
+implementation to unchanged `Ssz.assemble`, with flags and bytes projected from the
+same ordered slots. The size step, size loop and wrapper prove the exact four-byte
+budget check: totals at or above 2^32 return `SizeOverflow`, matching the reference
+`offsetOverflow` category. Header and body loops use decreasing remaining-index
+measures, preserve exact inline bytes, little-endian offsets and variable bodies,
+and prove native indexing, increments, casts, additions and Vec capacity safe.
+The registered wrapper has no extra count, width, byte-data or validity premises;
+empty slots and empty inline/variable parts are included. No Rust or generated
+extraction body is replaced by a paper model. This proves wire assembly only:
+Container declarations, ordinary-struct derive, generated ownership/conversions,
+value encoding/decoding and Container roots are not completed by this theorem.
+The fifteen existing `Ssz` dictionaries and their `CodecLaw` obligations are unchanged.
 
 `codec::Ssz` has a static immutable `TYPE` declaration and encode/decode/tree-root
 operations. Boolean and uint8/16/32/64/128/256 dictionaries prove that the complete
@@ -292,7 +358,16 @@ Both paths establish the existing immutable view invariant, so typed element tra
 and getters need no new assumptions. Element validity and collection codecs remain separate.
 
 Checks cover Rust tests/doctests/lints, extraction/API/import coverage, proofs and
-pinned source integrity. Generated declarations are partitioned into dependency-ordered
+pinned source integrity. For the integrated owned byte/bit, multiproof and raw Container proof slice,
+`python3 scripts/verify.py check` passes all 103 operations, 15 dictionaries and 3,412 source
+cases, including the actual owned byte and bit dictionaries. All 103 Python regression tests
+also pass (`python3 -m unittest discover -s scripts -p 'test_*.py'`). The library-source
+coverage gate (`cargo llvm-cov --workspace --ignore-filename-regex '/tests/' --fail-under-lines 80`)
+reports 95.51% lines overall, 96.75% for `container.rs` and 100% for `container_wire.rs`.
+This excludes integration-test files but includes in-module unit tests; coverage is not a
+formal branch or cost guarantee. The x86 CI job also executes the complete workspace tests
+on `i686-unknown-linux-musl` to exercise 32-bit native size boundaries.
+Generated declarations are partitioned into dependency-ordered
 modules with qualified names and declaration bodies preserved. Dependency-aware
 canonical ordering and inter-declaration whitespace avoid unrelated extraction
 order changes invalidating cached proofs. Registry source-location comments use

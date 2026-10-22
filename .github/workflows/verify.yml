@@ -20,6 +20,11 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - name: Test 32-bit native size boundaries
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          rustup target add --toolchain nightly-2026-08-18 i686-unknown-linux-musl
+          cargo test --locked --workspace --all-features --target i686-unknown-linux-musl
       - name: Check the current-version seven-family official vector slice
         run: >-
           python3 scripts/official_vectors.py check

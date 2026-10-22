@@ -20,6 +20,10 @@ path concatenation/rebasing and bottom-up path/sibling indices over the full `u1
 domain. Unrepresentable natural-number results return `ProofError::IndexOverflow`;
 bit queries and truncation explicitly handle positions beyond the word width.
 These numeric helpers do not yet resolve typed field/element paths.
+The `multiproof` module provides proved descending helper indices, multi-leaf root
+reconstruction and verification, including malformed requests and full-depth indices.
+Helper output overflow is distinguished from proof-length refusal; neither path imposes
+a combined-frontier or accumulated-path size budget.
 RustCrypto `sha2` is a test oracle only, not a runtime dependency.
 `U256` uses pinned `ruint` 1.20.1; its reachable getters/constructor are extracted
 and proved, not assumed correct. Other `ruint` operations are outside these proofs.
@@ -41,11 +45,18 @@ partial values. Basic codecs use `DecodeState = ()`; encode/root errors remain `
 The shared offset-span validator and fixed- or inferred-count layout parsers for
 both fixed- and variable-width elements are also proved. The parser returns an immutable zero-copy `SequenceView`, with checked
 headers, four-byte size envelope and body ranges. It does not decode element values.
+`container::container_view` also proves mixed fixed/variable field slicing in declaration
+order, including interspersed fixed fields. This is shared layout only, not a Container codec.
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
-typed index/path APIs, multiproofs, the complete official corpus and
+The shared `container_wire::assemble` helper is proved against the unchanged reference
+assembler for every paired inline/variable byte-slot slice, including empty parts and
+exact four-byte overflow errors. This is raw internal-layout assembly, not a Container
+value codec; it does not yet provide struct derive or generated ownership/conversions.
+
+Container value codecs, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
+typed index/path APIs, proof generation, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 
 ## Example
@@ -194,6 +205,26 @@ size envelope. Vectors require the exact byte budget, including checked multipli
 lists infer their count and reject widthless nonempty input or incomplete elements
 before checking capacity. An empty fixed list has zero elements, even at zero width.
 These are layout helpers, not complete typed collection codecs.
+
+## Borrowed Container layout
+
+```rust
+use nyx_ssz::container::container_view;
+let bytes = [42, 5, 0, 0, 0, 99];
+let view = container_view(&bytes, &[Ok(Some(1)), Ok(None)]).unwrap();
+assert_eq!(view.get(0), Some(&bytes[..1]));
+assert_eq!(view.get(1), Some(&bytes[5..]));
+```
+
+Pass child metadata from `codec::fixed_size`: fixed widths are `Ok(Some(width))`,
+variable fields are `Ok(None)`, and a fixed natural width exceeding `usize` is
+`Err(SizeOverflow)`. Layout rejection follows the pinned `Ssz.structSlices` budget
+and offset-check order. Internal zero fields/widths and empty variable bodies are
+supported. Bytes are borrowed, not copied; only range/offset metadata is allocated.
+The parent codec must validate field names, type declarations and field values.
+Ordinary named structs with `#[derive(Ssz)]`, generated conversions/ownership proofs,
+Container encoding/decoding and roots remain future work; this helper is not full
+Container conformance or an `Ssz` dictionary.
 
 ## Typed element decoding
 
