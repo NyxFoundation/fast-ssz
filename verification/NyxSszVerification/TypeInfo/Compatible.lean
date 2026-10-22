@@ -12,6 +12,10 @@ theorem type_info_compatible_exact (left right : NyxSszRust.type_info.TypeDescri
   induction left generalizing right <;> cases right <;>
     simp_all [NyxSszRust.type_info.is_compatible, declarationCompatible,
       metadata_usize_eq, Bool.beq_eq_decide_eq]
+  all_goals try split <;> simp_all
+  all_goals cases_type NyxSszRust.type_info.TypeDescriptor <;>
+    simp_all [NyxSszRust.type_info.is_compatible, declarationByteElement, metadata_usize_eq]
+  all_goals split <;> simp_all
   all_goals split <;> simp_all
 
 theorem declaration_nesting_positive (declaration : NyxSszRust.type_info.TypeDescriptor) :
@@ -23,10 +27,6 @@ theorem declaration_equal_compatible (left right : NyxSszRust.type_info.TypeDesc
     declarationCompatible left right = true := by
   induction left generalizing right <;> cases right <;>
     simp_all [typeDescriptorToSpec, Ssz.Desc.beq, declarationCompatible]
-
-def declarationByteElement : NyxSszRust.type_info.TypeDescriptor → Bool
-  | .Uint width => width.val == 1
-  | _ => false
 
 theorem declaration_byte_vector (element : NyxSszRust.type_info.TypeDescriptor) (count : Nat) :
     (Ssz.Desc.vector (typeDescriptorToSpec element) count).byteSequence =
@@ -76,8 +76,8 @@ theorem declaration_compatible_at (left right : NyxSszRust.type_info.TypeDescrip
           simp_all only [typeDescriptorToSpec, Ssz.Desc.nesting]
         all_goals try simp only [declaration_byte_vector, declaration_byte_list]
         all_goals simp_all [Ssz.Desc.byteSequence, declarationCompatible, BEq.beq, Ssz.Desc.beq]
-        all_goals split_ifs <;>
-          simp_all [byte_element_compatible_left, byte_element_compatible_right,
+        all_goals try split_ifs
+        all_goals simp_all [byte_element_compatible_left, byte_element_compatible_right,
             metadata_byte_vector_beq, metadata_byte_list_beq, Bool.beq_eq_decide_eq, Option.instBEq.beq]
 
 @[step] theorem type_info_is_compatible_refines

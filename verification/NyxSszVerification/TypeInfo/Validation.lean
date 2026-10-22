@@ -26,9 +26,18 @@ namespace NyxSszVerification
     · have nonzero : count.val ≠ 0 := by scalar_tac
       simp [NyxSszRust.type_info.validate, zero, typeDescriptorToSpec, Ssz.Desc.wellFormed,
         nonzero, codecValidityAgrees]
+  | ByteVector count =>
+    by_cases zero : count = 0#usize
+    · simp [NyxSszRust.type_info.validate, zero, typeDescriptorToSpec, Ssz.Desc.wellFormed,
+        codecValidityAgrees, codecFaultAgrees]
+    · have nonzero : count.val ≠ 0 := by scalar_tac
+      simp [NyxSszRust.type_info.validate, zero, typeDescriptorToSpec, Ssz.Desc.wellFormed,
+        nonzero, codecValidityAgrees]
   | BitList limit =>
     simp [NyxSszRust.type_info.validate, typeDescriptorToSpec, Ssz.Desc.wellFormed, codecValidityAgrees]
   | ProgressiveBitList limit =>
+    simp [NyxSszRust.type_info.validate, typeDescriptorToSpec, Ssz.Desc.wellFormed, codecValidityAgrees]
+  | ByteList limit =>
     simp [NyxSszRust.type_info.validate, typeDescriptorToSpec, Ssz.Desc.wellFormed, codecValidityAgrees]
   | Vector element count ih =>
     by_cases zero : count = 0#usize

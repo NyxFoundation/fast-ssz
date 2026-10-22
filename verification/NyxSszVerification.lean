@@ -1,5 +1,6 @@
 import NyxSszVerification.Boolean
 import NyxSszVerification.Bytes
+import NyxSszVerification.Bytecollections
 import NyxSszVerification.Collections
 import NyxSszVerification.Collection.Law
 import NyxSszVerification.ProgressiveCollection.Law

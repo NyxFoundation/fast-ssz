@@ -16,7 +16,7 @@ pub(crate) fn encode_parts<T: Ssz>(values: &[T]) -> Result<Vec<Vec<u8>>, CodecEr
     Ok(parts)
 }
 
-fn append(output: &mut Vec<u8>, bytes: &[u8]) {
+pub(crate) fn append(output: &mut Vec<u8>, bytes: &[u8]) {
     let mut index = 0;
     while index < bytes.len() {
         output.push(bytes[index]);

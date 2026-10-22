@@ -10,6 +10,8 @@ use crate::error::CodecError;
 pub enum TypeDescriptor {
     Boolean,
     Uint(usize),
+    ByteVector(usize),
+    ByteList(usize),
     BitVector(usize),
     BitList(usize),
     ProgressiveBitList(Option<usize>),
@@ -21,9 +23,10 @@ pub enum TypeDescriptor {
 pub(crate) const fn fixed_size(declaration: &TypeDescriptor) -> Result<Option<usize>, CodecError> {
     match declaration {
         TypeDescriptor::Boolean => Ok(Some(1)),
-        TypeDescriptor::Uint(width) => Ok(Some(*width)),
+        TypeDescriptor::Uint(width) | TypeDescriptor::ByteVector(width) => Ok(Some(*width)),
         TypeDescriptor::BitVector(count) => Ok(Some(count.div_ceil(8))),
-        TypeDescriptor::BitList(_)
+        TypeDescriptor::ByteList(_)
+        | TypeDescriptor::BitList(_)
         | TypeDescriptor::ProgressiveBitList(_)
         | TypeDescriptor::List(_, _)
         | TypeDescriptor::ProgressiveList(_, _) => Ok(None),
@@ -53,39 +56,45 @@ pub(crate) const fn is_basic(declaration: &TypeDescriptor) -> bool {
 }
 
 pub(crate) const fn is_compatible(left: &TypeDescriptor, right: &TypeDescriptor) -> bool {
+    use TypeDescriptor as D;
+
     match left {
-        TypeDescriptor::Boolean => matches!(right, TypeDescriptor::Boolean),
-        TypeDescriptor::Uint(left_width) => match right {
-            TypeDescriptor::Uint(right_width) => *left_width == *right_width,
+        D::Boolean => matches!(right, D::Boolean),
+        D::Uint(width) => match right {
+            D::Uint(other) => *width == *other,
             _ => false,
         },
-        TypeDescriptor::BitVector(left_count) => match right {
-            TypeDescriptor::BitVector(right_count) => *left_count == *right_count,
+        D::BitVector(count) => match right {
+            D::BitVector(other) => *count == *other,
             _ => false,
         },
-        TypeDescriptor::BitList(left_limit) => match right {
-            TypeDescriptor::BitList(right_limit) => *left_limit == *right_limit,
+        D::BitList(limit) => match right {
+            D::BitList(other) => *limit == *other,
             _ => false,
         },
-        TypeDescriptor::ProgressiveBitList(_) => {
-            matches!(right, TypeDescriptor::ProgressiveBitList(_))
-        }
-        TypeDescriptor::Vector(left_element, left_count) => match right {
-            TypeDescriptor::Vector(right_element, right_count) => {
-                *left_count == *right_count && is_compatible(left_element, right_element)
-            }
+        D::ProgressiveBitList(_) => matches!(right, D::ProgressiveBitList(_)),
+        D::ByteVector(count) => match right {
+            D::ByteVector(other) => *count == *other,
+            D::Vector(child, other) => *count == *other && matches!(child, D::Uint(1)),
             _ => false,
         },
-        TypeDescriptor::List(left_element, left_limit) => match right {
-            TypeDescriptor::List(right_element, right_limit) => {
-                *left_limit == *right_limit && is_compatible(left_element, right_element)
-            }
+        D::ByteList(limit) => match right {
+            D::ByteList(other) => *limit == *other,
+            D::List(child, other) => *limit == *other && matches!(child, D::Uint(1)),
             _ => false,
         },
-        TypeDescriptor::ProgressiveList(left_element, _) => match right {
-            TypeDescriptor::ProgressiveList(right_element, _) => {
-                is_compatible(left_element, right_element)
-            }
+        D::Vector(child, count) => match right {
+            D::ByteVector(other) => *count == *other && matches!(child, D::Uint(1)),
+            D::Vector(other, size) => *count == *size && is_compatible(child, other),
+            _ => false,
+        },
+        D::List(child, limit) => match right {
+            D::ByteList(other) => *limit == *other && matches!(child, D::Uint(1)),
+            D::List(other, size) => *limit == *size && is_compatible(child, other),
+            _ => false,
+        },
+        D::ProgressiveList(child, _) => match right {
+            D::ProgressiveList(other, _) => is_compatible(child, other),
             _ => false,
         },
     }
@@ -93,7 +102,14 @@ pub(crate) const fn is_compatible(left: &TypeDescriptor, right: &TypeDescriptor)
 
 pub(crate) const fn validate(declaration: &TypeDescriptor) -> Result<(), CodecError> {
     match declaration {
-        TypeDescriptor::Boolean => Ok(()),
+        TypeDescriptor::Boolean | TypeDescriptor::ByteList(_) => Ok(()),
+        TypeDescriptor::ByteVector(count) => {
+            if *count == 0 {
+                Err(CodecError::EmptyVector)
+            } else {
+                Ok(())
+            }
+        }
         TypeDescriptor::Uint(width) => match *width {
             1 | 2 | 4 | 8 | 16 | 32 => Ok(()),
             _ => Err(CodecError::InvalidIntegerWidth),

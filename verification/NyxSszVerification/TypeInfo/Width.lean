@@ -25,6 +25,10 @@ theorem codec_width_none (actual : core.result.Result (Option Usize) NyxSszRust.
     simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
   | ProgressiveBitList limit =>
     simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
+  | ByteVector count =>
+    simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
+  | ByteList limit =>
+    simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
   | List element limit ih =>
     simp [NyxSszRust.type_info.fixed_size, typeDescriptorToSpec, Ssz.Desc.fixedSize, codecWidthAgrees]
   | ProgressiveList element limit ih =>

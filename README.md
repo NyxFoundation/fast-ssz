@@ -32,8 +32,8 @@ Their `Ssz` implementations additionally compose encoding, decoding and roots wi
 any explicitly lawful child codec, including nested fixed- and variable-width collections.
 
 The `codec::Ssz` trait provides a uniform interface for Boolean, all six unsigned
-widths, generic Vector/List/ProgressiveList, and owned BitVector/BitList/ProgressiveBitList.
-Its thirteen library implementations have proved declaration
+widths, generic Vector/List/ProgressiveList, dedicated owned ByteVector/ByteList, and owned
+BitVector/BitList/ProgressiveBitList. Its fifteen library implementations have proved declaration
 metadata, encoding, decoding and roots. External implementations are not
 implicitly certified; generic dispatcher proofs require an explicit `CodecLaw`.
 Decoding returns `DecodeFailure<T::DecodeState>` on error, retaining ownership of
@@ -44,8 +44,8 @@ headers, four-byte size envelope and body ranges. It does not decode element val
 `codec::decode_elements` decodes those bodies in order. Its proof covers exact successful
 values, fault classes, and retention of both the completed prefix and nested failure state.
 
-Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive, owned byte
-trait integration, typed index/path APIs, multiproofs, the complete official corpus and
+Containers, bounded generic Progressive contexts, ProgressiveContainer, CompatibleUnion, derive,
+typed index/path APIs, multiproofs, the complete official corpus and
 benchmarks remain unfinished. The agreed release condition is not met.
 
 ## Example
@@ -89,14 +89,14 @@ widths, variable layouts (`Ok(None)`) or unrepresentable widths (`Err(SizeOverfl
 `codec::is_basic` derives packing classification; `codec::validate_type` checks the
 declaration without invoking a value codec. `codec::is_compatible` compares declared
 Merkle layouts but does not imply type validity. These are not independently overridable
-metadata constants. The descriptor covers Boolean, unsigned integers, and recursively
+metadata constants. The descriptor covers Boolean, unsigned integers, dedicated opaque byte arrays, and recursively
 nested Vector/List/ProgressiveList declarations. Vector widths use checked multiplication;
 an outer zero count cancels even an unrepresentable fixed child width, whereas a variable
 child stays variable. `ProgressiveList<T>` owns an unbounded sequence, encodes fixed or variable
 children using the same canonical list layout, and uses the Progressive tree with the element count.
 `CodecError` implements the standard error interfaces. The seven basic implementations
-and generic Vector/List/ProgressiveList and owned bitfield implementations are certified.
-Borrowed byte/bit codecs remain separately available.
+and generic Vector/List/ProgressiveList, owned ByteVector/ByteList, and owned bitfield
+implementations are certified. Borrowed byte/bit codecs remain separately available.
 
 ```rust
 use nyx_ssz::{codec::decode, error::CodecError};
@@ -145,6 +145,30 @@ with distinct `CodecError` categories. Fields and byte projections are immutable
 indices use `u128`, so a Progressive value never narrows its bit count to `usize`.
 Encoding and roots allocate byte/node buffers but never expand packed values into Boolean arrays.
 The same official bit-family cases exercise both borrowed APIs and these actual typed dictionaries.
+
+## Owned byte arrays
+
+```rust
+use nyx_ssz::{bytecollections::{ByteList, ByteVector}, codec::{decode, encode, hash_tree_root}};
+let storage = vec![0, 128, 255];
+let pointer = storage.as_ptr();
+let value = ByteVector::<3>::from_bytes(storage).unwrap();
+assert_eq!(value.as_bytes().as_ptr(), pointer);
+assert_eq!(encode(&value).unwrap(), [0, 128, 255]);
+let decoded = decode::<ByteList<8>>(&[0, 128, 255]).unwrap();
+assert_eq!(decoded.as_bytes(), value.as_bytes());
+assert_eq!(hash_tree_root(&value).unwrap()[..3], [0, 128, 255]);
+```
+
+These dedicated types own private `Vec<u8>` storage, not generic `Vector/List<u8>` aliases.
+`from_bytes` moves accepted allocations unchanged; vectors require a nonzero exact length,
+while lists permit empty values and zero capacity. `Ssz` decoding copies validated bytes
+and has unit failure state. Their dedicated byte descriptors are composite for parent packing
+and Merkle-compatible with equal-bound uint8 vectors/lists, but retain the pinned opaque-byte
+wire semantics: unlike generic sequences, standalone byte arrays have no four-byte sequence-size
+envelope. All native bounds and input slices are covered by the proofs, not just allocatable test
+examples. Generic parent collections still enforce their own sequence envelopes. Allocation/resource
+failures remain outside the existing guarantee.
 
 ## Borrowed sequence layout
 
