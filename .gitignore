@@ -1,6 +1,8 @@
 /target/
 /.venv-vectors/
 /tools/official-vectors/target/
+/tools/bench-compare/target/
+/tools/bench-compare/.runs/
 /.tools/
 /.lake/
 /verification/.lake/

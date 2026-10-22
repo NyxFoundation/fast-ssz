@@ -13,6 +13,7 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Host and 32-bit tests; 95.57% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
+[Three-library comparison](docs/benchmark-comparison.md) ·
 [Verification scope](docs/verification.md)
 
 **Current-source Aeneas/Lean verification:** 18 SHA-256/gindex/Merkle operations are freshly extracted and kernel checked.
