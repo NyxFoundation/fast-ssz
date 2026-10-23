@@ -20,6 +20,9 @@ It explicitly reports the remaining 103 documented APIs, 17 codec dictionaries a
 transformations as unproved with linked Issues. Actual metadata extraction is rejected for
 nested-loop returns. The six RustCrypto-dependent laws are unproved under
 [#27](https://github.com/NyxFoundation/nyx-ssz/issues/27). See [exact current scope and reproduction](current-verification.md).
+Direct encoding length/destination laws and the default allocating bridge are separately
+unproved under [#29](https://github.com/NyxFoundation/nyx-ssz/issues/29). Historical `CodecLaw`
+proofs do not cover the extended trait, and the full gate explicitly rejects that gap.
 Aeneas itself is unchanged; no axiom or input-domain assumption is added.
 The broader proof descriptions below are historical registrations, not certification of the
 enlarged current program. See [native API](native-api.md) and [descriptor evidence](full-descriptors.md).

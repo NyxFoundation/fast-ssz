@@ -10,6 +10,7 @@ tags:
 
 This is the 2026-10-22 scalar-SHA baseline. For the current backend and a same-day
 before/after recheck, see [RustCrypto migration](rustcrypto-migration.md).
+The newer [direct encode results](direct-encode.md) supersede this page's encode timings.
 
 Measured on this development machine, not copied from upstream READMEs.
 **nyx-ssz is substantially slower on these fixtures.** This is a valid-input,

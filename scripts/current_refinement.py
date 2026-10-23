@@ -35,7 +35,7 @@ def load_scope(path=SCOPE):
     for url in scope.get("issues", {}).values():
         if not re.fullmatch(r"https://github\.com/NyxFoundation/nyx-ssz/issues/[1-9][0-9]*", url):
             raise ValueError("proof skips require canonical issue links")
-    if set(scope.get("issues", {})) != {"metadata", "remaining", "rustcrypto"}:
+    if set(scope.get("issues", {})) != {"metadata", "remaining", "rustcrypto", "direct_encoding"}:
         raise ValueError("proof skip issues are missing")
     if set(scope.get("tool_revisions", {})) != {"aeneas_revision", "charon_revision"}:
         raise ValueError("proof skip tool revisions are missing")
@@ -55,7 +55,14 @@ def load_scope(path=SCOPE):
     for key in ("rustcrypto_source_sha256", "rustcrypto_probe_lock_sha256"):
         if not re.fullmatch(r"[0-9a-f]{64}", str(scope.get(key, ""))):
             raise ValueError("RustCrypto skip evidence fingerprint is missing")
+    validate_unproved_members(scope)
     return scope
+
+
+def validate_unproved_members(scope):
+    expected = ["nyx_ssz::codec::Ssz::encoded_len", "nyx_ssz::codec::Ssz::encode_into"]
+    if scope.get("unproved_trait_members") != expected:
+        raise ValueError("direct encoding member laws must remain explicitly unproved")
 
 
 def validate_roots():
@@ -124,6 +131,11 @@ def check_scope(scope, pins):
         raise ValueError("metadata changed; reassess the known unsupported skip")
     check_crypto_evidence(scope)
     contracts = legacy.load_contracts(VERIFICATION / "traits.json")
+    historical = {"TYPE", "DecodeState", "encode", "decode", "hash_tree_root"}
+    added = {f"{contract['rust']}::{name}" for contract in contracts
+             for name in set(contract["members"]) - historical}
+    if added != set(scope["unproved_trait_members"]):
+        raise ValueError("extended trait member proof status is incomplete")
     directory = ROOT / "target" / "api-coverage"
     legacy.run(["cargo", "rustdoc", "--lib", "--package", "nyx-ssz", "--target-dir", directory,
                 "--", "--output-format", "json", "-Z", "unstable-options"])
@@ -233,6 +245,7 @@ def main():
         legacy.assert_same_artifact(artifacts, expected)
         probe_metadata(pins, scope, directory / "metadata")
         print(f"SKIPPED RustCrypto-dependent equivalence (not proved): {scope['issues']['rustcrypto']}")
+        print(f"UNPROVED direct encoding member laws: {scope['issues']['direct_encoding']}")
         check_proofs(targets, directory)
         legacy.validate_dependencies(pins)
     print(f"PROVED current-source slice: {len(targets)} operations (not full-library equivalence).")

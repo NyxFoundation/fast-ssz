@@ -142,7 +142,8 @@
   "issues": {
     "metadata": "https://github.com/NyxFoundation/nyx-ssz/issues/24",
     "remaining": "https://github.com/NyxFoundation/nyx-ssz/issues/25",
-    "rustcrypto": "https://github.com/NyxFoundation/nyx-ssz/issues/27"
+    "rustcrypto": "https://github.com/NyxFoundation/nyx-ssz/issues/27",
+    "direct_encoding": "https://github.com/NyxFoundation/nyx-ssz/issues/29"
   },
   "tool_revisions": {
     "aeneas_revision": "3a7383419516c80c634f8d9b392e8cb7a0b3580f",
@@ -158,5 +159,9 @@
     "nyx_ssz::sha256::hash_pair"
   ],
   "rustcrypto_source_sha256": "68d2ea118e37b5f5c36b9b220027dc24e200d8a9e2caba825a75a3b71613ec2d",
-  "rustcrypto_probe_lock_sha256": "1040ff0ec25279a91980c3df9de7991b2c35a4432473c9b2e7890b7e281b5b70"
+  "rustcrypto_probe_lock_sha256": "1040ff0ec25279a91980c3df9de7991b2c35a4432473c9b2e7890b7e281b5b70",
+  "unproved_trait_members": [
+    "nyx_ssz::codec::Ssz::encoded_len",
+    "nyx_ssz::codec::Ssz::encode_into"
+  ]
 }

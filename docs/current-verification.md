@@ -56,6 +56,11 @@ unproved derive obligations.
   probe dependency lock and tool revisions; it does not rerun that timed resource probe.
   See `verification/rustcrypto-probe/README.md` for reproduction. No opaque-hash axiom,
   forced portable backend or local runtime fallback is introduced.
+- [#29: direct encoding laws](https://github.com/NyxFoundation/nyx-ssz/issues/29):
+  required `encoded_len` and `encode_into` methods, the default allocating bridge and
+  generated writes are unproved. The member inventory checks real inherited default bodies.
+  The full gate rejects the historical `CodecLaw` for extended traits rather than treating
+  coverage of encode/decode/root as proof of length or destination behavior.
 - [#25: remaining equivalence laws](https://github.com/NyxFoundation/nyx-ssz/issues/25):
   the other 97 skips include Cargo/MIR host-tool integration, metadata/codec laws,
   heterogeneous ownership, generated conversions, typed paths, node access and proof construction.

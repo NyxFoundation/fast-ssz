@@ -30,7 +30,7 @@ class CurrentRefinementTests(unittest.TestCase):
     def test_should_refuse_missing_or_ambiguous_skip_evidence(self):
         scope = self.scope()
         invalid = []
-        for key in ("issues", "tool_revisions", "derive_status"):
+        for key in ("issues", "tool_revisions", "derive_status", "unproved_trait_members"):
             value = deepcopy(scope)
             value.pop(key)
             invalid.append(value)
