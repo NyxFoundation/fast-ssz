@@ -5,7 +5,7 @@ import NyxSszRust.Core
 import NyxSszRust.Error
 import NyxSszRust.Sha256
 import NyxSszRust.Bitfield
-import NyxSszRust.Merkle
+import NyxSszRust.HistoricalMerkle
 import NyxSszRust.Ruint
 import NyxSszRust.Scalar
 open Aeneas Aeneas.Std RustM ControlFlow Error

@@ -12,13 +12,7 @@
     "nyx_ssz::gindex::path_indices",
     "nyx_ssz::gindex::rebase",
     "nyx_ssz::gindex::sibling",
-    "nyx_ssz::merkle::calculate_merkle_root",
-    "nyx_ssz::merkle::merkleize",
-    "nyx_ssz::merkle::verify_merkle_proof",
-    "nyx_ssz::multiproof::calculate_merkle_root",
-    "nyx_ssz::multiproof::helper_indices",
-    "nyx_ssz::multiproof::verify_merkle_proof",
-    "nyx_ssz::sha256::hash_pair"
+    "nyx_ssz::multiproof::helper_indices"
   ],
   "skipped": [
     "nyx_ssz::bitcollections::BitList::as_ssz_bytes",
@@ -76,6 +70,11 @@
     "nyx_ssz::collections::vector",
     "nyx_ssz::container::container_view",
     "nyx_ssz::container_wire::assemble",
+    "nyx_ssz::merkle::calculate_merkle_root",
+    "nyx_ssz::merkle::merkleize",
+    "nyx_ssz::merkle::verify_merkle_proof",
+    "nyx_ssz::multiproof::calculate_merkle_root",
+    "nyx_ssz::multiproof::verify_merkle_proof",
     "nyx_ssz::node::at_path",
     "nyx_ssz::node::get",
     "nyx_ssz::path::resolve",
@@ -104,6 +103,7 @@
     "nyx_ssz::sequence::offset_spans",
     "nyx_ssz::sequence::variable_list_view",
     "nyx_ssz::sequence::variable_vector_view",
+    "nyx_ssz::sha256::hash_pair",
     "nyx_ssz::tree_hash::hash_tree_root_bit_list",
     "nyx_ssz::tree_hash::hash_tree_root_bit_vector",
     "nyx_ssz::tree_hash::hash_tree_root_bool",
@@ -141,11 +141,22 @@
   "derive_status": "unproved; generated declarations, reordering, conversions and heterogeneous ownership laws are tracked by the remaining issue",
   "issues": {
     "metadata": "https://github.com/NyxFoundation/nyx-ssz/issues/24",
-    "remaining": "https://github.com/NyxFoundation/nyx-ssz/issues/25"
+    "remaining": "https://github.com/NyxFoundation/nyx-ssz/issues/25",
+    "rustcrypto": "https://github.com/NyxFoundation/nyx-ssz/issues/27"
   },
   "tool_revisions": {
     "aeneas_revision": "3a7383419516c80c634f8d9b392e8cb7a0b3580f",
     "charon_revision": "fea3fc68d445181cf4ce094855a43a17192a2b12"
   },
-  "metadata_source_sha256": "50bbd428b49887acf39dbbfb98be3ffe49b7f191fc857eb04ff1fab02ef8cff0"
+  "metadata_source_sha256": "50bbd428b49887acf39dbbfb98be3ffe49b7f191fc857eb04ff1fab02ef8cff0",
+  "rustcrypto_dependent_skips": [
+    "nyx_ssz::merkle::calculate_merkle_root",
+    "nyx_ssz::merkle::merkleize",
+    "nyx_ssz::merkle::verify_merkle_proof",
+    "nyx_ssz::multiproof::calculate_merkle_root",
+    "nyx_ssz::multiproof::verify_merkle_proof",
+    "nyx_ssz::sha256::hash_pair"
+  ],
+  "rustcrypto_source_sha256": "68d2ea118e37b5f5c36b9b220027dc24e200d8a9e2caba825a75a3b71613ec2d",
+  "rustcrypto_probe_lock_sha256": "1040ff0ec25279a91980c3df9de7991b2c35a4432473c9b2e7890b7e281b5b70"
 }

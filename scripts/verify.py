@@ -277,9 +277,32 @@ def inherent_method_paths(document):
     return methods
 
 
+def public_function_aliases(document):
+    index, paths = document.get("index", {}), document["paths"]
+    aliases = {}
+    for identifier, owner in index.items():
+        module = owner["inner"].get("module")
+        if not module or identifier not in paths or owner["visibility"] != "public":
+            continue
+        for child in module["items"]:
+            item = index[str(child)]
+            imported = item["inner"].get("use")
+            if not imported or imported["is_glob"] or item["visibility"] != "public":
+                continue
+            target = str(imported["id"])
+            if target not in paths or paths[target]["kind"] != "function":
+                continue
+            name = "::".join([*paths[identifier]["path"], imported["name"]])
+            if target in aliases and aliases[target] != name:
+                raise ValueError("ambiguous public function aliases")
+            aliases[target] = name
+    return aliases
+
+
 def api_functions(document, contracts=()):
     reserved = validate_traits(document, contracts)
     methods = inherent_method_paths(document)
+    aliases = public_function_aliases(document)
     for identifier, item in document.get("index", {}).items():
         if item["crate_id"] != 0 or item["visibility"] != "public":
             continue
@@ -287,7 +310,7 @@ def api_functions(document, contracts=()):
                 and identifier not in methods and identifier not in reserved):
             raise ValueError("public associated function has no discoverable type path")
     return {
-        "::".join(item["path"])
+        aliases.get(identifier, "::".join(item["path"]))
         for identifier, item in document["paths"].items()
         if item["crate_id"] == 0 and item["kind"] == "function" and identifier not in reserved
     } | set(methods.values())

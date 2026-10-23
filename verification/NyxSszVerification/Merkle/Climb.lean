@@ -1,4 +1,4 @@
-import NyxSszRust.Merkle
+import NyxSszRust.HistoricalMerkle
 import NyxSszVerification.Sha256
 import NyxSszVerification.Merkle.Nodes
 

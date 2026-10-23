@@ -16,13 +16,13 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 [Three-library comparison](docs/benchmark-comparison.md) ·
 [Verification scope](docs/verification.md)
 
-**Current-source Aeneas/Lean verification:** 18 SHA-256/gindex/Merkle operations are freshly extracted and kernel checked.
-The remaining 97 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25).
+**Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
+The remaining 103 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25), with the six RustCrypto-dependent skips in [#27](https://github.com/NyxFoundation/nyx-ssz/issues/27).
 Aeneas rejects the actual metadata's nested-loop returns. No tool fork, extra axiom or domain restriction was added.
 Historical broader artifacts are not current-source certification. See [exact current proof scope](docs/current-verification.md).
 
-`U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 is implemented locally;
-RustCrypto `sha2` is an independent test oracle only.
+`U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 uses pinned RustCrypto
+`sha2` 0.10.9 with its standard CPU-dispatched backend, like libssz. No local SHA fallback remains.
 
 ## Example
 
@@ -336,7 +336,7 @@ python3 scripts/current_refinement.py check
 After edits affecting the current proof slice, run `python3 scripts/current_refinement.py extract`,
 review the generated diff, update proofs, then rerun its `check`. Never hand-edit `verification/NyxSszRust.lean`
 or the generated `verification/NyxSszRust/` modules.
-Success proves only the explicit 18-operation current slice and validates the issue-linked
+Success proves only the explicit 12-operation current slice and validates the issue-linked
 unproved status of the rest. The legacy full `verify.py check` is not claimed to pass.
 
 MIT; see [third-party notices](THIRD_PARTY_NOTICES.md).

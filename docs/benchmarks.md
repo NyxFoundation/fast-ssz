@@ -1,6 +1,6 @@
 ---
 title: Reproducible codec benchmarks
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 tags:
   - ssz
   - rust
@@ -26,5 +26,6 @@ The fixture is a derived Container with a u64, 4,096 bytes and 1,024 u64 votes
 These are diagnostic measurements on a shared development machine, not a comparative
 performance claim. Small samples and observed outliers limit precision. Proof construction
 currently serializes and builds the occupied tree; it is not a sublinear implementation.
-SHA-256 is the local Rust implementation, not hardware-accelerated RustCrypto.
+These historical measurements used the now-removed local scalar SHA-256. The runtime
+now uses RustCrypto; see the [migration comparison](rustcrypto-migration.md).
 Criterion writes detailed reports under the ignored `target/criterion` directory.

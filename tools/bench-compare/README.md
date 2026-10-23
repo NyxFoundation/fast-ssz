@@ -46,4 +46,7 @@ git diff --exit-code -- encoding.go
 Do not hand-edit encoding.go. The generator resolves the same pinned module as
 the library. Its normal default SHA backend is used, not the optional gohashtree override.
 
-Measured results and limitations: [comparison](../../docs/benchmark-comparison.md).
+nyx-ssz and libssz now both use RustCrypto sha2 0.10.9's standard CPU-dispatched
+backend. Historical scalar and current results are separately versioned.
+Measured results and limitations: [baseline](../../docs/benchmark-comparison.md)
+and [RustCrypto migration](../../docs/rustcrypto-migration.md).

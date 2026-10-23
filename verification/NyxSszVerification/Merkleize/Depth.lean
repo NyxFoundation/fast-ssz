@@ -1,4 +1,4 @@
-import NyxSszRust.Merkle
+import NyxSszRust.HistoricalMerkle
 import Ssz.Proofs.Merkle.Merkleize
 
 open Aeneas Aeneas.Std Aeneas.Std.WP

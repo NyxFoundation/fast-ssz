@@ -1,12 +1,15 @@
 ---
 title: Three-library SSZ benchmark comparison
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 tags:
   - ssz
   - benchmarks
   - performance
 ---
 # Three-library SSZ benchmark comparison
+
+This is the 2026-10-22 scalar-SHA baseline. For the current backend and a same-day
+before/after recheck, see [RustCrypto migration](rustcrypto-migration.md).
 
 Measured on this development machine, not copied from upstream READMEs.
 **nyx-ssz is substantially slower on these fixtures.** This is a valid-input,
