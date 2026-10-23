@@ -6,20 +6,8 @@ use crate::sha256::hash_pair;
 /// One complete SSZ Merkle node.
 pub type Node = [u8; 32];
 
-/// Proof-request errors, distinct from well-formed root mismatches.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ProofError {
-    InvalidIndex,
-    RootHasNoBranch,
-    InvalidBranchLength,
-    IndexOverflow,
-    EmptyRequest,
-    RepeatedIndex,
-    NestedIndex,
-    InvalidLeafCount,
-    InvalidProofLength,
-    SizeOverflow,
-}
+mod error;
+pub use error::ProofError;
 
 /// A Merkle tree capacity cannot contain all supplied nodes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

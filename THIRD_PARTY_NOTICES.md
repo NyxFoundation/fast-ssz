@@ -4,10 +4,10 @@ The axiom audit adapts [ethereum/ssz-specs](https://github.com/ethereum/ssz-spec
 (MIT); its copyright/permission notice is in LICENSE. Source pins are in sources.lock.
 The multiproof frontier, antichain, fold and finite-tree compatibility proofs also
 adapt lemmas from that pinned source under the project's Lean toolchain.
-The SHA-256 implementation follows FIPS 180-4 and the pinned SSZ model, with
-RustCrypto sha2 0.10.9's portable compression implementation consulted under MIT.
-Its copyright/permission notice is preserved in LICENSE. The sha2 crate itself
-is a dev-only differential-test oracle.
+Runtime SHA-256 uses RustCrypto sha2 0.10.9 under MIT OR Apache-2.0,
+including its standard CPU-dispatched backend. Its MIT copyright/permission notice
+is preserved in LICENSE. No local scalar SHA implementation or custom fallback remains.
+Older generated Lean hash models are historical artifacts, not proof of RustCrypto.
 The production `U256` type uses ruint 1.20.1 (MIT). Extracted reachable definitions
 include ruint's limb access/construction and Rust's `usize::div_ceil`; their
 copyright/permission notices are preserved in LICENSE. Cargo.lock pins ruint and

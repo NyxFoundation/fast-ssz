@@ -306,6 +306,7 @@ version = "0.1.0"
 dependencies = [
  "nyx-ssz-derive",
  "ruint",
+ "sha2",
 ]
 
 [[package]]
