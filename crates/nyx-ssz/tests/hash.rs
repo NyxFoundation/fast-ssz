@@ -14,7 +14,7 @@ fn should_hash_two_zero_nodes_to_the_known_sha256_root() {
 }
 
 #[test]
-fn should_match_rustcrypto_for_diverse_node_pairs() {
+fn should_hash_exact_concatenation_when_node_pairs_have_diverse_bytes() {
     let mut seed = 0x243f_6a88_85a3_08d3_u64;
     for case in 0..512 {
         let mut message = [0; 64];
@@ -32,6 +32,30 @@ fn should_match_rustcrypto_for_diverse_node_pairs() {
         let right: [u8; 32] = message[32..].try_into().unwrap();
         let expected: [u8; 32] = Sha256::digest(message).into();
         assert_eq!(hash_pair(&left, &right), expected, "case {case}");
+    }
+}
+
+#[test]
+fn should_match_known_answers_when_input_bytes_are_nonzero() {
+    // Independent known-answer digests, not a comparison with the same backend.
+    let inputs = [
+        std::array::from_fn::<_, 64, _>(|index| index as u8),
+        [255; 64],
+    ];
+    let expected = [
+        [
+            253, 234, 185, 172, 243, 113, 3, 98, 189, 38, 88, 205, 201, 162, 158, 143, 156, 117,
+            127, 207, 152, 17, 96, 58, 140, 68, 124, 209, 217, 21, 17, 8,
+        ],
+        [
+            134, 103, 231, 24, 41, 78, 158, 13, 241, 211, 6, 0, 186, 62, 235, 32, 31, 118, 74, 173,
+            45, 173, 114, 116, 134, 67, 228, 162, 133, 225, 209, 247,
+        ],
+    ];
+    for (input, digest) in inputs.iter().zip(expected) {
+        let left = input[..32].try_into().unwrap();
+        let right = input[32..].try_into().unwrap();
+        assert_eq!(hash_pair(&left, &right), digest);
     }
 }
 

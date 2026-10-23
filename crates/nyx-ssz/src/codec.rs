@@ -20,7 +20,18 @@ pub trait Ssz: Sized {
     /// successful natural reference bytes have length greater than `usize::MAX`.
     /// Representable successes cannot use the native refusal; protocol faults
     /// retain their distinct errors and precedence, including through parents.
-    fn encode(&self) -> Result<Vec<u8>, CodecError>;
+    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+        let mut output = vec![0; self.encoded_len()?];
+        self.encode_into(&mut output)?;
+        Ok(output)
+    }
+    /// Exact encoded size, including complete value validation and error precedence.
+    /// Must agree with encode_into; native unrepresentability is not a protocol fault.
+    fn encoded_len(&self) -> Result<usize, CodecError>;
+    /// Write canonical bytes into an exactly sized destination without scratch allocation.
+    /// Wrong destination length is rejected before writing. Other failures may leave
+    /// partial writes; callers must discard the destination on error.
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError>;
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>>;
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError>;
 }
@@ -110,16 +121,6 @@ pub fn hash_tree_root<T: Ssz>(value: &T) -> Result<[u8; 32], CodecError> {
     value.hash_tree_root()
 }
 
-fn fixed_bytes<const N: usize>(input: [u8; N]) -> Vec<u8> {
-    let mut output = Vec::new();
-    let mut index = 0;
-    while index < N {
-        output.push(input[index]);
-        index += 1;
-    }
-    output
-}
-
 fn scalar_error(error: scalar::ScalarError) -> CodecError {
     match error {
         scalar::ScalarError::InvalidLength => CodecError::InvalidLength,
@@ -133,8 +134,12 @@ macro_rules! basic_codec {
             type DecodeState = ();
             const TYPE: &'static TypeDescriptor = &$declaration;
 
-            fn encode(&self) -> Result<Vec<u8>, CodecError> {
-                Ok(fixed_bytes(scalar::$encode(*self)))
+            fn encoded_len(&self) -> Result<usize, CodecError> {
+                Ok(core::mem::size_of::<$type>())
+            }
+
+            fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+                crate::encoding::copy(output, &scalar::$encode(*self))
             }
 
             fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {
@@ -201,8 +206,12 @@ impl Ssz for U256 {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(32);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        Ok(fixed_bytes(scalar::encode_u256(self)))
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        Ok(32)
+    }
+
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::encoding::copy(output, &scalar::encode_u256(self))
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {

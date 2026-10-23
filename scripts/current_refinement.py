@@ -11,11 +11,13 @@ import tempfile
 
 import verify as legacy
 from extracted_modules import split_model
+from historical_models import archive_omitted
+import tomllib
 
 ROOT = legacy.ROOT
 VERIFICATION = legacy.VERIFICATION
 SCOPE = VERIFICATION / "current-scope.json"
-MODULES = {f"NyxSszRust/{name}.lean" for name in ("Gindex", "Merkle", "Multiproof", "Sha256")}
+MODULES = {f"NyxSszRust/{name}.lean" for name in ("Gindex", "Merkle", "Multiproof")}
 
 
 def load_scope(path=SCOPE):
@@ -33,22 +35,43 @@ def load_scope(path=SCOPE):
     for url in scope.get("issues", {}).values():
         if not re.fullmatch(r"https://github\.com/NyxFoundation/nyx-ssz/issues/[1-9][0-9]*", url):
             raise ValueError("proof skips require canonical issue links")
-    if set(scope.get("issues", {})) != {"metadata", "remaining"}:
+    if set(scope.get("issues", {})) != {"metadata", "remaining", "rustcrypto", "direct_encoding"}:
         raise ValueError("proof skip issues are missing")
     if set(scope.get("tool_revisions", {})) != {"aeneas_revision", "charon_revision"}:
         raise ValueError("proof skip tool revisions are missing")
     if not isinstance(scope.get("derive_status"), str) or not scope["derive_status"].startswith("unproved;"):
         raise ValueError("derive transformation proof status must be explicit")
+    required_crypto = {f"nyx_ssz::{module}::{name}" for module, name in (
+        ("sha256", "hash_pair"), ("merkle", "merkleize"),
+        ("merkle", "calculate_merkle_root"), ("merkle", "verify_merkle_proof"),
+        ("multiproof", "calculate_merkle_root"), ("multiproof", "verify_merkle_proof"))}
+    crypto = scope.get("rustcrypto_dependent_skips", [])
+    if not isinstance(crypto, list) or not all(isinstance(name, str) for name in crypto):
+        raise ValueError("RustCrypto-dependent proof skips must be identifiers")
+    if set(crypto) != required_crypto or len(crypto) != 6:
+        raise ValueError("RustCrypto-dependent proof skips must be explicit")
+    if not required_crypto <= set(scope["skipped"]):
+        raise ValueError("RustCrypto-dependent APIs are not currently proved")
+    for key in ("rustcrypto_source_sha256", "rustcrypto_probe_lock_sha256"):
+        if not re.fullmatch(r"[0-9a-f]{64}", str(scope.get(key, ""))):
+            raise ValueError("RustCrypto skip evidence fingerprint is missing")
+    validate_unproved_members(scope)
     return scope
+
+
+def validate_unproved_members(scope):
+    expected = ["nyx_ssz::codec::Ssz::encoded_len", "nyx_ssz::codec::Ssz::encode_into"]
+    if scope.get("unproved_trait_members") != expected:
+        raise ValueError("direct encoding member laws must remain explicitly unproved")
 
 
 def validate_roots():
     roots = {
-        "current_merkle.rs": ("//! Proof extraction root: includes current production files without copying them.\n", ["gindex", "merkle", "multiproof", "sha256"]),
+        "current_gindex.rs": ("//! Current hash-independent production files, preserving public module paths.\n", ["gindex", "merkle/error", "multiproof/helpers"]),
         "current_metadata.rs": ("//! Extract the actual shared metadata implementation without Cargo host tools.\n", ["error", "type_info"]),
     }
     for name, (header, modules) in roots.items():
-        expected = header + "".join(f'#[path = "../crates/nyx-ssz/src/{module}.rs"]\npub mod {module};\n' for module in modules)
+        expected = header + "".join(f'#[path = "../crates/nyx-ssz/src/{module}.rs"]\npub mod {module.split("/")[0]};\n' for module in modules)
         if (VERIFICATION / name).read_text() != expected:
             raise ValueError("extraction roots must include the actual production files only")
 
@@ -60,18 +83,65 @@ def current_targets(scope):
     return [registered[name] for name in scope["proven"]]
 
 
+def check_source_bindings(document, scope):
+    aliases = legacy.public_function_aliases(document)
+    paths, index = document["paths"], document["index"]
+    functions = {aliases.get(key, "::".join(row["path"])): key for key, row in paths.items()
+                 if row["crate_id"] == 0 and row["kind"] == "function"}
+    for name in scope["proven"]:
+        module = "gindex.rs" if name.startswith("nyx_ssz::gindex::") else "multiproof/helpers.rs"
+        identifier = functions[name]
+        actual = index[identifier]["span"]["filename"]
+        expected_name = name if module == "gindex.rs" else "nyx_ssz::multiproof::helpers::helper_indices"
+        if "::".join(paths[identifier]["path"]) != expected_name:
+            raise ValueError("public operation is not bound to its extracted production source")
+        if (ROOT / actual).resolve() != ROOT / "crates/nyx-ssz/src" / module:
+            raise ValueError("public operation is not bound to its extracted production source")
+    for key, row in paths.items():
+        if row["path"] != ["nyx_ssz", "merkle"]:
+            continue
+        for child in index[key]["inner"]["module"]["items"]:
+            item = index[str(child)]
+            imported = item["inner"].get("use")
+            if not imported or imported["name"] != "ProofError" or item["visibility"] != "public":
+                continue
+            target = str(imported["id"])
+            actual = index[target]["span"]["filename"]
+            if (paths[target]["path"] == ["nyx_ssz", "merkle", "error", "ProofError"] and
+                    (ROOT / actual).resolve() == ROOT / "crates/nyx-ssz/src/merkle/error.rs"):
+                return
+    raise ValueError("public proof error is not bound to its extracted production definition")
+
+
+def check_crypto_evidence(scope):
+    crypto = hashlib.sha256((ROOT / "crates/nyx-ssz/src/sha256.rs").read_bytes()).hexdigest()
+    probe = hashlib.sha256((VERIFICATION / "rustcrypto-probe/Cargo.lock").read_bytes()).hexdigest()
+    manifest = tomllib.loads((ROOT / "crates/nyx-ssz/Cargo.toml").read_text())
+    if crypto != scope["rustcrypto_source_sha256"] or probe != scope["rustcrypto_probe_lock_sha256"]:
+        raise ValueError("RustCrypto proof skip evidence changed")
+    if manifest["dependencies"].get("sha2") != "=0.10.9":
+        raise ValueError("RustCrypto backend dependency changed")
+
+
 def check_scope(scope, pins):
     if scope["tool_revisions"] != {key: pins["tools"][key] for key in scope["tool_revisions"]}:
         raise ValueError("proof skip tool pins changed")
     digest = hashlib.sha256((ROOT / "crates/nyx-ssz/src/type_info.rs").read_bytes()).hexdigest()
     if digest != scope["metadata_source_sha256"]:
         raise ValueError("metadata changed; reassess the known unsupported skip")
+    check_crypto_evidence(scope)
     contracts = legacy.load_contracts(VERIFICATION / "traits.json")
+    historical = {"TYPE", "DecodeState", "encode", "decode", "hash_tree_root"}
+    added = {f"{contract['rust']}::{name}" for contract in contracts
+             for name in set(contract["members"]) - historical}
+    if added != set(scope["unproved_trait_members"]):
+        raise ValueError("extended trait member proof status is incomplete")
     directory = ROOT / "target" / "api-coverage"
     legacy.run(["cargo", "rustdoc", "--lib", "--package", "nyx-ssz", "--target-dir", directory,
                 "--", "--output-format", "json", "-Z", "unstable-options"])
     document = json.loads((directory / "doc" / "nyx_ssz.json").read_text())
     actual = legacy.api_functions(document, contracts)
+    check_source_bindings(document, scope)
     if actual != set(scope["proven"]) | set(scope["skipped"]):
         raise ValueError("public APIs must be exactly proved or explicitly issue-linked skipped")
     instances = {instance["lean"] for contract in contracts for instance in contract["instances"]}
@@ -100,8 +170,8 @@ def aeneas_command(pins, destination, llbc):
 
 
 def extract_core(pins, targets, destination):
-    names = [row["rust"] for row in targets] + ["nyx_ssz::merkle::merkleize_progressive"]
-    llbc = charon_root(pins, destination, "verification/current_merkle.rs", names)
+    names = [row["rust"] for row in targets]
+    llbc = charon_root(pins, destination, "verification/current_gindex.rs", names)
     legacy.assert_safe_drops(json.loads(llbc.read_text()))
     legacy.run(aeneas_command(pins, destination, llbc))
     artifacts = split_model((destination / "NyxSsz.lean").read_text())
@@ -166,11 +236,16 @@ def main():
         artifacts = extract_core(pins, targets, directory / "core")
         if arguments.command == "extract":
             for relative, content in artifacts.items():
-                (VERIFICATION / relative).write_bytes(content)
+                path = VERIFICATION / relative
+                if path.stem in {"Merkle", "Multiproof"}:
+                    archive_omitted(path, content.decode())
+                path.write_bytes(content)
             return
         expected = {name: (VERIFICATION / name).read_bytes() for name in MODULES}
         legacy.assert_same_artifact(artifacts, expected)
         probe_metadata(pins, scope, directory / "metadata")
+        print(f"SKIPPED RustCrypto-dependent equivalence (not proved): {scope['issues']['rustcrypto']}")
+        print(f"UNPROVED direct encoding member laws: {scope['issues']['direct_encoding']}")
         check_proofs(targets, directory)
         legacy.validate_dependencies(pins)
     print(f"PROVED current-source slice: {len(targets)} operations (not full-library equivalence).")

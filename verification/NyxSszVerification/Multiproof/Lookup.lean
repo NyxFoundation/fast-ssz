@@ -1,3 +1,4 @@
+import NyxSszRust.HistoricalMultiproof
 import NyxSszVerification.Multiproof.Cut
 import NyxSszVerification.Merkle
 

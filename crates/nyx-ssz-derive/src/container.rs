@@ -4,7 +4,7 @@ use crate::{
     bounded_generics, state_name,
 };
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{DataStruct, DeriveInput};
 
 pub fn expand(
@@ -56,16 +56,36 @@ fn state_definition(
 }
 
 fn encode_method(fields: &[Field], krate: &TokenStream) -> TokenStream {
-    let encode = fields.iter().map(|f| {
-        let n = &f.ident;
-        quote!(encoder.push(&self.#n)?;)
+    let sizing = fields.iter().map(|f| {
+        let name = &f.ident;
+        quote!(size.push(&self.#name)?;)
+    });
+    let prepare = fields.iter().enumerate().map(|(i, f)| {
+        let name = &f.ident;
+        let local = format_ident!("__ssz_size_{}", i);
+        quote!(let #local = size.push(&self.#name)?;)
+    });
+    let writes = fields.iter().enumerate().map(|(i, f)| {
+        let name = &f.ident;
+        let local = format_ident!("__ssz_size_{}", i);
+        quote!(writer.push(&self.#name, #local.ok_or(#krate::error::CodecError::NativeOutputOverflow)?)?;)
     });
     quote! {
-        fn encode(&self) -> ::core::result::Result<::std::vec::Vec<u8>, #krate::error::CodecError> {
+        fn encoded_len(&self) -> ::core::result::Result<usize, #krate::error::CodecError> {
             #krate::codec::validate_type::<Self>()?;
-            let mut encoder = #krate::composite::FieldEncoder::default();
-            #(#encode)*
-            encoder.finish()
+            let mut size = #krate::encoding::ContainerSize::default();
+            #(#sizing)*
+            size.finish().map(|(_, total)| total)
+        }
+        fn encode_into(&self, output: &mut [u8]) -> ::core::result::Result<(), #krate::error::CodecError> {
+            #krate::codec::validate_type::<Self>()?;
+            let mut size = #krate::encoding::ContainerSize::default();
+            #(#prepare)*
+            let (leading, total) = size.finish()?;
+            #krate::encoding::check_length(output, total)?;
+            let mut writer = #krate::encoding::ContainerWriter::new(output, leading)?;
+            #(#writes)*
+            writer.finish()
         }
     }
 }

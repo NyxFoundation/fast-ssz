@@ -1,7 +1,7 @@
 ---
 title: Verification scope and trust boundary
-last_updated: 2026-10-22
-verification_status: current-18-operation-slice-explicit-issue-linked-skips
+last_updated: 2026-10-23
+verification_status: current-12-operation-slice-explicit-issue-linked-skips
 tags:
   - ssz
   - aeneas
@@ -15,10 +15,14 @@ All 13 shapes have codecs, including generated heterogeneous ownership state.
 Typed paths, sparse node access and proof construction are native-tested.
 All 4,601 pinned official corpus cases pass with preserved source/version-alignment checks.
 
-The current gate freshly extracts and kernel-checks 18 SHA-256/gindex/Merkle operations.
-It explicitly reports the remaining 97 documented APIs, 17 codec dictionaries and derive
+The current gate freshly extracts and kernel-checks 12 hash-independent gindex/helper-index operations.
+It explicitly reports the remaining 103 documented APIs, 17 codec dictionaries and derive
 transformations as unproved with linked Issues. Actual metadata extraction is rejected for
-nested-loop returns. See [exact current scope and reproduction](current-verification.md).
+nested-loop returns. The six RustCrypto-dependent laws are unproved under
+[#27](https://github.com/NyxFoundation/nyx-ssz/issues/27). See [exact current scope and reproduction](current-verification.md).
+Direct encoding length/destination laws and the default allocating bridge are separately
+unproved under [#29](https://github.com/NyxFoundation/nyx-ssz/issues/29). Historical `CodecLaw`
+proofs do not cover the extended trait, and the full gate explicitly rejects that gap.
 Aeneas itself is unchanged; no axiom or input-domain assumption is added.
 The broader proof descriptions below are historical registrations, not certification of the
 enlarged current program. See [native API](native-api.md) and [descriptor evidence](full-descriptors.md).
@@ -188,7 +192,10 @@ for every 512-bit input. This covers SSZ's 32-byte-child/32-byte-child hashing p
 not a general-purpose arbitrary-message SHA-256 API. Schedule, all 64 rounds,
 both compression blocks, padding and output encoding are connected to the unchanged
 upstream SHA-256 implementation. No external hash-function correctness is assumed.
-RustCrypto `sha2` 0.10.9 is used only for differential tests.
+This paragraph describes the historical scalar implementation only. The current runtime
+uses RustCrypto `sha2` 0.10.9; neither it nor its dependent root laws are covered by this theorem.
+`HistoricalMerkle.lean` and `HistoricalMultiproof.lean` retain omitted snapshot definitions,
+not current-source hash certification or a runtime fallback.
 
 `merkleize_refines` covers all complete-node slices and every optional `usize`
 capacity against `Ssz.merkleizeBounded`. Empty trees, zero capacity, undersized

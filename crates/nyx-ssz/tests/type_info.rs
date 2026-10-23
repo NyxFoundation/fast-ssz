@@ -31,8 +31,11 @@ impl<const WIDTH: usize> Ssz for DeclaredUint<WIDTH> {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(WIDTH);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        panic!("metadata inspection must not call encode")
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        panic!("metadata must not invoke encoded_len")
+    }
+    fn encode_into(&self, _: &mut [u8]) -> Result<(), CodecError> {
+        panic!("metadata must not invoke encode_into")
     }
     fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
         panic!("metadata inspection must not call decode")
@@ -104,8 +107,11 @@ impl<const INDEX: usize> Ssz for DeclaredShape<INDEX> {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &NEW_SHAPES[INDEX];
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        panic!("metadata inspection must not call encode")
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        panic!("metadata must not invoke encoded_len")
+    }
+    fn encode_into(&self, _: &mut [u8]) -> Result<(), CodecError> {
+        panic!("metadata must not invoke encode_into")
     }
     fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
         panic!("metadata inspection must not call decode")

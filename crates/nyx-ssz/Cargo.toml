@@ -11,12 +11,13 @@ repository.workspace = true
 verification = []
 
 [dependencies]
+sha2 = "=0.10.9"
 nyx-ssz-derive = { path = "../nyx-ssz-derive" }
 ruint = { version = "=1.20.1", default-features = false }
 
 [dev-dependencies]
+stats_alloc = "=0.1.10"
 criterion = { version = "=0.7.0", default-features = false }
-sha2 = "=0.10.9"
 
 [[bench]]
 name = "codec"

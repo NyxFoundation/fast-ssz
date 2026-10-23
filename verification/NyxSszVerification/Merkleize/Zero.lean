@@ -1,5 +1,5 @@
 import NyxSszVerification.Sha256
-import NyxSszRust.Merkle
+import NyxSszRust.HistoricalMerkle
 import Ssz.Merkle.Tree
 
 open Aeneas Aeneas.Std Aeneas.Std.WP

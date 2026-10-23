@@ -21,8 +21,8 @@ class CurrentRefinementTests(unittest.TestCase):
 
     def test_should_classify_every_current_operation_without_overlapping_proof_claims(self):
         scope = self.scope()
-        self.assertEqual(len(current.current_targets(scope)), 18)
-        self.assertEqual(len(scope["skipped"]), 97)
+        self.assertEqual(len(current.current_targets(scope)), 12)
+        self.assertEqual(len(scope["skipped"]), 103)
         self.assertEqual(len(scope["skipped_traits"]), 17)
         current.validate_roots()
         self.assertFalse(set(scope["proven"]) & set(scope["skipped"]))
@@ -30,7 +30,7 @@ class CurrentRefinementTests(unittest.TestCase):
     def test_should_refuse_missing_or_ambiguous_skip_evidence(self):
         scope = self.scope()
         invalid = []
-        for key in ("issues", "tool_revisions", "derive_status"):
+        for key in ("issues", "tool_revisions", "derive_status", "unproved_trait_members"):
             value = deepcopy(scope)
             value.pop(key)
             invalid.append(value)

@@ -1,9 +1,6 @@
 import Lean
 import NyxSszVerification.Gindex
-import NyxSszVerification.Sha256
-import NyxSszVerification.Merkle
-import NyxSszVerification.Merkleize
-import NyxSszVerification.Multiproof
+import NyxSszVerification.Multiproof.Collect
 
 open Lean Elab Command
 

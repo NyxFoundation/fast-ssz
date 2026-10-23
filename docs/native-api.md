@@ -1,6 +1,6 @@
 ---
 title: Native SSZ API
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 tags:
   - ssz
   - rust
@@ -51,6 +51,59 @@ return `NoSelector`/`UnknownSelector`.
 Fields default to their Rust name (raw-identifier prefixes are removed).
 `#[ssz(rename = "任意の名前")]` supplies an exact UTF-8 name; duplicate final names are rejected.
 Renaming affects schema/path lookup, not bytes or roots.
+
+## Direct encoding
+
+`Ssz::encoded_len() -> Result<usize, CodecError>` performs complete value validation
+and returns the exact encoded length without building encoded bytes.
+`Ssz::encode_into(&mut [u8]) -> Result<(), CodecError>` writes into an exactly sized slice.
+The library implementations need no encoded-child scratch buffers.
+The existing `encode()` is now a default method: calculate length, allocate one
+zero-initialized output Vec, then write directly into it.
+
+```rust
+use nyx_ssz::codec::Ssz;
+let value = 0x1234_u16;
+let mut output = vec![0; value.encoded_len().unwrap()];
+value.encode_into(&mut output).unwrap();
+assert_eq!(output, [0x34, 0x12]);
+```
+
+For valid values, an incorrectly sized destination returns `InvalidLength` before
+any write. Other failures may leave partial output; discard it on error. Only the
+supplied slice is writable, so a subslice's surrounding bytes remain untouched.
+No rollback copy is made. Reusing a buffer is a separate operation from allocating
+`encode()` and must be benchmarked separately.
+
+Manual implementors must replace their old allocating `encode` implementation with
+the two required methods. They must agree on validation, length and bytes, preserve
+protocol-fault precedence, and never implement either by calling the default `encode()`.
+For a simple wrapper, delegate both methods to the wrapped codec:
+
+```rust
+use nyx_ssz::{codec::Ssz, error::{CodecError, DecodeFailure}, type_info::TypeDescriptor};
+struct Counter(u64);
+impl Ssz for Counter {
+    type DecodeState = ();
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(8);
+    fn encoded_len(&self) -> Result<usize, CodecError> { self.0.encoded_len() }
+    fn encode_into(&self, out: &mut [u8]) -> Result<(), CodecError> { self.0.encode_into(out) }
+    fn decode(input: &[u8]) -> Result<Self, DecodeFailure<()>> { u64::decode(input).map(Self) }
+    fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> { self.0.hash_tree_root() }
+}
+assert_eq!(Counter(42).encode().unwrap(), 42_u64.to_le_bytes());
+```
+
+Length calculation must still inspect later children after an earlier
+`NativeOutputOverflow`, so their protocol errors win over deferred parent
+assembly refusal. Sequence/Container output retains the strict four-byte budget;
+do not impose that budget on top-level opaque bytes or union prefixes.
+`NativeOutputOverflow` remains distinct from protocol `SizeOverflow`.
+
+The new member laws and default-method bridge are **not formally proved**.
+The historical `CodecLaw` does not cover these methods; the full proof gate rejects
+that incomplete contract until [#29](https://github.com/NyxFoundation/nyx-ssz/issues/29)
+is resolved. The 12 hash-independent current-source proofs remain checked.
 
 ## Failure ownership
 

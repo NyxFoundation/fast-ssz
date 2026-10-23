@@ -17,8 +17,11 @@ impl<D: Declaration> Ssz for Declared<D> {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = D::TYPE;
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        panic!("metadata must not call encode")
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        panic!("metadata must not invoke encoded_len")
+    }
+    fn encode_into(&self, _: &mut [u8]) -> Result<(), CodecError> {
+        panic!("metadata must not invoke encode_into")
     }
     fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
         panic!("metadata must not call decode")

@@ -10,18 +10,25 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Container, sparse ProgressiveContainer and CompatibleUnion through `#[derive(nyx_ssz::Ssz)]`.
 - Type-level field/element paths, packed-element locations, node access and single/multiproof construction.
 - All **4,601 cases in all nine families** of the immutable official corpus, with explicit current-version Progressive root alignment and preserved original metadata.
-- Host and 32-bit tests; 95.57% workspace line coverage; reproducible Criterion benchmarks.
+- Host and 32-bit tests; 95.40% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
+[Current encode comparison](docs/direct-encode.md) ·
 [Verification scope](docs/verification.md)
 
-**Current-source Aeneas/Lean verification:** 18 SHA-256/gindex/Merkle operations are freshly extracted and kernel checked.
-The remaining 97 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25).
+**Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
+The remaining 103 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25), with the six RustCrypto-dependent skips in [#27](https://github.com/NyxFoundation/nyx-ssz/issues/27).
 Aeneas rejects the actual metadata's nested-loop returns. No tool fork, extra axiom or domain restriction was added.
 Historical broader artifacts are not current-source certification. See [exact current proof scope](docs/current-verification.md).
 
-`U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 is implemented locally;
-RustCrypto `sha2` is an independent test oracle only.
+`U256` uses pinned `ruint` 1.20.1. Runtime SHA-256 uses pinned RustCrypto
+`sha2` 0.10.9 with its standard CPU-dispatched backend, like libssz. No local SHA fallback remains.
+
+Typed encoding now uses `Ssz::encoded_len()` and `Ssz::encode_into(&mut [u8])`.
+`encode()` keeps its allocating caller API. **Manual Ssz implementations must migrate**
+to the two required methods; derive and library types are updated.
+[Direct encoding contract and migration](docs/native-api.md#direct-encoding).
+These new member laws are unproved under [#29](https://github.com/NyxFoundation/nyx-ssz/issues/29).
 
 ## Example
 
@@ -47,10 +54,14 @@ nyx-ssz = { git = "https://github.com/NyxFoundation/nyx-ssz" }
 ## Typed codecs
 
 ```rust
-use nyx_ssz::codec::{decode, encode, fixed_size, hash_tree_root, is_compatible, validate_type};
+use nyx_ssz::codec::{decode, encode, fixed_size, hash_tree_root, is_compatible, validate_type, Ssz};
 let value = 0x1234u16;
 let bytes = encode(&value).unwrap();
 assert_eq!(bytes, [0x34, 0x12]);
+let mut output = [0; 2];
+value.encode_into(&mut output).unwrap();
+assert_eq!(value.encoded_len(), Ok(2));
+assert_eq!(output, [0x34, 0x12]);
 assert_eq!(decode::<u16>(&bytes), Ok(value));
 assert_eq!(fixed_size::<u16>(), Ok(Some(2)));
 assert_eq!(validate_type::<u16>(), Ok(()));
@@ -335,7 +346,7 @@ python3 scripts/current_refinement.py check
 After edits affecting the current proof slice, run `python3 scripts/current_refinement.py extract`,
 review the generated diff, update proofs, then rerun its `check`. Never hand-edit `verification/NyxSszRust.lean`
 or the generated `verification/NyxSszRust/` modules.
-Success proves only the explicit 18-operation current slice and validates the issue-linked
+Success proves only the explicit 12-operation current slice and validates the issue-linked
 unproved status of the rest. The legacy full `verify.py check` is not claimed to pass.
 
 MIT; see [third-party notices](THIRD_PARTY_NOTICES.md).

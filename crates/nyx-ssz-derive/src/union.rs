@@ -96,15 +96,26 @@ pub fn expand(
 }
 
 fn encode_method(variants: &[Variant], krate: &TokenStream) -> TokenStream {
-    let arms = variants.iter().map(|v| {
+    let sizes = variants.iter().map(|v| {
+        let name = &v.name;
+        quote!(Self::#name(value) => #krate::encoding::union_len(value),)
+    });
+    let writes = variants.iter().map(|v| {
         let name = &v.name;
         let tag = v.selector as u8;
-        quote!(Self::#name(value) => #krate::composite::encode_union(#tag, value),)
+        quote!(Self::#name(value) => {
+            output[0] = #tag;
+            #krate::codec::Ssz::encode_into(value, &mut output[1..])
+        },)
     });
     quote! {
-        fn encode(&self) -> ::core::result::Result<::std::vec::Vec<u8>, #krate::error::CodecError> {
+        fn encoded_len(&self) -> ::core::result::Result<usize, #krate::error::CodecError> {
             #krate::codec::validate_type::<Self>()?;
-            match self { #(#arms)* }
+            match self { #(#sizes)* }
+        }
+        fn encode_into(&self, output: &mut [u8]) -> ::core::result::Result<(), #krate::error::CodecError> {
+            #krate::encoding::check_length(output, #krate::codec::Ssz::encoded_len(self)?)?;
+            match self { #(#writes)* }
         }
     }
 }

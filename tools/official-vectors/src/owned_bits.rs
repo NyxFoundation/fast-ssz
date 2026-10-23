@@ -67,9 +67,7 @@ pub(crate) fn verify_owned<T: BitAccess>(case: &Case, fixed: Option<usize>) -> T
             return Err("owned bit value differs from YAML".into());
         }
     }
-    if actual.encode().map_err(|_| "owned bit encoding failed")? != case.bytes {
-        return Err("owned bit encoding differs from official bytes".into());
-    }
+    crate::types::verify_encoding(&actual, &case.bytes)?;
     if actual
         .hash_tree_root()
         .map_err(|_| "owned bit root failed")?

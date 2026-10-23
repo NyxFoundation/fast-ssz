@@ -26,9 +26,15 @@ impl<const VARIABLE: bool> Ssz for Script<VARIABLE> {
         &TypeDescriptor::Uint(1)
     };
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
         self.trace.borrow_mut().push(self.index);
-        self.result.clone()
+        self.result.as_ref().map(Vec::len).map_err(|error| *error)
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        match &self.result {
+            Ok(bytes) => nyx_ssz::encoding::copy(output, bytes),
+            Err(error) => Err(*error),
+        }
     }
 
     fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
@@ -65,7 +71,13 @@ fn check<const VARIABLE: bool>(
             _ => encode(&progressive_list(values)),
         };
         assert_eq!(actual, expected);
-        assert_eq!(*trace.borrow(), visited);
+        let trace = trace.borrow();
+        if actual.is_err() {
+            assert_eq!(*trace, visited);
+        } else {
+            assert!(!trace.is_empty());
+            assert!(trace.chunks(visited.len()).all(|pass| pass == visited));
+        }
     }
 }
 

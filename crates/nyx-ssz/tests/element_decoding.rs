@@ -31,8 +31,11 @@ impl Ssz for TracedByte {
     type DecodeState = Cleanup;
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(1);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        Ok(vec![self.0])
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        Ok(1)
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        nyx_ssz::encoding::copy(output, &[self.0])
     }
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
         Ok(nyx_ssz::tree_hash::hash_tree_root_u8(self.0))

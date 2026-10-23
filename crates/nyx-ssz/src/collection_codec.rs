@@ -3,7 +3,6 @@
 use crate::{
     codec::{decode_elements, fixed_size, validate_type, SequenceDecodeState, Ssz},
     collection_tree::root_sequence,
-    collection_wire::encode_sequence,
     collections::{list, vector, LengthError, LengthErrorKind, List, Vector},
     error::{CodecError, DecodeFailure},
     sequence::{
@@ -123,13 +122,18 @@ impl<T: Ssz, const N: usize> Ssz for Vector<T, N> {
     type DecodeState = SequenceDecodeState<T>;
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Vector(T::TYPE, N);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
         vector_type::<T, N>()?;
         let values = self.as_slice();
         if values.len() != N {
             return Err(CodecError::InvalidLength);
         }
-        encode_sequence(values)
+        crate::encoding::sequence_len(values)
+    }
+
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::encoding::check_length(output, self.encoded_len()?)?;
+        crate::encoding::write_sequence(self.as_slice(), output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {
@@ -150,13 +154,18 @@ impl<T: Ssz, const MAX: usize> Ssz for List<T, MAX> {
     type DecodeState = SequenceDecodeState<T>;
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::List(T::TYPE, MAX);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
         validate_type::<T>()?;
         let values = self.as_slice();
         if values.len() > MAX {
             return Err(CodecError::OverLimit);
         }
-        encode_sequence(values)
+        crate::encoding::sequence_len(values)
+    }
+
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::encoding::check_length(output, self.encoded_len()?)?;
+        crate::encoding::write_sequence(self.as_slice(), output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {

@@ -85,7 +85,10 @@ impl Ssz for Oversized {
     type DecodeState = ReturnedState;
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(1);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        Err(CodecError::SizeOverflow)
+    }
+    fn encode_into(&self, _: &mut [u8]) -> Result<(), CodecError> {
         Err(CodecError::SizeOverflow)
     }
 

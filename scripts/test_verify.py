@@ -11,6 +11,14 @@ ENTRY = {"rust": "nyx_ssz::encode", "lean": "Rust.encode", "proof": "Proof.encod
 
 
 class VerificationGateTests(unittest.TestCase):
+    def test_should_refuse_historical_trait_laws_when_direct_encoding_members_are_unproved(self):
+        contracts = verify.load_contracts(verify.VERIFICATION / "traits.json")
+        with tempfile.TemporaryDirectory() as temporary, patch.object(verify, "run") as run:
+            with self.assertRaisesRegex(ValueError, "extended trait member laws are unproved"):
+                verify.check_proof_targets([], contracts, Path(temporary))
+            run.assert_not_called()
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
     def assert_invalid_targets(self, entries, message):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "targets.json"
