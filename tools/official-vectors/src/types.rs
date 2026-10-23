@@ -167,6 +167,31 @@ impl<T: FromFixture> FromFixture for ProgressiveList<T> {
     }
 }
 
+pub(crate) fn verify_encoding<T: Ssz>(value: &T, expected: &[u8]) -> TestResult {
+    if value
+        .encode()
+        .map_err(|_| "valid value could not be encoded")?
+        != expected
+    {
+        return Err("encoding differs from official bytes".into());
+    }
+    if value
+        .encoded_len()
+        .map_err(|_| "valid value has no encoded length")?
+        != expected.len()
+    {
+        return Err("encoded length differs from official bytes".into());
+    }
+    let mut output = vec![0xa5; expected.len()];
+    value
+        .encode_into(&mut output)
+        .map_err(|_| "direct encoding failed")?;
+    if output != expected {
+        return Err("direct encoding differs from official bytes".into());
+    }
+    Ok(())
+}
+
 pub(crate) fn verify<T: Ssz + FromFixture>(case: &Case) -> TestResult {
     let actual = T::decode(&case.bytes);
     if case.outcome == Outcome::Invalid {
@@ -181,13 +206,7 @@ pub(crate) fn verify<T: Ssz + FromFixture>(case: &Case) -> TestResult {
     if !actual.equivalent(&expected) {
         return Err("decoded value differs from the expected YAML value".into());
     }
-    if actual
-        .encode()
-        .map_err(|_| "valid value could not be encoded")?
-        != case.bytes
-    {
-        return Err("encoding differs from official bytes".into());
-    }
+    verify_encoding(&actual, &case.bytes)?;
     if actual
         .hash_tree_root()
         .map_err(|_| "valid value has no root")?

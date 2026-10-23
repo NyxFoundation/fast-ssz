@@ -14,7 +14,9 @@
       "TYPE": "assoc_const",
       "encode": "function",
       "decode": "function",
-      "hash_tree_root": "function"
+      "hash_tree_root": "function",
+      "encoded_len": "function",
+      "encode_into": "function"
     },
     "instances": [
       {

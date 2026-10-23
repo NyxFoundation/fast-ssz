@@ -15,8 +15,11 @@ impl Drop for Owner {
 impl Ssz for Owner {
     type DecodeState = Self;
     const TYPE: &'static D = &D::Uint(1);
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        Ok(vec![0])
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        Ok(1)
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        nyx_ssz::encoding::copy(output, &[0])
     }
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self>> {
         DECODES.fetch_add(1, Ordering::SeqCst);
@@ -74,7 +77,10 @@ struct Oversized;
 impl Ssz for Oversized {
     type DecodeState = ();
     const TYPE: &'static D = &D::Vector(&D::Uint(32), usize::MAX);
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        Err(CodecError::NativeOutputOverflow)
+    }
+    fn encode_into(&self, _: &mut [u8]) -> Result<(), CodecError> {
         Err(CodecError::NativeOutputOverflow)
     }
     fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {
@@ -91,7 +97,10 @@ struct Refusal;
 impl Ssz for Refusal {
     type DecodeState = ();
     const TYPE: &'static D = &D::Boolean;
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        Err(CodecError::InvalidBoolean)
+    }
+    fn encode_into(&self, _: &mut [u8]) -> Result<(), CodecError> {
         Err(CodecError::InvalidBoolean)
     }
     fn decode(_: &[u8]) -> Result<Self, DecodeFailure<()>> {

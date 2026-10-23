@@ -67,6 +67,22 @@ class TraitContractTests(unittest.TestCase):
                 validate_traits(data, contracts)
             contracts = self.load([CONTRACT])
 
+    def test_should_inventory_inherited_methods_only_when_the_declaration_provides_a_body(self):
+        data = document()
+        data["index"]["3"]["inner"]["function"]["has_body"] = True
+        implementation = data["index"]["4"]["inner"]["impl"]
+        implementation["items"].remove(6)
+        implementation["provided_trait_methods"] = ["encode"]
+        self.assertEqual(validate_traits(data, [CONTRACT]), {"2", "3", "5", "7", "8"})
+        for names in (["TYPE"], ["encode", "encode"], ["unknown"], [None]):
+            invalid = copy.deepcopy(data)
+            invalid["index"]["4"]["inner"]["impl"]["provided_trait_methods"] = names
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                validate_traits(invalid, [CONTRACT])
+        data["index"]["3"]["inner"]["function"]["has_body"] = False
+        with self.assertRaisesRegex(ValueError, "declared default"):
+            validate_traits(data, [CONTRACT])
+
     def test_should_inventory_generic_type_and_const_arguments_when_a_collection_is_registered(self):
         contracts = copy.deepcopy([CONTRACT])
         contracts[0]["instances"][0]["type"] = "crate::collections::Vector<T,N>"

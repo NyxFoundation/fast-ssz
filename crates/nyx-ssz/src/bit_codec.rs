@@ -17,8 +17,11 @@ impl<const N: usize> Ssz for BitVector<N> {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::BitVector(N);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        bit_storage::normalize_vector(self.as_ssz_bytes(), N)
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        crate::bit_encoding::vector_len(self.as_ssz_bytes(), N)
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::bit_encoding::write_vector(self.as_ssz_bytes(), N, output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
@@ -38,8 +41,11 @@ impl<const MAX: usize> Ssz for BitList<MAX> {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::BitList(MAX);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        bit_storage::normalize_list(self.as_ssz_bytes(), Some(MAX))
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        crate::bit_encoding::list_len(self.as_ssz_bytes(), Some(MAX))
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::bit_encoding::write_list(self.as_ssz_bytes(), Some(MAX), output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
@@ -59,8 +65,11 @@ impl<const MAX: usize> Ssz for BoundedProgressiveBitList<MAX> {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::ProgressiveBitList(Some(MAX));
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        bit_storage::normalize_list(self.as_ssz_bytes(), Some(MAX))
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        crate::bit_encoding::list_len(self.as_ssz_bytes(), Some(MAX))
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::bit_encoding::write_list(self.as_ssz_bytes(), Some(MAX), output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
@@ -86,8 +95,11 @@ impl Ssz for ProgressiveBitList {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::ProgressiveBitList(None);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
-        bit_storage::normalize_list(self.as_ssz_bytes(), None)
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        crate::bit_encoding::list_len(self.as_ssz_bytes(), None)
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::bit_encoding::write_list(self.as_ssz_bytes(), None, output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {

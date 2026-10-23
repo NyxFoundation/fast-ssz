@@ -1,7 +1,6 @@
 //! Shared implementation for generated heterogeneous codecs.
 use crate::{
-    codec::{self, Ssz},
-    container_wire,
+    codec::Ssz,
     error::CodecError,
     merkle::{self, Node},
     sha256::hash_pair,
@@ -19,33 +18,6 @@ impl<T: Ssz> Default for FieldDecodeState<T> {
             value: None,
             child: None,
         }
-    }
-}
-
-/// Encoded fields collected before applying the parent's four-byte budget.
-#[derive(Default)]
-pub struct FieldEncoder {
-    slots: Vec<(bool, Vec<u8>)>,
-    oversized: bool,
-}
-
-impl FieldEncoder {
-    pub fn push<T: Ssz>(&mut self, value: &T) -> Result<(), CodecError> {
-        match value.encode() {
-            Ok(bytes) => self
-                .slots
-                .push((!matches!(codec::fixed_size::<T>(), Ok(None)), bytes)),
-            Err(CodecError::NativeOutputOverflow) => self.oversized = true,
-            Err(error) => return Err(error),
-        }
-        Ok(())
-    }
-
-    pub fn finish(self) -> Result<Vec<u8>, CodecError> {
-        if self.oversized {
-            return Err(CodecError::SizeOverflow);
-        }
-        container_wire::assemble(&self.slots)
     }
 }
 
@@ -71,18 +43,6 @@ pub fn root_fields(roots: &[Node], active: Option<&[bool]>) -> Result<Node, Code
         });
     }
     Ok(hash_pair(&merkle::merkleize_progressive(&slots), &word))
-}
-
-/// Union has no four-byte envelope; preserve the exact native success boundary.
-pub fn encode_union<T: Ssz>(selector: u8, value: &T) -> Result<Vec<u8>, CodecError> {
-    let body = value.encode()?;
-    if body.len() == usize::MAX {
-        return Err(CodecError::NativeOutputOverflow);
-    }
-    let mut bytes = Vec::with_capacity(body.len() + 1);
-    bytes.push(selector);
-    bytes.extend_from_slice(&body);
-    Ok(bytes)
 }
 
 pub fn root_union<T: Ssz>(selector: u8, value: &T) -> Result<Node, CodecError> {

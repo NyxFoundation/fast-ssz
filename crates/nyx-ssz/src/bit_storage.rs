@@ -62,22 +62,6 @@ pub(crate) fn get_list_bit(bytes: &[u8], index: u128) -> Option<bool> {
     get_bit(bytes, index)
 }
 
-pub(crate) fn normalize_vector(bytes: &[u8], length: usize) -> Result<Vec<u8>, CodecError> {
-    if length == 0 {
-        return Err(CodecError::EmptyVector);
-    }
-    if bytes.len() != length.div_ceil(8) {
-        return Err(CodecError::InvalidLength);
-    }
-    let mut output = copy_bytes(bytes);
-    let remainder = length % 8;
-    if remainder != 0 {
-        let last = output.len() - 1;
-        output[last] &= (1_u8 << remainder) - 1;
-    }
-    Ok(output)
-}
-
 pub(crate) fn normalize_list(bytes: &[u8], limit: Option<usize>) -> Result<Vec<u8>, CodecError> {
     if let Some(capacity) = limit {
         if delimited_len(bytes) > capacity as u128 {

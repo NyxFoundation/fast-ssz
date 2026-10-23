@@ -104,11 +104,14 @@ mod ssz {
         type DecodeState = ();
         const TYPE: &'static TypeDescriptor = &TypeDescriptor::ByteVector(N);
 
-        fn encode(&self) -> Result<Vec<u8>, CodecError> {
-            match bytes::encode_byte_vector(self.as_bytes(), N) {
-                Ok(bytes) => Ok(copy_bytes(bytes)),
-                Err(error) => Err(byte_error(error)),
-            }
+        fn encoded_len(&self) -> Result<usize, CodecError> {
+            bytes::encode_byte_vector(self.as_bytes(), N)
+                .map(|bytes| bytes.len())
+                .map_err(byte_error)
+        }
+        fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+            let bytes = bytes::encode_byte_vector(self.as_bytes(), N).map_err(byte_error)?;
+            crate::encoding::copy(output, bytes)
         }
 
         fn decode(input: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {
@@ -133,11 +136,14 @@ mod ssz {
         type DecodeState = ();
         const TYPE: &'static TypeDescriptor = &TypeDescriptor::ByteList(MAX);
 
-        fn encode(&self) -> Result<Vec<u8>, CodecError> {
-            match bytes::encode_byte_list(self.as_bytes(), MAX) {
-                Ok(bytes) => Ok(copy_bytes(bytes)),
-                Err(error) => Err(byte_error(error)),
-            }
+        fn encoded_len(&self) -> Result<usize, CodecError> {
+            bytes::encode_byte_list(self.as_bytes(), MAX)
+                .map(|bytes| bytes.len())
+                .map_err(byte_error)
+        }
+        fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+            let bytes = bytes::encode_byte_list(self.as_bytes(), MAX).map_err(byte_error)?;
+            crate::encoding::copy(output, bytes)
         }
 
         fn decode(input: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {

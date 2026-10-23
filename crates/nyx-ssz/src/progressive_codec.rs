@@ -4,7 +4,6 @@ use crate::{
     codec::{decode_elements, validate_type, SequenceDecodeState, Ssz},
     collection_codec::{empty_failure, list_layout, storage_failure},
     collection_tree::root_progressive_sequence,
-    collection_wire::encode_sequence,
     collections::{
         bounded_progressive_list, progressive_list, BoundedProgressiveList, ProgressiveList,
     },
@@ -47,13 +46,18 @@ impl<T: Ssz, const MAX: usize> Ssz for BoundedProgressiveList<T, MAX> {
     type DecodeState = SequenceDecodeState<T>;
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::ProgressiveList(T::TYPE, Some(MAX));
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
         validate_type::<T>()?;
         let values = self.as_slice();
         if values.len() > MAX {
             return Err(CodecError::OverLimit);
         }
-        encode_sequence(values)
+        crate::encoding::sequence_len(values)
+    }
+
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::encoding::check_length(output, self.encoded_len()?)?;
+        crate::encoding::write_sequence(self.as_slice(), output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {
@@ -71,9 +75,14 @@ impl<T: Ssz> Ssz for ProgressiveList<T> {
     type DecodeState = SequenceDecodeState<T>;
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::ProgressiveList(T::TYPE, None);
 
-    fn encode(&self) -> Result<Vec<u8>, CodecError> {
+    fn encoded_len(&self) -> Result<usize, CodecError> {
         validate_type::<T>()?;
-        encode_sequence(self.as_slice())
+        crate::encoding::sequence_len(self.as_slice())
+    }
+
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        crate::encoding::check_length(output, self.encoded_len()?)?;
+        crate::encoding::write_sequence(self.as_slice(), output)
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {

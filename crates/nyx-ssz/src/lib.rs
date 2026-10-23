@@ -9,6 +9,7 @@ pub use nyx_ssz_derive::Ssz;
 pub use ruint::aliases::U256;
 
 mod bit_codec;
+mod bit_encoding;
 mod bit_storage;
 pub mod bitcollections;
 pub mod bitfield;
@@ -23,6 +24,8 @@ pub mod collections;
 pub mod composite;
 pub mod container;
 pub mod container_wire;
+#[doc(hidden)]
+pub mod encoding;
 pub mod error;
 pub mod gindex;
 pub mod merkle;

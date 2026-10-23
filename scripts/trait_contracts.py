@@ -131,7 +131,16 @@ def validate_implementations(index, trait_identifier, declaration, contract):
     for identifier in declaration["implementations"]:
         implementation = index[str(identifier)]["inner"]["impl"]
         discovered.append(instance_type(implementation, trait_identifier))
-        if member_inventory(index, implementation["items"]) != contract["members"]:
+        defaults = {index[str(item)]["name"] for item in declaration["items"]
+                    if index[str(item)]["inner"].get("function", {}).get("has_body") is True}
+        provided = implementation.get("provided_trait_methods", [])
+        if not isinstance(provided, list) or any(not isinstance(name, str) for name in provided):
+            raise ValueError("invalid inherited trait methods")
+        if len(provided) != len(set(provided)) or not set(provided) <= defaults:
+            raise ValueError("inherited trait method has no declared default body")
+        expected_members = {name: kind for name, kind in contract["members"].items()
+                            if name not in provided}
+        if member_inventory(index, implementation["items"]) != expected_members:
             raise ValueError("trait implementation member inventory differs")
         items.update(str(value) for value in implementation["items"])
     expected = [instance["type"] for instance in contract["instances"]]

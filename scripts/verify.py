@@ -356,6 +356,9 @@ def assert_import_closure(directory):
 
 
 def check_proof_targets(targets, contracts, directory):
+    historical_members = {"DecodeState", "TYPE", "encode", "decode", "hash_tree_root"}
+    if any(set(contract["members"]) != historical_members for contract in contracts):
+        raise ValueError("extended trait member laws are unproved; historical CodecLaw is insufficient")
     lines = ["import NyxSszVerification.Audit"]
     lines.extend(f"check_refinement {target['lean']} via {target['proof']}" for target in targets)
     lines.extend(f"check_trait_contract {instance['lean']} against {contract['law']} via {instance['proof']}"
