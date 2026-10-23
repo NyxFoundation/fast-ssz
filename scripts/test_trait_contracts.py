@@ -79,6 +79,9 @@ class TraitContractTests(unittest.TestCase):
             invalid["index"]["4"]["inner"]["impl"]["provided_trait_methods"] = names
             with self.subTest(names=names), self.assertRaises(ValueError):
                 validate_traits(invalid, [CONTRACT])
+        overridden = copy.deepcopy(data)
+        overridden["index"]["4"]["inner"]["impl"]["items"].append(6)
+        self.assertEqual(validate_traits(overridden, [CONTRACT]), {"2", "3", "5", "6", "7", "8"})
         data["index"]["3"]["inner"]["function"]["has_body"] = False
         with self.assertRaisesRegex(ValueError, "declared default"):
             validate_traits(data, [CONTRACT])

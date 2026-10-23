@@ -35,7 +35,7 @@ def load_scope(path=SCOPE):
     for url in scope.get("issues", {}).values():
         if not re.fullmatch(r"https://github\.com/NyxFoundation/nyx-ssz/issues/[1-9][0-9]*", url):
             raise ValueError("proof skips require canonical issue links")
-    if set(scope.get("issues", {})) != {"metadata", "remaining", "rustcrypto", "direct_encoding"}:
+    if set(scope.get("issues", {})) != {"metadata", "remaining", "rustcrypto", "direct_encoding", "bulk_decode"}:
         raise ValueError("proof skip issues are missing")
     if set(scope.get("tool_revisions", {})) != {"aeneas_revision", "charon_revision"}:
         raise ValueError("proof skip tool revisions are missing")
@@ -60,9 +60,10 @@ def load_scope(path=SCOPE):
 
 
 def validate_unproved_members(scope):
-    expected = ["nyx_ssz::codec::Ssz::encoded_len", "nyx_ssz::codec::Ssz::encode_into"]
+    expected = ["nyx_ssz::codec::Ssz::encoded_len", "nyx_ssz::codec::Ssz::encode_into",
+                "nyx_ssz::codec::Ssz::decode_fixed_sequence"]
     if scope.get("unproved_trait_members") != expected:
-        raise ValueError("direct encoding member laws must remain explicitly unproved")
+        raise ValueError("extended trait member laws must remain explicitly unproved")
 
 
 def validate_roots():
@@ -246,6 +247,7 @@ def main():
         probe_metadata(pins, scope, directory / "metadata")
         print(f"SKIPPED RustCrypto-dependent equivalence (not proved): {scope['issues']['rustcrypto']}")
         print(f"UNPROVED direct encoding member laws: {scope['issues']['direct_encoding']}")
+        print(f"UNPROVED bulk decoding member laws: {scope['issues']['bulk_decode']}")
         check_proofs(targets, directory)
         legacy.validate_dependencies(pins)
     print(f"PROVED current-source slice: {len(targets)} operations (not full-library equivalence).")

@@ -138,9 +138,11 @@ def validate_implementations(index, trait_identifier, declaration, contract):
             raise ValueError("invalid inherited trait methods")
         if len(provided) != len(set(provided)) or not set(provided) <= defaults:
             raise ValueError("inherited trait method has no declared default body")
+        actual_members = member_inventory(index, implementation["items"])
+        # Rustdoc lists all trait-provided methods, including explicit overrides.
         expected_members = {name: kind for name, kind in contract["members"].items()
-                            if name not in provided}
-        if member_inventory(index, implementation["items"]) != expected_members:
+                            if name not in provided or name in actual_members}
+        if actual_members != expected_members:
             raise ValueError("trait implementation member inventory differs")
         items.update(str(value) for value in implementation["items"])
     expected = [instance["type"] for instance in contract["instances"]]
