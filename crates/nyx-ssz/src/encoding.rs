@@ -141,7 +141,10 @@ pub(crate) fn sequence_len<T: Ssz>(values: &[T]) -> Result<usize, CodecError> {
     let mut oversized = false;
     for value in values {
         match value.encoded_len() {
-            Ok(length) => body = (body + length as u128).min(ENVELOPE),
+            // At most usize::MAX children, each at most usize::MAX bytes:
+            // their sum fits u128 on supported 32/64-bit targets. Keeping the
+            // exact sum lets constant-width scalar loops fold into arithmetic.
+            Ok(length) => body += length as u128,
             Err(CodecError::NativeOutputOverflow) => oversized = true,
             Err(error) => return Err(error),
         }
@@ -151,7 +154,9 @@ pub(crate) fn sequence_len<T: Ssz>(values: &[T]) -> Result<usize, CodecError> {
     } else {
         values.len() as u128 * 4
     };
-    if oversized || leading + body >= ENVELOPE {
+    // Check each operand first: their sum need only be formed below 2^32.
+    // All children were still validated before any parent budget refusal.
+    if oversized || body >= ENVELOPE || leading >= ENVELOPE || leading + body >= ENVELOPE {
         return Err(CodecError::SizeOverflow);
     }
     Ok((leading + body) as usize)
