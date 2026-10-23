@@ -117,6 +117,50 @@ fn all_reference_success_with_native_marker_gets_parent_protocol_budget_error() 
     check::<true>(&repeated, Err(SizeOverflow), &[0, 1, 2]);
 }
 
+fn basic_root(results: &[Result<Vec<u8>, CodecError>]) -> Result<[u8; 32], CodecError> {
+    let values = results
+        .iter()
+        .enumerate()
+        .map(|(index, result)| Script::<false> {
+            result: result.clone(),
+            index,
+            trace: Trace::default(),
+        })
+        .collect();
+    list::<_, 128>(values).unwrap().hash_tree_root()
+}
+
+#[test]
+fn should_validate_every_basic_child_before_refusing_an_unrepresentable_root_encoding() {
+    use CodecError::*;
+    assert_eq!(
+        basic_root(&[Err(NativeOutputOverflow), Err(InvalidBoolean)]),
+        Err(InvalidBoolean)
+    );
+    assert_eq!(
+        basic_root(&[Err(SizeOverflow), Err(InvalidBoolean)]),
+        Err(SizeOverflow)
+    );
+    assert_eq!(
+        basic_root(&[Ok(vec![1]), Err(NativeOutputOverflow)]),
+        Err(InvalidLength)
+    );
+}
+
+#[test]
+fn should_pack_cross_chunk_and_empty_encodings_without_assuming_external_codec_widths() {
+    use nyx_ssz::{merkle::merkleize, sha256::hash_pair, tree_hash::hash_tree_root_u128};
+    let results = [Ok(vec![7; 33]), Ok(vec![]), Ok(vec![9; 17])];
+    let mut second = [9; 32];
+    second[0] = 7;
+    second[18..].fill(0);
+    let content = merkleize(&[[7; 32], second], Some(4)).unwrap();
+    assert_eq!(
+        basic_root(&results),
+        Ok(hash_pair(&content, &hash_tree_root_u128(3)))
+    );
+}
+
 #[test]
 fn fully_representable_parts_retain_exact_order_and_offsets() {
     let results = [Ok(vec![1, 2]), Ok(vec![]), Ok(vec![3])];

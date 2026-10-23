@@ -2,36 +2,73 @@
 
 use crate::{
     codec::{fixed_size, is_basic, Ssz},
-    collection_wire::encode_parts,
     error::CodecError,
     merkle::{merkleize, merkleize_progressive, MerkleizeError, Node},
     sha256::hash_pair,
     tree_hash::hash_tree_root_u128,
 };
 
-fn pack_parts(parts: &[Vec<u8>]) -> Vec<Node> {
-    let mut chunks = Vec::new();
-    let mut pending = [0; 32];
-    let mut filled = 0;
-    let mut part = 0;
-    while part < parts.len() {
-        let mut byte = 0;
-        while byte < parts[part].len() {
-            pending[filled] = parts[part][byte];
-            filled += 1;
-            if filled == 32 {
-                chunks.push(pending);
-                pending = [0; 32];
-                filled = 0;
+struct BasicPacker {
+    chunks: Vec<Node>,
+    pending: Node,
+    filled: usize,
+}
+
+impl BasicPacker {
+    fn push(&mut self, bytes: &[u8]) {
+        let mut offset = 0;
+        while offset < bytes.len() {
+            let count = (32 - self.filled).min(bytes.len() - offset);
+            self.pending[self.filled..self.filled + count]
+                .copy_from_slice(&bytes[offset..offset + count]);
+            self.filled += count;
+            offset += count;
+            if self.filled == 32 {
+                self.chunks.push(self.pending);
+                self.pending = [0; 32];
+                self.filled = 0;
             }
-            byte += 1;
         }
-        part += 1;
     }
-    if filled != 0 {
-        chunks.push(pending);
+
+    fn finish(mut self) -> Vec<Node> {
+        if self.filled != 0 {
+            self.chunks.push(self.pending);
+        }
+        self.chunks
     }
-    chunks
+}
+
+fn maximum_encoding<T: Ssz>(values: &[T]) -> Result<Option<usize>, CodecError> {
+    let mut maximum = 0;
+    let mut oversized = false;
+    for value in values {
+        match value.encoded_len() {
+            Ok(length) => maximum = maximum.max(length),
+            Err(CodecError::NativeOutputOverflow) => oversized = true,
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(if oversized { None } else { Some(maximum) })
+}
+
+fn pack_basic<T: Ssz>(values: &[T]) -> Result<Vec<Node>, CodecError> {
+    let maximum = maximum_encoding(values)?.ok_or(CodecError::InvalidLength)?;
+    // One shared child buffer preserves even externally supplied variable encodings;
+    // it does not impose a serialization-wide byte budget on root calculation.
+    let mut scratch = vec![0; maximum];
+    let mut packer = BasicPacker {
+        chunks: Vec::with_capacity(basic_capacity::<T>(values.len())?),
+        pending: [0; 32],
+        filled: 0,
+    };
+    for value in values {
+        let length = value.encoded_len()?;
+        let output = scratch.get_mut(..length).ok_or(CodecError::InvalidLength)?;
+        value.encode_into(output)?;
+        packer.push(output);
+    }
+    Ok(packer.finish())
 }
 
 fn root_elements<T: Ssz>(values: &[T]) -> Result<Vec<Node>, CodecError> {
@@ -53,11 +90,7 @@ fn basic_capacity<T: Ssz>(positions: usize) -> Result<usize, CodecError> {
 
 pub(crate) fn root_progressive_sequence<T: Ssz>(values: &[T]) -> Result<Node, CodecError> {
     let chunks = if is_basic::<T>() {
-        let Some(parts) = encode_parts(values)? else {
-            // Impossible for lawful basic children: each serializes to ≤32 bytes.
-            return Err(CodecError::InvalidLength);
-        };
-        pack_parts(&parts)
+        pack_basic(values)?
     } else {
         root_elements(values)?
     };
@@ -74,11 +107,7 @@ pub(crate) fn root_sequence<T: Ssz>(
     mix_length: bool,
 ) -> Result<Node, CodecError> {
     let (chunks, capacity) = if is_basic::<T>() {
-        let Some(parts) = encode_parts(values)? else {
-            // Impossible for lawful basic children, not a root native refusal.
-            return Err(CodecError::InvalidLength);
-        };
-        (pack_parts(&parts), basic_capacity::<T>(positions)?)
+        (pack_basic(values)?, basic_capacity::<T>(positions)?)
     } else {
         (root_elements(values)?, positions)
     };
