@@ -92,20 +92,50 @@ fn decode_ranges<T: Ssz>(
         let range = &ranges[index];
         let value = match decode_range::<T>(input, range.start, range.end) {
             Ok(value) => value,
-            Err(failure) => {
-                return Err(DecodeFailure {
-                    kind: failure.kind,
-                    state: SequenceDecodeState {
-                        values,
-                        child: Some(failure.state),
-                    },
-                })
-            }
+            Err(failure) => return Err(sequence_failure(values, failure)),
         };
         values.push(value);
         index += 1;
     }
     Ok(values)
+}
+
+/// Decode a prevalidated fixed layout without allocating an element-range table.
+pub(crate) fn decode_fixed<T: Ssz>(
+    input: &[u8],
+    width: usize,
+    count: usize,
+) -> Result<Vec<T>, DecodeFailure<SequenceDecodeState<T>>> {
+    let mut values = Vec::new();
+    for index in 0..count {
+        let start = index * width;
+        let value = match decode_range::<T>(input, start, start + width) {
+            Ok(value) => value,
+            Err(failure) => return Err(sequence_failure(values, failure)),
+        };
+        // Capacity is only a hint: a larger Rust representation must not make
+        // an early child error panic by reserving the entire potential result.
+        // Never allocate before first-child success or restrict the decode count.
+        if index == 0 {
+            let capacity = count.min(input.len() / core::mem::size_of::<T>().max(1));
+            values.reserve_exact(capacity);
+        }
+        values.push(value);
+    }
+    Ok(values)
+}
+
+fn sequence_failure<T: Ssz>(
+    values: Vec<T>,
+    failure: DecodeFailure<T::DecodeState>,
+) -> DecodeFailure<SequenceDecodeState<T>> {
+    DecodeFailure {
+        kind: failure.kind,
+        state: SequenceDecodeState {
+            values,
+            child: Some(failure.state),
+        },
+    }
 }
 
 fn decode_range<T: Ssz>(

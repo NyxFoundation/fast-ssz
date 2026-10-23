@@ -79,16 +79,7 @@ pub fn fixed_vector_view(
     width: usize,
     count: usize,
 ) -> Result<SequenceView<'_>, CodecError> {
-    if input.len() as u128 >= 4_294_967_296 {
-        return Err(CodecError::SizeOverflow);
-    }
-    let expected = match width.checked_mul(count) {
-        Some(expected) => expected,
-        None => return Err(CodecError::InvalidLength),
-    };
-    if input.len() != expected {
-        return Err(CodecError::InvalidLength);
-    }
+    validate_fixed_vector(input.len(), width, count)?;
     Ok(SequenceView {
         input,
         ranges: fixed_ranges(width, count),
@@ -104,27 +95,7 @@ pub fn fixed_list_view(
     width: usize,
     limit: Option<usize>,
 ) -> Result<SequenceView<'_>, CodecError> {
-    if input.len() as u128 >= 4_294_967_296 {
-        return Err(CodecError::SizeOverflow);
-    }
-    if input.is_empty() {
-        return Ok(SequenceView {
-            input,
-            ranges: Vec::new(),
-        });
-    }
-    if width == 0 {
-        return Err(CodecError::ScopeWidthless);
-    }
-    if !input.len().is_multiple_of(width) {
-        return Err(CodecError::ScopeUndivided);
-    }
-    let count = input.len() / width;
-    if let Some(capacity) = limit {
-        if count > capacity {
-            return Err(CodecError::OverLimit);
-        }
-    }
+    let count = fixed_list_count(input.len(), width, limit)?;
     fixed_vector_view(input, width, count)
 }
 
@@ -209,6 +180,44 @@ pub fn variable_list_view(
     variable_vector_view(input, count)
 }
 
+pub(crate) fn validate_fixed_vector(
+    length: usize,
+    width: usize,
+    count: usize,
+) -> Result<(), CodecError> {
+    if length as u128 >= 4_294_967_296 {
+        return Err(CodecError::SizeOverflow);
+    }
+    if width.checked_mul(count) != Some(length) {
+        return Err(CodecError::InvalidLength);
+    }
+    Ok(())
+}
+
+pub(crate) fn fixed_list_count(
+    length: usize,
+    width: usize,
+    limit: Option<usize>,
+) -> Result<usize, CodecError> {
+    if length as u128 >= 4_294_967_296 {
+        return Err(CodecError::SizeOverflow);
+    }
+    if length == 0 {
+        return Ok(0);
+    }
+    if width == 0 {
+        return Err(CodecError::ScopeWidthless);
+    }
+    if !length.is_multiple_of(width) {
+        return Err(CodecError::ScopeUndivided);
+    }
+    let count = length / width;
+    if limit.is_some_and(|capacity| count > capacity) {
+        return Err(CodecError::OverLimit);
+    }
+    Ok(count)
+}
+
 fn fixed_ranges(width: usize, count: usize) -> Vec<BodyRange> {
     let mut ranges = Vec::new();
     let mut index = 0;
@@ -247,4 +256,44 @@ fn body_ranges(offsets: &[usize], spans: &[usize]) -> Vec<BodyRange> {
         index += 1;
     }
     ranges
+}
+
+#[cfg(test)]
+mod fixed_budget_tests {
+    use super::*;
+
+    #[test]
+    fn should_validate_fixed_counts_and_fault_precedence_without_allocating_ranges() {
+        assert_eq!(validate_fixed_vector(0, 0, usize::MAX), Ok(()));
+        assert_eq!(
+            validate_fixed_vector(0, usize::MAX, 2),
+            Err(CodecError::InvalidLength)
+        );
+        assert_eq!(fixed_list_count(0, 0, Some(0)), Ok(0));
+        assert_eq!(
+            fixed_list_count(1, 0, Some(0)),
+            Err(CodecError::ScopeWidthless)
+        );
+        assert_eq!(
+            fixed_list_count(3, 2, Some(0)),
+            Err(CodecError::ScopeUndivided)
+        );
+        assert_eq!(fixed_list_count(4, 2, Some(1)), Err(CodecError::OverLimit));
+        assert_eq!(fixed_list_count(4, 2, Some(2)), Ok(2));
+    }
+
+    #[test]
+    fn should_reject_the_four_byte_envelope_before_other_layout_faults() {
+        if usize::BITS > 32 {
+            let boundary = 4_294_967_296_u64 as usize;
+            assert_eq!(
+                validate_fixed_vector(boundary, 0, 0),
+                Err(CodecError::SizeOverflow)
+            );
+            assert_eq!(
+                fixed_list_count(boundary, 0, Some(0)),
+                Err(CodecError::SizeOverflow)
+            );
+        }
+    }
 }

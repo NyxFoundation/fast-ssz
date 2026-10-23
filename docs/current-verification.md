@@ -65,6 +65,8 @@ unproved derive obligations.
   the other 97 skips include Cargo/MIR host-tool integration, metadata/codec laws,
   heterogeneous ownership, generated conversions, typed paths, node access and proof construction.
   They are outstanding obligations, not claims that every operation is individually impossible.
+  The table-free fixed decoder and bulk-copy optimization are native-tested changes within
+  that backlog, not newly proved codec equivalence laws.
 
 Historical broader generated artifacts and registrations are not current-source certification.
 `HistoricalMerkle.lean` and `HistoricalMultiproof.lean` preserve omitted Aeneas declaration

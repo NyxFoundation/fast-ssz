@@ -1,6 +1,6 @@
 use nyx_ssz::{
     codec::{decode, decode_elements, Ssz},
-    collections::{BoundedProgressiveList, List, Vector},
+    collections::{BoundedProgressiveList, List, ProgressiveList, Vector},
     error::{CodecError, DecodeFailure},
     sequence::variable_vector_view,
     type_info::TypeDescriptor,
@@ -192,6 +192,35 @@ fn bounded_progressive_capacity_refusal_invokes_no_callbacks_or_destructors() {
     assert!(failure.state.child.is_none());
     assert_eq!(calls(), 0);
     assert!(drops().is_empty());
+}
+
+#[test]
+fn should_retain_every_owner_at_each_failure_position_in_all_fixed_sequence_families() {
+    for family in 0..4 {
+        for input in [[255, 7, 9], [7, 255, 9], [7, 9, 255]] {
+            reset();
+            let failure = match family {
+                0 => Vector::<TracedByte, 3>::decode(&input).err().unwrap(),
+                1 => List::<TracedByte, 3>::decode(&input).err().unwrap(),
+                2 => ProgressiveList::<TracedByte>::decode(&input).err().unwrap(),
+                _ => BoundedProgressiveList::<TracedByte, 3>::decode(&input)
+                    .err()
+                    .unwrap(),
+            };
+            let prefix: Vec<_> = input.into_iter().take_while(|&byte| byte != 255).collect();
+            assert_eq!(failure.kind, CodecError::InvalidLength);
+            assert_eq!(
+                failure.state.values.iter().map(|v| v.0).collect::<Vec<_>>(),
+                prefix
+            );
+            assert_eq!(failure.state.child.as_ref().map(|v| v.0), Some(200));
+            assert_eq!(calls(), prefix.len() + 1);
+            assert!(drops().is_empty());
+            drop(failure);
+            let expected: Vec<_> = prefix.into_iter().chain([200]).collect();
+            assert_eq!(drops(), expected);
+        }
+    }
 }
 
 #[test]

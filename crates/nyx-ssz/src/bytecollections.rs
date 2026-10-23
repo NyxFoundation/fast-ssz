@@ -33,9 +33,7 @@ fn byte_error(error: ByteError) -> CodecError {
 }
 
 fn copy_bytes(bytes: &[u8]) -> Vec<u8> {
-    let mut output = Vec::new();
-    crate::collection_wire::append(&mut output, bytes);
-    output
+    bytes.to_vec()
 }
 
 impl<const N: usize> ByteVector<N> {

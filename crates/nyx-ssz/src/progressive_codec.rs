@@ -1,8 +1,8 @@
 //! Progressive-list codecs with exact optional bounds and owned failure state.
 
 use crate::{
-    codec::{decode_elements, validate_type, SequenceDecodeState, Ssz},
-    collection_codec::{empty_failure, list_layout, storage_failure},
+    codec::{validate_type, SequenceDecodeState, Ssz},
+    collection_codec::{decode_list_values, empty_failure, storage_failure},
     collection_tree::root_progressive_sequence,
     collections::{
         bounded_progressive_list, progressive_list, BoundedProgressiveList, ProgressiveList,
@@ -17,11 +17,7 @@ fn decode_progressive<T: Ssz>(
     if let Err(kind) = validate_type::<T>() {
         return Err(empty_failure::<T>(kind));
     }
-    let view = match list_layout::<T>(input, None) {
-        Ok(view) => view,
-        Err(kind) => return Err(empty_failure::<T>(kind)),
-    };
-    let values = decode_elements::<T>(&view)?;
+    let values = decode_list_values::<T>(input, None)?;
     Ok(progressive_list(values))
 }
 
@@ -31,11 +27,7 @@ fn decode_bounded_progressive<T: Ssz, const MAX: usize>(
     if let Err(kind) = validate_type::<T>() {
         return Err(empty_failure::<T>(kind));
     }
-    let view = match list_layout::<T>(input, Some(MAX)) {
-        Ok(view) => view,
-        Err(kind) => return Err(empty_failure::<T>(kind)),
-    };
-    let values = decode_elements::<T>(&view)?;
+    let values = decode_list_values::<T>(input, Some(MAX))?;
     match bounded_progressive_list(values) {
         Ok(value) => Ok(value),
         Err(error) => Err(storage_failure::<T>(error)),

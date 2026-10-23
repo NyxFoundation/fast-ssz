@@ -50,4 +50,5 @@ nyx-ssz and libssz now both use RustCrypto sha2 0.10.9's standard CPU-dispatched
 backend. Historical scalar and current results are separately versioned.
 Measured results and limitations: [baseline](../../docs/benchmark-comparison.md)
 and [RustCrypto migration](../../docs/rustcrypto-migration.md).
-Current encode optimization: [direct encode](../../docs/direct-encode.md).
+Encode optimization: [direct encode](../../docs/direct-encode.md).
+Decode optimization: [fixed decode](../../docs/fixed-decode.md).

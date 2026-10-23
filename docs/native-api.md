@@ -105,6 +105,23 @@ The historical `CodecLaw` does not cover these methods; the full proof gate reje
 that incomplete contract until [#29](https://github.com/NyxFoundation/nyx-ssz/issues/29)
 is resolved. The 12 hash-independent current-source proofs remain checked.
 
+## Fixed-width decoding
+
+Typed Vector/List and both ProgressiveList variants validate the entire fixed layout
+before invoking any child decoder, then read element slices directly without a
+temporary range table. Variable-width layouts keep their existing offset validation.
+The public `SequenceView` API and all error/ownership types are unchanged.
+
+Decoded byte/bit storage uses standard bulk copying into its owned allocation.
+Fixed sequence decoding reserves its output only after the first child succeeds.
+The initial capacity hint is bounded by the encoded input size, not the potentially
+much larger full Rust representation. It never restricts the decoded element count;
+the vector grows as needed. This preserves later child errors even when eagerly
+reserving the potential full result would overflow native allocation limits.
+
+See [measurements and regression evidence](fixed-decode.md).
+These changed codec laws remain unproved under the existing equivalence backlog.
+
 ## Failure ownership
 
 A derived struct's `DecodeState` has one `FieldDecodeState<T>` per Rust field:
