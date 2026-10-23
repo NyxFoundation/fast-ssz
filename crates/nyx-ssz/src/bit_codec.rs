@@ -25,7 +25,7 @@ impl<const N: usize> Ssz for BitVector<N> {
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
-        match Self::from_ssz_bytes(bit_storage::copy_bytes(bytes)) {
+        match Self::from_ssz_bytes(bytes.to_vec()) {
             Ok(value) => Ok(value),
             Err(kind) => Err(DecodeFailure { kind, state: () }),
         }
@@ -49,7 +49,7 @@ impl<const MAX: usize> Ssz for BitList<MAX> {
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
-        match Self::from_ssz_bytes(bit_storage::copy_bytes(bytes)) {
+        match Self::from_ssz_bytes(bytes.to_vec()) {
             Ok(value) => Ok(value),
             Err(kind) => Err(DecodeFailure { kind, state: () }),
         }
@@ -73,7 +73,7 @@ impl<const MAX: usize> Ssz for BoundedProgressiveBitList<MAX> {
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
-        match Self::from_ssz_bytes(bit_storage::copy_bytes(bytes)) {
+        match Self::from_ssz_bytes(bytes.to_vec()) {
             Ok(value) => Ok(value),
             Err(kind) => Err(DecodeFailure { kind, state: () }),
         }
@@ -103,7 +103,7 @@ impl Ssz for ProgressiveBitList {
     }
 
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<()>> {
-        match Self::from_ssz_bytes(bit_storage::copy_bytes(bytes)) {
+        match Self::from_ssz_bytes(bytes.to_vec()) {
             Ok(value) => Ok(value),
             Err(kind) => Err(DecodeFailure { kind, state: () }),
         }
