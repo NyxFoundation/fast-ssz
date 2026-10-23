@@ -84,6 +84,45 @@ fn should_preserve_alignment_and_capacity_faults_for_multibyte_elements() {
     }
 }
 
+#[derive(Debug)]
+struct PaddedBool {
+    value: bool,
+    _padding: [u8; 511],
+}
+impl Ssz for PaddedBool {
+    type DecodeState = ();
+    const TYPE: &'static TypeDescriptor = &TypeDescriptor::Boolean;
+    fn encoded_len(&self) -> Result<usize, CodecError> {
+        self.value.encoded_len()
+    }
+    fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
+        self.value.encode_into(output)
+    }
+    fn decode(input: &[u8]) -> Result<Self, DecodeFailure<()>> {
+        bool::decode(input).map(|value| Self {
+            value,
+            _padding: [0; 511],
+        })
+    }
+    fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
+        self.value.hash_tree_root()
+    }
+}
+
+#[test]
+fn should_not_reserve_unrepresentable_full_storage_before_a_later_child_refusal() {
+    const COUNT: usize = 1 << 22;
+    let mut input = vec![0; COUNT];
+    input[1] = 2;
+    assert_eq!(core::mem::size_of::<PaddedBool>(), 512);
+    let failure = List::<PaddedBool, COUNT>::decode(&input).unwrap_err();
+    assert_eq!(failure.kind, CodecError::InvalidBoolean);
+    assert_eq!(failure.state.values.len(), 1);
+    assert!(!failure.state.values[0].value);
+    assert!(failure.state.child.is_some());
+    assert!(failure.state.values.capacity() <= COUNT / 512);
+}
+
 // A metadata-only dictionary: no native input can contain one complete element.
 struct TooWide;
 impl Ssz for TooWide {

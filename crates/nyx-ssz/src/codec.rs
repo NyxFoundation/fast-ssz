@@ -113,10 +113,12 @@ pub(crate) fn decode_fixed<T: Ssz>(
             Ok(value) => value,
             Err(failure) => return Err(sequence_failure(values, failure)),
         };
-        // Do not allocate before a first-child refusal. A successful result needs
-        // exactly one owned vector; zero-width layouts still invoke every child.
+        // Capacity is only a hint: a larger Rust representation must not make
+        // an early child error panic by reserving the entire potential result.
+        // Never allocate before first-child success or restrict the decode count.
         if index == 0 {
-            values.reserve_exact(count);
+            let capacity = count.min(input.len() / core::mem::size_of::<T>().max(1));
+            values.reserve_exact(capacity);
         }
         values.push(value);
     }
