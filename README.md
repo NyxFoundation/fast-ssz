@@ -10,10 +10,10 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Container, sparse ProgressiveContainer and CompatibleUnion through `#[derive(nyx_ssz::Ssz)]`.
 - Type-level field/element paths, packed-element locations, node access and single/multiproof construction.
 - All **4,601 cases in all nine families** of the immutable official corpus, with explicit current-version Progressive root alignment and preserved original metadata.
-- Host and 32-bit tests; 95.40% workspace line coverage; reproducible Criterion benchmarks.
+- Host and 32-bit tests; 95.32% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
-[Current encode comparison](docs/direct-encode.md) ·
+[Encode comparison](docs/direct-encode.md) · [Decode comparison](docs/fixed-decode.md) ·
 [Verification scope](docs/verification.md)
 
 **Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
