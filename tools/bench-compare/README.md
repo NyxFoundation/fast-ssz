@@ -52,3 +52,4 @@ Measured results and limitations: [baseline](../../docs/benchmark-comparison.md)
 and [RustCrypto migration](../../docs/rustcrypto-migration.md).
 Encode optimization: [direct encode](../../docs/direct-encode.md).
 Decode optimization: [fixed decode](../../docs/fixed-decode.md).
+Current root/length/integer improvements: [bulk codecs](../../docs/bulk-codecs.md).

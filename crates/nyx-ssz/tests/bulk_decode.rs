@@ -28,6 +28,22 @@ fn should_bulk_decode_all_unsigned_widths_from_unaligned_little_endian_inputs() 
     check(&[255; 8], vec![u32::MAX; 2], 4);
     check(&[255; 32], vec![u128::MAX; 2], 16);
     check(&[255; 64], vec![U256::MAX; 2], 32);
+    check(&[4, 3, 2, 1], vec![0x0102_0304_u32], 4);
+    check(
+        &(1..=16).collect::<Vec<_>>(),
+        vec![0x100f0e0d0c0b0a090807060504030201_u128],
+        16,
+    );
+    check(
+        &(1..=32).collect::<Vec<_>>(),
+        vec![U256::from_limbs([
+            0x0807060504030201,
+            0x100f0e0d0c0b0a09,
+            0x1817161514131211,
+            0x201f1e1d1c1b1a19,
+        ])],
+        32,
+    );
     assert_eq!(
         List::<u64, 2>::decode(&guarded[1..]).unwrap().as_slice(),
         &[7, u64::MAX]

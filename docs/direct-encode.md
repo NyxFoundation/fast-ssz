@@ -8,6 +8,9 @@ tags:
 ---
 # Direct encode optimization
 
+This records the initial direct-write stage. Newer length-arithmetic results are in
+[bulk codec optimization](bulk-codecs.md).
+
 Typed encoding now calculates the validated length and writes directly into an
 exactly sized slice. The default `encode()` allocates its output Vec once; scalar,
 collection and generated field codecs no longer build encoded-child Vecs.

@@ -61,6 +61,10 @@ unproved derive obligations.
   generated writes are unproved. The member inventory checks real inherited default bodies.
   The full gate rejects the historical `CodecLaw` for extended traits rather than treating
   coverage of encode/decode/root as proof of length or destination behavior.
+- [#32: fixed-sequence decode dispatch](https://github.com/NyxFoundation/nyx-ssz/issues/32):
+  the provided `decode_fixed_sequence` method, integer overrides and parent dispatch
+  are unproved. All added trait members are explicitly inventoried as unproved; the
+  historical `CodecLaw` is not treated as coverage of the new behavior.
 - [#25: remaining equivalence laws](https://github.com/NyxFoundation/nyx-ssz/issues/25):
   the other 97 skips include Cargo/MIR host-tool integration, metadata/codec laws,
   heterogeneous ownership, generated conversions, typed paths, node access and proof construction.

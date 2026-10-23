@@ -56,6 +56,20 @@ fn assert_invalid_width<const WIDTH: usize>() {
 }
 
 #[test]
+fn should_validate_fixed_sequence_declarations_before_invoking_external_callbacks() {
+    assert_eq!(
+        DeclaredUint::<3>::decode_fixed_sequence(&[])
+            .err()
+            .unwrap()
+            .kind,
+        CodecError::InvalidIntegerWidth
+    );
+    assert!(DeclaredUint::<1>::decode_fixed_sequence(&[])
+        .unwrap()
+        .is_empty());
+}
+
+#[test]
 fn should_reject_illegal_integer_declarations_without_invoking_value_codecs() {
     assert_invalid_width::<0>();
     assert_invalid_width::<3>();

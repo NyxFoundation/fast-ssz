@@ -10,10 +10,10 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Container, sparse ProgressiveContainer and CompatibleUnion through `#[derive(nyx_ssz::Ssz)]`.
 - Type-level field/element paths, packed-element locations, node access and single/multiproof construction.
 - All **4,601 cases in all nine families** of the immutable official corpus, with explicit current-version Progressive root alignment and preserved original metadata.
-- Host and 32-bit tests; 95.32% workspace line coverage; reproducible Criterion benchmarks.
+- Host and 32-bit tests; 95.27% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
-[Encode comparison](docs/direct-encode.md) · [Decode comparison](docs/fixed-decode.md) ·
+[Current codec comparison](docs/bulk-codecs.md) ·
 [Verification scope](docs/verification.md)
 
 **Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
@@ -29,6 +29,9 @@ Typed encoding now uses `Ssz::encoded_len()` and `Ssz::encode_into(&mut [u8])`.
 to the two required methods; derive and library types are updated.
 [Direct encoding contract and migration](docs/native-api.md#direct-encoding).
 These new member laws are unproved under [#29](https://github.com/NyxFoundation/nyx-ssz/issues/29).
+The provided `Ssz::decode_fixed_sequence` hook adds safe unsigned-integer bulk decoding
+without requiring manual impl changes; its laws are unproved under
+[#32](https://github.com/NyxFoundation/nyx-ssz/issues/32).
 
 ## Example
 

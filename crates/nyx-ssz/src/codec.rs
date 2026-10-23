@@ -33,8 +33,10 @@ pub trait Ssz: Sized {
     /// partial writes; callers must discard the destination on error.
     fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError>;
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>>;
-    /// Decode an unbounded sequence of fixed-width values, retaining any prefix
-    /// and child state on failure. Variable-width declarations are rejected.
+    /// Decode fixed-width values under the four-byte sequence envelope, without
+    /// an additional element-count bound. Success must return one value per
+    /// declared width. Layout errors retain an empty state; child errors retain
+    /// the completed prefix and child state. Variable declarations are rejected.
     /// Integer implementations use safe bulk conversion; other types retain
     /// their individual decode callbacks and owned refusal states.
     fn decode_fixed_sequence(
