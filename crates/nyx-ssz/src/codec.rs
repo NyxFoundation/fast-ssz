@@ -48,7 +48,7 @@ pub trait Ssz: Sized {
 }
 
 /// Return a fixed width, variable layout (`Ok(None)`), or size overflow.
-pub fn fixed_size<T: Ssz>() -> Result<Option<usize>, CodecError> {
+pub const fn fixed_size<T: Ssz>() -> Result<Option<usize>, CodecError> {
     type_info::fixed_size(T::TYPE)
 }
 
@@ -63,8 +63,32 @@ pub fn is_compatible<Left: Ssz, Right: Ssz>() -> bool {
 }
 
 /// Check a type declaration without invoking any value codec.
-pub fn validate_type<T: Ssz>() -> Result<(), CodecError> {
+pub const fn validate_type<T: Ssz>() -> Result<(), CodecError> {
     type_info::validate(T::TYPE)
+}
+
+/// Sum compile-time fixed widths for generated container decoders.
+#[doc(hidden)]
+pub const fn fixed_layout<const N: usize>(
+    widths: [Result<Option<usize>, CodecError>; N],
+) -> Result<Option<(usize, [usize; N])>, CodecError> {
+    let mut total = 0usize;
+    let mut exact = [0usize; N];
+    let mut index = 0;
+    while index < N {
+        match widths[index] {
+            Ok(Some(width)) => match total.checked_add(width) {
+                Some(next) => {
+                    exact[index] = width;
+                    total = next;
+                }
+                None => return Err(CodecError::InvalidLength),
+            },
+            _ => return Ok(None),
+        }
+        index += 1;
+    }
+    Ok(Some((total, exact)))
 }
 
 /// Encode a typed value using its codec.

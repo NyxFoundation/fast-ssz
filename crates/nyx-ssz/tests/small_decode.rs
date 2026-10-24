@@ -1,5 +1,23 @@
-use nyx_ssz::{codec::Ssz, container::fixed_container_cursor, error::CodecError};
+use nyx_ssz::{
+    codec::{fixed_layout, Ssz},
+    container::fixed_container_cursor,
+    error::CodecError,
+};
+
+const EXACT_LAYOUT: Result<Option<(usize, [usize; 2])>, CodecError> =
+    fixed_layout([Ok(Some(1)), Ok(Some(2))]);
+const VARIABLE_LAYOUT: Result<Option<(usize, [usize; 2])>, CodecError> =
+    fixed_layout([Ok(Some(1)), Ok(None)]);
+const OVERFLOWING_LAYOUT: Result<Option<(usize, [usize; 2])>, CodecError> =
+    fixed_layout([Ok(Some(usize::MAX)), Ok(Some(1))]);
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+#[test]
+fn should_classify_generated_fixed_layouts_at_compile_time() {
+    assert_eq!(EXACT_LAYOUT, Ok(Some((3, [1, 2]))));
+    assert_eq!(VARIABLE_LAYOUT, Ok(None));
+    assert_eq!(OVERFLOWING_LAYOUT, Err(CodecError::InvalidLength));
+}
 
 #[test]
 fn should_classify_fixed_container_widths_without_allocating_ranges() {
