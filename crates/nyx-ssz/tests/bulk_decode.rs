@@ -17,6 +17,18 @@ fn check<T: Ssz + PartialEq + std::fmt::Debug>(input: &[u8], expected: Vec<T>, w
     }
 }
 
+#[cfg(target_endian = "little")]
+#[test]
+fn should_bulk_decode_aligned_native_integer_bytes() {
+    let words = [7_u64, u64::MAX, 0x0102_0304_0506_0708];
+    let input: &[u8] = bytemuck::cast_slice(&words);
+    check(input, words.to_vec(), 8);
+    assert_eq!(
+        List::<u64, 3>::decode(input).unwrap().as_slice(),
+        words.as_slice()
+    );
+}
+
 #[test]
 fn should_bulk_decode_all_unsigned_widths_from_unaligned_little_endian_inputs() {
     let mut guarded = vec![0xa5];

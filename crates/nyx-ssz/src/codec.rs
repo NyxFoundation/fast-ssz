@@ -153,18 +153,37 @@ fn decode_fixed_sequence_default<T: Ssz>(input: &[u8]) -> Result<Vec<T>, CodecEr
     }
 }
 
-fn decode_integer_sequence<T: Ssz, const WIDTH: usize>(
+fn decode_integer_sequence<T: Ssz + bytemuck::Pod, const WIDTH: usize>(
     input: &[u8],
     convert: impl Fn([u8; WIDTH]) -> T,
 ) -> Result<Vec<T>, CodecError> {
     crate::sequence::fixed_list_count(input.len(), WIDTH, None)?;
-    Ok(input
+    #[cfg(target_endian = "little")]
+    if let Ok(values) = bytemuck::try_cast_slice::<u8, T>(input) {
+        return Ok(values.to_vec());
+    }
+    Ok(collect_integer_sequence(input, convert))
+}
+
+fn decode_integer_sequence_scalar<T, const WIDTH: usize>(
+    input: &[u8],
+    convert: impl Fn([u8; WIDTH]) -> T,
+) -> Result<Vec<T>, CodecError> {
+    crate::sequence::fixed_list_count(input.len(), WIDTH, None)?;
+    Ok(collect_integer_sequence(input, convert))
+}
+
+fn collect_integer_sequence<T, const WIDTH: usize>(
+    input: &[u8],
+    convert: impl Fn([u8; WIDTH]) -> T,
+) -> Vec<T> {
+    input
         .as_chunks::<WIDTH>()
         .0
         .iter()
         .copied()
         .map(convert)
-        .collect())
+        .collect()
 }
 
 /// Compute a typed value's SSZ root using its codec.
@@ -264,7 +283,7 @@ impl Ssz for U256 {
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(32);
 
     fn decode_fixed_sequence(input: &[u8]) -> Result<Vec<Self>, CodecError> {
-        decode_integer_sequence::<Self, 32>(input, Self::from_le_bytes::<32>)
+        decode_integer_sequence_scalar::<Self, 32>(input, Self::from_le_bytes::<32>)
     }
 
     fn encoded_len(&self) -> Result<usize, CodecError> {
