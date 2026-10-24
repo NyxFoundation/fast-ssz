@@ -35,6 +35,8 @@ without requiring manual impl changes; its laws are unproved under
 `Ssz::decode` now fails directly with `CodecError`; partial decode-state ownership has been
 removed, and derived variable containers validate offsets with stack metadata. The breaking
 change and measurements are documented in [fail-fast decode](docs/fail-fast-decode.md).
+Aligned little-endian primitive integer lists use a safe validated native copy; the recorded
+12KB mixed decode is 252.586ns versus libssz's 256.937ns in the same five-round batch.
 
 ## Example
 

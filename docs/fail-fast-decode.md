@@ -1,6 +1,6 @@
 ---
 title: Fail-fast variable container decoding
-last_updated: 2026-10-24
+last_updated: 2026-10-25
 tags:
   - ssz
   - rust
@@ -55,6 +55,32 @@ layout metadata itself allocates nothing.
 - Both reports use the same harness digest and contain all 22 cases, individual runs,
   fixtures, tool versions, CPU affinity and load averages.
 - Reproduce with `python3 tools/bench-compare/run.py run --cpu 0 --rounds 5 --out <dir>`.
+
+## Safe native integer copy
+
+A second stage accelerates fully materialized primitive integer sequences without adding
+crate-local unsafe code. On little-endian targets, `bytemuck::try_cast_slice` validates
+alignment and layout before cloning the native integer slice into the result `Vec`. Unaligned
+input and big-endian targets keep the scalar little-endian conversion path; U256 also keeps
+its scalar conversion. The decoded representation and public collection API are unchanged.
+
+2026-10-25 on the same machine and CPU, five rounds:
+
+| Decode fixture | nyx-ssz | libssz 0.3.0 | fastssz | nyx/libssz time |
+| --- | ---: | ---: | ---: | ---: |
+| Header, unchanged path | 10.565 | 9.336 | 56.110 | 1.13× |
+| Mixed, 1,024 u64 values | **252.586** | 256.937 | 9,908.000 | **0.98×** |
+
+Relative to the preceding recorded nyx-ssz result, mixed decode fell from 407.767 ns to
+252.586 ns, an observed 1.61× speedup. A separate five-round run also placed nyx-ssz ahead
+of libssz (303.044 ns versus 324.084 ns). Shared-host variance is substantial, so the claim
+is limited to repeated same-batch parity/slight advantage, not a guaranteed superiority.
+The changed code is decode-only. An additional three-round repeat put unchanged mixed encode
+at 1,042.359 ns versus the preceding 1,057.076 ns; its five-round medians varied more widely.
+
+- [Native-copy JSON](data/native-integer-decode-after.json), source
+  `ad49728d417ade2c3fcfb97abf7714cf94442fb3`.
+- The report contains all 22 cases and individual runs; no benchmark-only decoding path exists.
 
 ## Validation and formal status
 

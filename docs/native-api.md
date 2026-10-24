@@ -1,6 +1,6 @@
 ---
 title: Native SSZ API
-last_updated: 2026-10-24
+last_updated: 2026-10-25
 tags:
   - ssz
   - rust
@@ -142,10 +142,11 @@ returns `Result<Vec<Self>, CodecError>`. This is a provided method: existing man
 implementations and derive users need no override. Its generic default keeps individual
 decode callbacks. Variable-width declarations return `BadDeclaration`.
 
-Unsigned integer implementations (u8 through U256) override it with safe fixed-byte
-array conversion and exact-size collection. No type-punning, crate-local unsafe,
-alignment assumption or little-endian-only interpretation is used. Boolean values
-keep per-element validity checking.
+Unsigned integer implementations override it with exact-size collection. On little-endian
+targets, aligned u8 through u128 input uses `bytemuck::try_cast_slice` followed by a safe
+slice clone; unaligned input, big-endian targets and U256 retain fixed-byte conversion.
+There is no crate-local unsafe code, and alignment is checked rather than assumed. Boolean
+values keep per-element validity checking.
 
 Typed parents validate declaration, exact count/alignment, capacity and their
 four-byte envelope before dispatch. Returned success counts are checked; a custom
