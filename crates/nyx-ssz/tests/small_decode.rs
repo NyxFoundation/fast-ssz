@@ -47,7 +47,6 @@ impl Drop for Owner {
     }
 }
 impl Ssz for Owner {
-    type DecodeState = ();
     const TYPE: &'static nyx_ssz::type_info::TypeDescriptor =
         &nyx_ssz::type_info::TypeDescriptor::Uint(1);
     fn encoded_len(&self) -> Result<usize, CodecError> {
@@ -56,13 +55,10 @@ impl Ssz for Owner {
     fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError> {
         nyx_ssz::encoding::copy(output, &[self.0])
     }
-    fn decode(input: &[u8]) -> Result<Self, nyx_ssz::error::DecodeFailure<()>> {
+    fn decode(input: &[u8]) -> Result<Self, CodecError> {
         match input {
             [0] => Ok(Self(0)),
-            _ => Err(nyx_ssz::error::DecodeFailure {
-                kind: CodecError::InvalidBoolean,
-                state: (),
-            }),
+            _ => Err(CodecError::InvalidBoolean),
         }
     }
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError> {
@@ -77,15 +73,11 @@ struct Pair {
 }
 
 #[test]
-fn should_retain_fixed_container_prefixes_when_a_later_field_fails() {
+fn should_drop_fixed_container_prefixes_when_a_later_field_fails() {
     DROPS.store(0, Ordering::SeqCst);
-    let Err(failure) = Pair::decode(&[0, 2]) else {
-        panic!("invalid field must fail");
-    };
-    assert_eq!(failure.kind, CodecError::InvalidBoolean);
-    assert!(failure.state.first.value.is_some());
-    assert!(failure.state.second.value.is_none());
-    assert_eq!(DROPS.load(Ordering::SeqCst), 0);
-    drop(failure);
+    assert_eq!(
+        Pair::decode(&[0, 2]).err().unwrap(),
+        CodecError::InvalidBoolean
+    );
     assert_eq!(DROPS.load(Ordering::SeqCst), 1);
 }

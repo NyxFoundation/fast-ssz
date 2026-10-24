@@ -13,9 +13,10 @@ wire width in inline constant expressions. Their runtime decode path checks the 
 size envelope and exact input length, then slices each field at its precomputed width.
 It no longer walks the type descriptor or rebuilds the fixed layout for every value.
 
-Variable-width and progressive containers retain the existing validated view path. Child
-decoders, partial failure state, ownership, error categories and error precedence are
-unchanged. The generated path remains safe Rust and introduces no dependency.
+This document records the source revision measured before the later fail-fast decode API.
+That later change also replaces variable-container heap metadata with stack ranges. At the
+revision measured here, variable-width and progressive containers retained the validated
+view path and partial failure-state contract.
 
 ## Observed timing
 
@@ -48,8 +49,8 @@ These are shared-host observations, not guaranteed speedups or randomized causal
 
 The full workspace test suite, documentation tests, formatting and Clippy with warnings
 denied pass. Compile-time regression tests cover exact, variable and overflowing layouts.
-Existing tests cover generic derived containers, malformed declarations, partial child
-failures, owner retention and fixed-layout error precedence.
+At the recorded revision, tests covered generic derived containers, malformed declarations,
+partial child failures, owner retention and fixed-layout error precedence.
 
 This optimization is not formally proved. Derived codec equivalence remains tracked in
 [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25).
