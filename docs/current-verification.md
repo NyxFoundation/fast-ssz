@@ -35,7 +35,7 @@ native-decision axioms and unrelated theorem registrations. Allowed foundational
 
 ## Explicitly unproved
 
-`verification/current-scope.json` enumerates all **103 remaining documented APIs**
+`verification/current-scope.json` enumerates all **105 remaining documented APIs**
 and **17 codec dictionaries**, plus the derive-transformation backlog.
 Every documented API must be exactly in the proved or skipped set; additions, stale
 registrations, overlaps or missing dictionary status fail the gate. Public re-exports are

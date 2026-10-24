@@ -16,7 +16,7 @@ Typed paths, sparse node access and proof construction are native-tested.
 All 4,601 pinned official corpus cases pass with preserved source/version-alignment checks.
 
 The current gate freshly extracts and kernel-checks 12 hash-independent gindex/helper-index operations.
-It explicitly reports the remaining 103 documented APIs, 17 codec dictionaries and derive
+It explicitly reports the remaining 105 documented APIs, 17 codec dictionaries and derive
 transformations as unproved with linked Issues. Actual metadata extraction is rejected for
 nested-loop returns. The six RustCrypto-dependent laws are unproved under
 [#27](https://github.com/NyxFoundation/nyx-ssz/issues/27). See [exact current scope and reproduction](current-verification.md).
@@ -262,20 +262,20 @@ against the actual pinned executable definitions, checking precedence, explicit 
 wrong roots/order and every supported depth. This baseline makes no performance claim.
 
 `bytecollections::ByteVector<N>` and `bytecollections::ByteList<MAX>` are dedicated owned
-opaque-byte types with private `Vec<u8>` storage, not aliases for generic uint8 sequences.
-Their four registered public methods prove exact constructor fault classes, retention of the
-original vector on success, and immutable byte-for-byte projections. Rejected byte storage
-can be dropped without invoking arbitrary user element destructors. Runtime tests check allocation
-identity, zero/maximum bounds and bounded Debug output (unit-array markers are not formatted).
-Their two actual extracted generic dictionaries prove the unchanged full `CodecLaw`: exact opaque
-byte observations, encoding/decoding faults, unit decode state, and complete roots. Existing borrowed
-byte validators and packed-root proofs are reused, together with the real proved append loop for
-owned copies. No narrow-data or native-width hypotheses are introduced. Dedicated descriptors
+opaque-byte types, not aliases for generic uint8 sequences. Current source copies `ByteVector`
+values of at most 32 bytes into the value; larger vectors and byte lists still move `Vec<u8>`.
+Historical proofs assumed universal vector retention and are not current-source certification.
+Their four registered public methods remain explicitly unproved. The old statements covered
+constructor fault classes and immutable byte-for-byte projections. Rejected byte storage
+can be dropped without invoking arbitrary user element destructors. Runtime tests check pointer
+identity above 32 bytes, zero/maximum bounds and bounded Debug output (unit-array markers are not formatted).
+Historical extracted dictionaries are not current-source certification of the changed storage.
+Dedicated descriptors
 preserve pinned `.byteVector`/`.byteList` metadata: fixed/variable width, vector nonzero validity,
 composite packing classification, and compatibility with equal-bound vectors/lists of uint8.
 Compatibility does not identify wire specifications: opaque-byte serialization/deserialization has
 no generic sequence <2^32 size envelope. Containing generic sequences retain their own envelopes.
-All native slices and bounds are covered; allocation/resource failures retain the existing trust boundary.
+Allocation/resource failures retain the existing trust boundary. This paragraph does not extend the current 12-operation proof.
 
 `collections::Vector<T, N>` and `collections::List<T, MAX>` own a private `Vec<T>`.
 Their generic constructors are proved for every element type and machine-size bound:

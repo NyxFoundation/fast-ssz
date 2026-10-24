@@ -13,11 +13,11 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Host and 32-bit tests; 95.27% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
-[Current codec comparison](docs/bulk-codecs.md) ·
+[Current codec comparison](docs/bulk-codecs.md) · [Small decode](docs/small-decode.md) ·
 [Verification scope](docs/verification.md)
 
 **Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
-The remaining 103 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25), with the six RustCrypto-dependent skips in [#27](https://github.com/NyxFoundation/nyx-ssz/issues/27).
+The remaining 105 documented APIs, 17 library codec dictionaries and derive transformations are explicitly **unproved/skipped**, tracked in [#24](https://github.com/NyxFoundation/nyx-ssz/issues/24) and [#25](https://github.com/NyxFoundation/nyx-ssz/issues/25), with the six RustCrypto-dependent skips in [#27](https://github.com/NyxFoundation/nyx-ssz/issues/27).
 Aeneas rejects the actual metadata's nested-loop returns. No tool fork, extra axiom or domain restriction was added.
 Historical broader artifacts are not current-source certification. See [exact current proof scope](docs/current-verification.md).
 
@@ -167,20 +167,23 @@ The same official bit-family cases exercise both borrowed APIs and these actual 
 
 ```rust
 use nyx_ssz::{bytecollections::{ByteList, ByteVector}, codec::{decode, encode, hash_tree_root}};
-let storage = vec![0, 128, 255];
+let inline = ByteVector::<3>::from_bytes(vec![0, 128, 255]).unwrap();
+assert_eq!(inline.as_bytes(), &[0, 128, 255]);
+let mut storage = Vec::with_capacity(33);
+storage.extend([7; 33]);
 let pointer = storage.as_ptr();
-let value = ByteVector::<3>::from_bytes(storage).unwrap();
+let value = ByteVector::<33>::from_bytes(storage).unwrap();
 assert_eq!(value.as_bytes().as_ptr(), pointer);
-assert_eq!(encode(&value).unwrap(), [0, 128, 255]);
+assert_eq!(encode(&inline).unwrap(), [0, 128, 255]);
 let decoded = decode::<ByteList<8>>(&[0, 128, 255]).unwrap();
-assert_eq!(decoded.as_bytes(), value.as_bytes());
-assert_eq!(hash_tree_root(&value).unwrap()[..3], [0, 128, 255]);
+assert_eq!(decoded.as_bytes(), inline.as_bytes());
+assert_eq!(hash_tree_root(&inline).unwrap()[..3], [0, 128, 255]);
 ```
 
-These dedicated types own private `Vec<u8>` storage, not generic `Vector/List<u8>` aliases.
-`from_bytes` moves accepted allocations unchanged; vectors require a nonzero exact length,
-while lists permit empty values and zero capacity. `Ssz` decoding copies validated bytes
-and has unit failure state. Their dedicated byte descriptors are composite for parent packing
+These dedicated types are not generic `Vector/List<u8>` aliases. A `ByteVector` of at most
+32 bytes is copied into the value; larger vectors and every `ByteList` move the accepted
+allocation unchanged. Vectors require a nonzero exact length, while lists permit empty values
+and zero capacity. `Ssz` decoding of inline vectors does not allocate. Failure state is unit. Their dedicated byte descriptors are composite for parent packing
 and Merkle-compatible with equal-bound uint8 vectors/lists, but retain the pinned opaque-byte
 wire semantics: unlike generic sequences, standalone byte arrays have no four-byte sequence-size
 envelope. All native bounds and input slices are covered by the proofs, not just allocatable test

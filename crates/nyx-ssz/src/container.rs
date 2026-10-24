@@ -159,3 +159,57 @@ fn finish_ranges(
     }
     ranges
 }
+
+/// A validated all-fixed container body. Variable or erroneous widths are not cursors.
+#[derive(Debug)]
+pub struct FixedCursor<'a> {
+    rest: &'a [u8],
+}
+
+impl<'a> FixedCursor<'a> {
+    /// Borrow the next field. A width outside the validated body is `InvalidLength`.
+    pub fn read(&mut self, width: usize) -> Result<&'a [u8], CodecError> {
+        let Some((head, rest)) = self.rest.split_at_checked(width) else {
+            return Err(CodecError::InvalidLength);
+        };
+        self.rest = rest;
+        Ok(head)
+    }
+}
+
+/// Return a no-allocation cursor when every width is fixed and sums to `input.len()`.
+/// `Ok(None)` means at least one width is variable or a child metadata error.
+pub fn fixed_container_cursor<'a>(
+    input: &'a [u8],
+    widths: &[Result<Option<usize>, CodecError>],
+) -> Result<Option<FixedCursor<'a>>, CodecError> {
+    if input.len() as u128 >= 4_294_967_296 {
+        return Err(CodecError::SizeOverflow);
+    }
+    match fixed_total(widths) {
+        FixedTotal::Variable => Ok(None),
+        FixedTotal::Overflow => Err(CodecError::InvalidLength),
+        FixedTotal::Exact(total) if total == input.len() => Ok(Some(FixedCursor { rest: input })),
+        FixedTotal::Exact(_) => Err(CodecError::InvalidLength),
+    }
+}
+
+enum FixedTotal {
+    Variable,
+    Overflow,
+    Exact(usize),
+}
+
+fn fixed_total(widths: &[Result<Option<usize>, CodecError>]) -> FixedTotal {
+    let mut total: usize = 0;
+    for width in widths {
+        let Ok(Some(width)) = width else {
+            return FixedTotal::Variable;
+        };
+        match total.checked_add(*width) {
+            Some(next) => total = next,
+            None => return FixedTotal::Overflow,
+        }
+    }
+    FixedTotal::Exact(total)
+}

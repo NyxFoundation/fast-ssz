@@ -1,7 +1,8 @@
 //! Owned opaque SSZ byte arrays, distinct from generic uint8 sequences.
 //!
-//! Constructors retain accepted allocations. Private storage prevents resizing;
-//! the unit-array markers preserve const bounds during generic extraction only.
+//! Values of at most 32 bytes are stored inline. Larger values retain the accepted
+//! `Vec` allocation. Private storage prevents resizing; the unit-array markers
+//! preserve const bounds during generic extraction only.
 
 use crate::{
     bytes::{self, ByteError},
@@ -11,9 +12,20 @@ use crate::{
     type_info::TypeDescriptor,
 };
 
+const INLINE_LIMIT: usize = 32;
+
+fn inline_bytes<const N: usize>(bytes: &[u8]) -> [u8; INLINE_LIMIT] {
+    let mut inline = [0; INLINE_LIMIT];
+    inline[..N].copy_from_slice(bytes);
+    inline
+}
+
 /// Exactly `N` bytes; zero-length vector declarations are invalid.
+///
+/// `N <= 32` uses `inline` and an empty `heap`. Larger `N` moves bytes into `heap`.
 pub struct ByteVector<const N: usize> {
-    bytes: Vec<u8>,
+    inline: [u8; INLINE_LIMIT],
+    heap: Vec<u8>,
     _bound: [(); N],
 }
 
@@ -37,22 +49,52 @@ fn copy_bytes(bytes: &[u8]) -> Vec<u8> {
 }
 
 impl<const N: usize> ByteVector<N> {
-    /// Validate the declaration and exact length, moving accepted storage unchanged.
+    /// Validate the declaration and exact length.
+    /// Lengths above 32 bytes move the accepted allocation; smaller lengths are copied inline.
     #[cfg_attr(feature = "verification", verify::start_from)]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, CodecError> {
         match bytes::encode_byte_vector(&bytes, N) {
-            Ok(_) => Ok(Self {
-                bytes,
-                _bound: [(); N],
-            }),
+            Ok(_) => Ok(Self::from_validated(bytes)),
             Err(error) => Err(byte_error(error)),
         }
     }
 
-    /// Borrow every byte in its original order without changing the allocation.
+    /// Borrow every byte in its original order without changing storage.
     #[cfg_attr(feature = "verification", verify::start_from)]
     pub fn as_bytes(&self) -> &[u8] {
-        &self.bytes
+        if N <= INLINE_LIMIT {
+            &self.inline[..N]
+        } else {
+            &self.heap
+        }
+    }
+
+    fn from_slice(bytes: &[u8]) -> Self {
+        if N <= INLINE_LIMIT {
+            Self {
+                inline: inline_bytes::<N>(bytes),
+                heap: Vec::new(),
+                _bound: [(); N],
+            }
+        } else {
+            Self {
+                inline: [0; INLINE_LIMIT],
+                heap: bytes.to_vec(),
+                _bound: [(); N],
+            }
+        }
+    }
+
+    fn from_validated(bytes: Vec<u8>) -> Self {
+        if N <= INLINE_LIMIT {
+            Self::from_slice(&bytes)
+        } else {
+            Self {
+                inline: [0; INLINE_LIMIT],
+                heap: bytes,
+                _bound: [(); N],
+            }
+        }
     }
 }
 
@@ -81,7 +123,7 @@ impl<const N: usize> std::fmt::Debug for ByteVector<N> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("ByteVector")
-            .field("bytes", &self.bytes)
+            .field("bytes", &self.as_bytes())
             .finish()
     }
 }
@@ -114,10 +156,7 @@ mod ssz {
 
         fn decode(input: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>> {
             match bytes::decode_byte_vector(input, N) {
-                Ok(bytes) => Ok(Self {
-                    bytes: copy_bytes(bytes),
-                    _bound: [(); N],
-                }),
+                Ok(bytes) => Ok(Self::from_slice(bytes)),
                 Err(error) => Err(DecodeFailure {
                     kind: byte_error(error),
                     state: (),
@@ -170,14 +209,16 @@ mod tests {
     #[test]
     fn codecs_defensively_check_private_storage_and_declarations() {
         let zero = ByteVector::<0> {
-            bytes: vec![],
+            inline: [0; INLINE_LIMIT],
+            heap: Vec::new(),
             _bound: [],
         };
         assert_eq!(zero.encode(), Err(CodecError::EmptyVector));
         assert_eq!(zero.hash_tree_root(), Err(CodecError::EmptyVector));
-        let short = ByteVector::<2> {
-            bytes: vec![1],
-            _bound: [(); 2],
+        let short = ByteVector::<33> {
+            inline: [0; INLINE_LIMIT],
+            heap: vec![1],
+            _bound: [(); 33],
         };
         assert_eq!(short.encode(), Err(CodecError::InvalidLength));
         assert_eq!(short.hash_tree_root(), Err(CodecError::InvalidLength));
@@ -196,7 +237,8 @@ mod tests {
     #[test]
     fn formatting_never_expands_machine_maximum_markers() {
         let value = ByteVector::<{ usize::MAX }> {
-            bytes: vec![],
+            inline: [0; INLINE_LIMIT],
+            heap: Vec::new(),
             _bound: [(); usize::MAX],
         };
         assert_eq!(format!("{value:?}"), "ByteVector { bytes: [] }");

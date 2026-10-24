@@ -11,12 +11,14 @@ use nyx_ssz::{
 
 #[test]
 fn constructors_move_allocations_and_expose_exact_bytes() {
+    let inline = ByteVector::<3>::from_bytes(vec![0, 128, 255]).unwrap();
+    assert_eq!(inline.as_bytes(), &[0, 128, 255]);
     let mut bytes = Vec::with_capacity(41);
-    bytes.extend([0, 128, 255]);
+    bytes.extend([7; 33]);
     let pointer = bytes.as_ptr();
-    let value = ByteVector::<3>::from_bytes(bytes).unwrap();
+    let value = ByteVector::<33>::from_bytes(bytes).unwrap();
     assert_eq!(value.as_bytes().as_ptr(), pointer);
-    assert_eq!(value.as_bytes(), &[0, 128, 255]);
+    assert_eq!(value.as_bytes(), &[7; 33]);
     let mut bytes = Vec::with_capacity(43);
     bytes.extend([255, 0, 128]);
     let pointer = bytes.as_ptr();
