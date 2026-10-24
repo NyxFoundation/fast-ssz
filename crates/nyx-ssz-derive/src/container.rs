@@ -23,7 +23,7 @@ pub fn expand(
     let state = state_definition(input, &fields, &generics, krate);
     let (descriptor, mask) = metadata(&fields, progressive, krate);
     let encode = encode_method(&fields, krate);
-    let decode = decode_method(&fields, &state_name, krate);
+    let decode = decode_method(&fields, &state_name, krate, progressive);
     let root = root_method(&fields, &mask, krate);
     Ok(quote! {
         #state
@@ -126,26 +126,80 @@ fn metadata(
     )
 }
 
-fn decode_method(fields: &[Field], state_name: &syn::Ident, krate: &TokenStream) -> TokenStream {
+fn decode_method(
+    fields: &[Field],
+    state_name: &syn::Ident,
+    krate: &TokenStream,
+    progressive: bool,
+) -> TokenStream {
     let names: Vec<_> = fields.iter().map(|f| &f.ident).collect();
-    let types = fields.iter().map(|f| &f.ty);
+    let types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
     let marker = marker_name(fields);
     let decode = fields
         .iter()
         .enumerate()
         .map(|(index, field)| decode_field(index, field, krate));
+    let fixed = if progressive {
+        quote!()
+    } else {
+        fixed_decode(&names, &types, krate)
+    };
     quote! {
         fn decode(bytes: &[u8]) -> ::core::result::Result<Self, #krate::error::DecodeFailure<Self::DecodeState>> {
             let mut state = #state_name { #(#names: ::core::default::Default::default(),)* #marker: ::core::marker::PhantomData };
             if let ::core::result::Result::Err(kind) = #krate::codec::validate_type::<Self>() {
                 return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state });
             }
+            #fixed
             let view = match #krate::container::container_view(bytes, &[#(#krate::codec::fixed_size::<#types>(),)*]) {
                 ::core::result::Result::Ok(view) => view,
                 ::core::result::Result::Err(kind) => return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state }),
             };
             #(#decode)*
             ::core::result::Result::Ok(Self { #(#names: state.#names.value.take().expect("completed SSZ field"),)* })
+        }
+    }
+}
+
+fn fixed_decode(names: &[&syn::Ident], types: &[&syn::Type], krate: &TokenStream) -> TokenStream {
+    let reads = names
+        .iter()
+        .zip(types)
+        .map(|(name, ty)| fixed_field(name, ty, krate));
+    quote! {
+        match #krate::container::fixed_container_cursor(bytes, &[#(#krate::codec::fixed_size::<#types>(),)*]) {
+            ::core::result::Result::Ok(::core::option::Option::Some(mut cursor)) => {
+                #(#reads)*
+                return ::core::result::Result::Ok(Self { #(#names: state.#names.value.take().expect("completed SSZ field"),)* });
+            }
+            ::core::result::Result::Ok(::core::option::Option::None) => {}
+            ::core::result::Result::Err(kind) => {
+                return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state });
+            }
+        }
+    }
+}
+
+fn fixed_field(name: &syn::Ident, ty: &syn::Type, krate: &TokenStream) -> TokenStream {
+    quote! {
+        let slice = match cursor.read(match #krate::codec::fixed_size::<#ty>() {
+            ::core::result::Result::Ok(::core::option::Option::Some(width)) => width,
+            _ => return ::core::result::Result::Err(#krate::error::DecodeFailure {
+                kind: #krate::error::CodecError::InvalidLength,
+                state,
+            }),
+        }) {
+            ::core::result::Result::Ok(slice) => slice,
+            ::core::result::Result::Err(kind) => {
+                return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state });
+            }
+        };
+        match <#ty as #krate::codec::Ssz>::decode(slice) {
+            ::core::result::Result::Ok(value) => state.#name.value = ::core::option::Option::Some(value),
+            ::core::result::Result::Err(failure) => {
+                state.#name.child = ::core::option::Option::Some(failure.state);
+                return ::core::result::Result::Err(#krate::error::DecodeFailure { kind: failure.kind, state });
+            }
         }
     }
 }

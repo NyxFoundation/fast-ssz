@@ -122,6 +122,20 @@ reserving the potential full result would overflow native allocation limits.
 See [measurements and regression evidence](fixed-decode.md).
 These changed codec laws remain unproved under the existing equivalence backlog.
 
+## Small fixed decoding
+
+All-fixed, non-progressive containers validate the declaration and exact body length, then
+split field slices directly. They do not build a range table. Variable and progressive
+containers keep `container_view`. A width sum that overflows `usize` is `InvalidLength`,
+and inputs of at least four gigabytes remain `SizeOverflow`, both before any field decoder.
+Field failures still retain completed owners.
+
+`ByteVector<N>` for `N <= 32` stores those bytes inline. `from_bytes` therefore does not
+preserve the input allocation at those sizes. `N > 32` and every `ByteList` still move the
+accepted `Vec`. Decode of an inline vector performs no allocation. These layout changes are
+native-tested and remain under the unproved codec backlog in
+[#25](https://github.com/NyxFoundation/nyx-ssz/issues/25).
+
 ## Fixed-sequence decode hook
 
 `Ssz::decode_fixed_sequence(input)` decodes a sequence of a fixed-width type
