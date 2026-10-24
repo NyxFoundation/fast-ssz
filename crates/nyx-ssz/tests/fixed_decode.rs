@@ -145,6 +145,11 @@ impl Ssz for TooWide {
 
 #[test]
 fn should_accept_empty_lists_but_refuse_nonempty_scopes_when_fixed_width_is_unrepresentable() {
+    assert!(TooWide::decode_fixed_sequence(&[]).unwrap().is_empty());
+    assert_eq!(
+        TooWide::decode_fixed_sequence(&[1]).err().unwrap().kind,
+        CodecError::ScopeUndivided
+    );
     assert!(List::<TooWide, 0>::decode(&[])
         .unwrap()
         .as_slice()

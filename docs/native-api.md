@@ -113,7 +113,7 @@ temporary range table. Variable-width layouts keep their existing offset validat
 The public `SequenceView` API and all error/ownership types are unchanged.
 
 Decoded byte/bit storage uses standard bulk copying into its owned allocation.
-Fixed sequence decoding reserves its output only after the first child succeeds.
+Generic fixed sequence decoding reserves its output only after the first child succeeds.
 The initial capacity hint is bounded by the encoded input size, not the potentially
 much larger full Rust representation. It never restricts the decoded element count;
 the vector grows as needed. This preserves later child errors even when eagerly
@@ -121,6 +121,30 @@ reserving the potential full result would overflow native allocation limits.
 
 See [measurements and regression evidence](fixed-decode.md).
 These changed codec laws remain unproved under the existing equivalence backlog.
+
+## Fixed-sequence decode hook
+
+`Ssz::decode_fixed_sequence(input)` decodes a sequence of a fixed-width type
+under the standard four-byte envelope, without an extra element-count bound, and
+returns `Vec<Self>` or the usual `SequenceDecodeState<Self>` failure.
+This is a provided method: existing manual implementations and derive users need
+no new implementation. Its generic default keeps individual decode callbacks and
+every owned failure prefix. Variable-width declarations return `BadDeclaration`.
+
+Unsigned integer implementations (u8 through U256) override it with safe fixed-byte
+array conversion and exact-size collection. No type-punning, crate-local unsafe,
+alignment assumption or little-endian-only interpretation is used. Boolean values
+keep per-element validity checking and prefix retention.
+
+Typed parents validate declaration, exact count/alignment, capacity and their
+four-byte envelope before dispatch. Returned success counts are checked; if a
+custom override returns the wrong count, `InvalidLength` retains all returned
+owners in the failure instead of dropping them. Overrides must obey the same
+fixed-sequence bytes, errors and ownership contract as the generic implementation.
+
+The member and integer-override laws are **unproved** under
+[#32](https://github.com/NyxFoundation/nyx-ssz/issues/32).
+See [bulk codec results](bulk-codecs.md) for all three optimization stages.
 
 ## Failure ownership
 

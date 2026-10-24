@@ -16,7 +16,8 @@
       "decode": "function",
       "hash_tree_root": "function",
       "encoded_len": "function",
-      "encode_into": "function"
+      "encode_into": "function",
+      "decode_fixed_sequence": "function"
     },
     "instances": [
       {

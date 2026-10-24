@@ -8,6 +8,9 @@ tags:
 ---
 # Fixed-width decode optimization
 
+This records the initial table-free stage. Newer integer bulk conversion results are in
+[bulk codec optimization](bulk-codecs.md).
+
 After merging #30 at `04bb70b`, this change optimizes fixed-width sequence decoding
 and owned byte/bit copies. Public APIs and error/ownership types are unchanged.
 No encode/root algorithm, unsafe code or dependency is added.

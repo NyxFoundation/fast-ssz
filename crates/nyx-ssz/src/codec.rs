@@ -33,6 +33,17 @@ pub trait Ssz: Sized {
     /// partial writes; callers must discard the destination on error.
     fn encode_into(&self, output: &mut [u8]) -> Result<(), CodecError>;
     fn decode(bytes: &[u8]) -> Result<Self, DecodeFailure<Self::DecodeState>>;
+    /// Decode fixed-width values under the four-byte sequence envelope, without
+    /// an additional element-count bound. Success must return one value per
+    /// declared width. Layout errors retain an empty state; child errors retain
+    /// the completed prefix and child state. Variable declarations are rejected.
+    /// Integer implementations use safe bulk conversion; other types retain
+    /// their individual decode callbacks and owned refusal states.
+    fn decode_fixed_sequence(
+        bytes: &[u8],
+    ) -> Result<Vec<Self>, DecodeFailure<SequenceDecodeState<Self>>> {
+        decode_fixed_sequence_default(bytes)
+    }
     fn hash_tree_root(&self) -> Result<[u8; 32], CodecError>;
 }
 
@@ -125,6 +136,47 @@ pub(crate) fn decode_fixed<T: Ssz>(
     Ok(values)
 }
 
+fn decode_fixed_sequence_default<T: Ssz>(
+    input: &[u8],
+) -> Result<Vec<T>, DecodeFailure<SequenceDecodeState<T>>> {
+    use crate::collection_codec::empty_failure;
+    validate_type::<T>().map_err(empty_failure::<T>)?;
+    match fixed_size::<T>() {
+        Ok(Some(width)) => {
+            let count = crate::sequence::fixed_list_count(input.len(), width, None)
+                .map_err(empty_failure::<T>)?;
+            decode_fixed(input, width, count)
+        }
+        Ok(None) => Err(empty_failure::<T>(CodecError::BadDeclaration)),
+        Err(CodecError::SizeOverflow) => {
+            if input.len() as u128 >= 4_294_967_296 {
+                return Err(empty_failure::<T>(CodecError::SizeOverflow));
+            }
+            if input.is_empty() {
+                Ok(Vec::new())
+            } else {
+                Err(empty_failure::<T>(CodecError::ScopeUndivided))
+            }
+        }
+        Err(error) => Err(empty_failure::<T>(error)),
+    }
+}
+
+fn decode_integer_sequence<T: Ssz, const WIDTH: usize>(
+    input: &[u8],
+    convert: impl Fn([u8; WIDTH]) -> T,
+) -> Result<Vec<T>, DecodeFailure<SequenceDecodeState<T>>> {
+    crate::sequence::fixed_list_count(input.len(), WIDTH, None)
+        .map_err(crate::collection_codec::empty_failure::<T>)?;
+    Ok(input
+        .as_chunks::<WIDTH>()
+        .0
+        .iter()
+        .copied()
+        .map(convert)
+        .collect())
+}
+
 fn sequence_failure<T: Ssz>(
     values: Vec<T>,
     failure: DecodeFailure<T::DecodeState>,
@@ -158,11 +210,27 @@ fn scalar_error(error: scalar::ScalarError) -> CodecError {
     }
 }
 
+macro_rules! integer_bulk_method {
+    (bool) => {};
+    ($type:ident) => {
+        fn decode_fixed_sequence(
+            input: &[u8],
+        ) -> Result<Vec<Self>, DecodeFailure<SequenceDecodeState<Self>>> {
+            decode_integer_sequence::<Self, { core::mem::size_of::<$type>() }>(
+                input,
+                <$type>::from_le_bytes,
+            )
+        }
+    };
+}
+
 macro_rules! basic_codec {
-    ($type:ty, $declaration:expr, $encode:ident, $decode:ident, $root:ident) => {
+    ($type:ident, $declaration:expr, $encode:ident, $decode:ident, $root:ident) => {
         impl Ssz for $type {
             type DecodeState = ();
             const TYPE: &'static TypeDescriptor = &$declaration;
+
+            integer_bulk_method!($type);
 
             fn encoded_len(&self) -> Result<usize, CodecError> {
                 Ok(core::mem::size_of::<$type>())
@@ -235,6 +303,12 @@ basic_codec!(
 impl Ssz for U256 {
     type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::Uint(32);
+
+    fn decode_fixed_sequence(
+        input: &[u8],
+    ) -> Result<Vec<Self>, DecodeFailure<SequenceDecodeState<Self>>> {
+        decode_integer_sequence::<Self, 32>(input, Self::from_le_bytes::<32>)
+    }
 
     fn encoded_len(&self) -> Result<usize, CodecError> {
         Ok(32)

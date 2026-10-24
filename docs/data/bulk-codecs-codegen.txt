@@ -1,0 +1,223 @@
+Source: 7e6716e08cebb8f3b11ead4df2facdff1a117da8
+Binary SHA-256: 2fa58e72de3f7a1b05cd8737cc64b58edea11f0083a35bb482afc6f757a7fc47
+
+Constant-width length calculation (no per-element clamp loop):
+
+/home/shouki/orca/workspaces/fast-ssz/nyx-ssz-bulk-codecs-20261023/tools/bench-compare/target/release/build/nyx-ssz-bench-compare/3096141fe0e9fa28/out/compare-3096141fe0e9fa28:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+00000000001a63e0 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>>:
+  1a63e0:	41 57                	push   r15
+  1a63e2:	41 56                	push   r14
+  1a63e4:	53                   	push   rbx
+  1a63e5:	48 83 ec 10          	sub    rsp,0x10
+  1a63e9:	49 89 d7             	mov    r15,rdx
+  1a63ec:	49 89 f6             	mov    r14,rsi
+  1a63ef:	48 89 fb             	mov    rbx,rdi
+  1a63f2:	48 8d 3d e7 4d e8 ff 	lea    rdi,[rip+0xffffffffffe84de7]        # 2b1e0 <anon.3cb38c822c3631cdd2b674f40daf0c56.10.llvm.5635698937988050186>
+  1a63f9:	ff 15 09 9e 0c 00    	call   QWORD PTR [rip+0xc9e09]        # 270208 <_DYNAMIC+0xf30>
+  1a63ff:	3c ff                	cmp    al,0xff
+  1a6401:	74 13                	je     1a6416 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x36>
+  1a6403:	3c 07                	cmp    al,0x7
+  1a6405:	75 1e                	jne    1a6425 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x45>
+  1a6407:	41 c6 46 20 01       	mov    BYTE PTR [r14+0x20],0x1
+  1a640c:	31 c0                	xor    eax,eax
+  1a640e:	48 89 03             	mov    QWORD PTR [rbx],rax
+  1a6411:	e9 1d 01 00 00       	jmp    1a6533 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x153>
+  1a6416:	4d 8b 7f 10          	mov    r15,QWORD PTR [r15+0x10]
+  1a641a:	b0 10                	mov    al,0x10
+  1a641c:	49 81 ff 00 04 00 00 	cmp    r15,0x400
+  1a6423:	76 10                	jbe    1a6435 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x55>
+  1a6425:	88 43 08             	mov    BYTE PTR [rbx+0x8],al
+  1a6428:	b8 02 00 00 00       	mov    eax,0x2
+  1a642d:	48 89 03             	mov    QWORD PTR [rbx],rax
+  1a6430:	e9 fe 00 00 00       	jmp    1a6533 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x153>
+  1a6435:	48 8d 35 d4 4c e8 ff 	lea    rsi,[rip+0xffffffffffe84cd4]        # 2b110 <anon.86de42c51eaf38da59fa583d15fbc7fe.0.llvm.1105793048062972847>
+  1a643c:	48 89 e7             	mov    rdi,rsp
+  1a643f:	ff 15 93 9d 0c 00    	call   QWORD PTR [rip+0xc9d93]        # 2701d8 <_DYNAMIC+0xf00>
+  1a6445:	48 8b 04 24          	mov    rax,QWORD PTR [rsp]
+  1a6449:	48 85 c0             	test   rax,rax
+  1a644c:	74 12                	je     1a6460 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x80>
+  1a644e:	83 f8 02             	cmp    eax,0x2
+  1a6451:	75 09                	jne    1a645c <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x7c>
+  1a6453:	0f b6 44 24 08       	movzx  eax,BYTE PTR [rsp+0x8]
+  1a6458:	3c 06                	cmp    al,0x6
+  1a645a:	75 a7                	jne    1a6403 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x23>
+  1a645c:	31 c0                	xor    eax,eax
+  1a645e:	eb 08                	jmp    1a6468 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x88>
+  1a6460:	4a 8d 04 bd 00 00 00 	lea    rax,[r15*4+0x0]
+  1a6467:	00 
+  1a6468:	49 c1 e7 03          	shl    r15,0x3
+  1a646c:	49 01 c7             	add    r15,rax
+  1a646f:	48 8d 35 72 36 0c 00 	lea    rsi,[rip+0xc3672]        # 269ae8 <anon.86de42c51eaf38da59fa583d15fbc7fe.1.llvm.1105793048062972847>
+  1a6476:	48 89 e7             	mov    rdi,rsp
+  1a6479:	ff 15 59 9d 0c 00    	call   QWORD PTR [rip+0xc9d59]        # 2701d8 <_DYNAMIC+0xf00>
+  1a647f:	48 8b 04 24          	mov    rax,QWORD PTR [rsp]
+  1a6483:	48 85 c0             	test   rax,rax
+  1a6486:	74 45                	je     1a64cd <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0xed>
+  1a6488:	83 f8 02             	cmp    eax,0x2
+  1a648b:	75 0d                	jne    1a649a <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0xba>
+  1a648d:	0f b6 44 24 08       	movzx  eax,BYTE PTR [rsp+0x8]
+  1a6492:	3c 06                	cmp    al,0x6
+  1a6494:	0f 85 a6 00 00 00    	jne    1a6540 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x160>
+  1a649a:	49 8b 46 08          	mov    rax,QWORD PTR [r14+0x8]
+  1a649e:	49 8b 0e             	mov    rcx,QWORD PTR [r14]
+  1a64a1:	4c 01 f9             	add    rcx,r15
+  1a64a4:	48 83 d0 00          	adc    rax,0x0
+  1a64a8:	48 ba 00 00 00 00 01 	movabs rdx,0x100000000
+  1a64af:	00 00 00 
+  1a64b2:	48 39 d1             	cmp    rcx,rdx
+  1a64b5:	48 0f 43 ca          	cmovae rcx,rdx
+  1a64b9:	48 85 c0             	test   rax,rax
+  1a64bc:	48 0f 45 ca          	cmovne rcx,rdx
+  1a64c0:	49 89 0e             	mov    QWORD PTR [r14],rcx
+  1a64c3:	49 c7 46 08 00 00 00 	mov    QWORD PTR [r14+0x8],0x0
+  1a64ca:	00 
+  1a64cb:	eb 5b                	jmp    1a6528 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x148>
+  1a64cd:	49 8b 06             	mov    rax,QWORD PTR [r14]
+  1a64d0:	49 8b 4e 08          	mov    rcx,QWORD PTR [r14+0x8]
+  1a64d4:	48 83 c0 04          	add    rax,0x4
+  1a64d8:	48 83 d1 00          	adc    rcx,0x0
+  1a64dc:	48 ba 00 00 00 00 01 	movabs rdx,0x100000000
+  1a64e3:	00 00 00 
+  1a64e6:	48 39 d0             	cmp    rax,rdx
+  1a64e9:	48 0f 43 c2          	cmovae rax,rdx
+  1a64ed:	48 85 c9             	test   rcx,rcx
+  1a64f0:	48 0f 45 c2          	cmovne rax,rdx
+  1a64f4:	49 89 06             	mov    QWORD PTR [r14],rax
+  1a64f7:	49 c7 46 08 00 00 00 	mov    QWORD PTR [r14+0x8],0x0
+  1a64fe:	00 
+  1a64ff:	49 8b 46 18          	mov    rax,QWORD PTR [r14+0x18]
+  1a6503:	49 8b 4e 10          	mov    rcx,QWORD PTR [r14+0x10]
+  1a6507:	4c 01 f9             	add    rcx,r15
+  1a650a:	48 83 d0 00          	adc    rax,0x0
+  1a650e:	48 39 d1             	cmp    rcx,rdx
+  1a6511:	48 0f 43 ca          	cmovae rcx,rdx
+  1a6515:	48 85 c0             	test   rax,rax
+  1a6518:	48 0f 45 ca          	cmovne rcx,rdx
+  1a651c:	49 89 4e 10          	mov    QWORD PTR [r14+0x10],rcx
+  1a6520:	49 c7 46 18 00 00 00 	mov    QWORD PTR [r14+0x18],0x0
+  1a6527:	00 
+  1a6528:	48 c7 03 01 00 00 00 	mov    QWORD PTR [rbx],0x1
+  1a652f:	4c 89 7b 08          	mov    QWORD PTR [rbx+0x8],r15
+  1a6533:	48 89 d8             	mov    rax,rbx
+  1a6536:	48 83 c4 10          	add    rsp,0x10
+  1a653a:	5b                   	pop    rbx
+  1a653b:	41 5e                	pop    r14
+  1a653d:	41 5f                	pop    r15
+  1a653f:	c3                   	ret
+  1a6540:	88 43 08             	mov    BYTE PTR [rbx+0x8],al
+  1a6543:	48 c7 03 02 00 00 00 	mov    QWORD PTR [rbx],0x2
+  1a654a:	eb e7                	jmp    1a6533 <<nyx_ssz::encoding::ContainerSize>::push::<nyx_ssz::collections::List<u64, 1024>>+0x153>
+
+Safe u64 collection (two unaligned 16-byte load/store pairs per four values):
+
+/home/shouki/orca/workspaces/fast-ssz/nyx-ssz-bulk-codecs-20261023/tools/bench-compare/target/release/build/nyx-ssz-bench-compare/3096141fe0e9fa28/out/compare-3096141fe0e9fa28:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+00000000001a4c00 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter>:
+  1a4c00:	41 57                	push   r15
+  1a4c02:	41 56                	push   r14
+  1a4c04:	53                   	push   rbx
+  1a4c05:	48 83 ec 10          	sub    rsp,0x10
+  1a4c09:	48 89 d3             	mov    rbx,rdx
+  1a4c0c:	48 29 f3             	sub    rbx,rsi
+  1a4c0f:	48 b8 f8 ff ff ff ff 	movabs rax,0x7ffffffffffffff8
+  1a4c16:	ff ff 7f 
+  1a4c19:	48 39 c3             	cmp    rbx,rax
+  1a4c1c:	76 0b                	jbe    1a4c29 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x29>
+  1a4c1e:	31 ff                	xor    edi,edi
+  1a4c20:	48 89 de             	mov    rsi,rbx
+  1a4c23:	ff 15 ef a8 0c 00    	call   QWORD PTR [rip+0xca8ef]        # 26f518 <_DYNAMIC+0x240>
+  1a4c29:	48 39 f2             	cmp    rdx,rsi
+  1a4c2c:	74 17                	je     1a4c45 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x45>
+  1a4c2e:	49 89 f7             	mov    r15,rsi
+  1a4c31:	49 89 fe             	mov    r14,rdi
+  1a4c34:	48 83 fb 07          	cmp    rbx,0x7
+  1a4c38:	76 17                	jbe    1a4c51 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x51>
+  1a4c3a:	48 89 df             	mov    rdi,rbx
+  1a4c3d:	ff 15 8d a8 0c 00    	call   QWORD PTR [rip+0xca88d]        # 26f4d0 <malloc@GLIBC_2.2.5>
+  1a4c43:	eb 3a                	jmp    1a4c7f <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x7f>
+  1a4c45:	b8 08 00 00 00       	mov    eax,0x8
+  1a4c4a:	31 c9                	xor    ecx,ecx
+  1a4c4c:	e9 fe 00 00 00       	jmp    1a4d4f <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x14f>
+  1a4c51:	48 c7 44 24 08 00 00 	mov    QWORD PTR [rsp+0x8],0x0
+  1a4c58:	00 00 
+  1a4c5a:	48 8d 7c 24 08       	lea    rdi,[rsp+0x8]
+  1a4c5f:	be 08 00 00 00       	mov    esi,0x8
+  1a4c64:	48 89 da             	mov    rdx,rbx
+  1a4c67:	ff 15 6b a8 0c 00    	call   QWORD PTR [rip+0xca86b]        # 26f4d8 <posix_memalign@GLIBC_2.2.5>
+  1a4c6d:	bf 08 00 00 00       	mov    edi,0x8
+  1a4c72:	85 c0                	test   eax,eax
+  1a4c74:	0f 85 f2 00 00 00    	jne    1a4d6c <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x16c>
+  1a4c7a:	48 8b 44 24 08       	mov    rax,QWORD PTR [rsp+0x8]
+  1a4c7f:	48 85 c0             	test   rax,rax
+  1a4c82:	0f 84 df 00 00 00    	je     1a4d67 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x167>
+  1a4c88:	4c 89 fa             	mov    rdx,r15
+  1a4c8b:	48 89 d9             	mov    rcx,rbx
+  1a4c8e:	48 c1 e9 03          	shr    rcx,0x3
+  1a4c92:	31 f6                	xor    esi,esi
+  1a4c94:	48 83 fb 40          	cmp    rbx,0x40
+  1a4c98:	4c 89 f7             	mov    rdi,r14
+  1a4c9b:	72 47                	jb     1a4ce4 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0xe4>
+  1a4c9d:	49 89 d0             	mov    r8,rdx
+  1a4ca0:	49 29 c0             	sub    r8,rax
+  1a4ca3:	49 83 f8 e0          	cmp    r8,0xffffffffffffffe0
+  1a4ca7:	77 3b                	ja     1a4ce4 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0xe4>
+  1a4ca9:	48 be fc ff ff ff ff 	movabs rsi,0xffffffffffffffc
+  1a4cb0:	ff ff 0f 
+  1a4cb3:	48 21 ce             	and    rsi,rcx
+  1a4cb6:	45 31 c0             	xor    r8d,r8d
+  1a4cb9:	0f 1f 80 00 00 00 00 	nop    DWORD PTR [rax+0x0]
+  1a4cc0:	42 0f 10 04 c2       	movups xmm0,XMMWORD PTR [rdx+r8*8]
+  1a4cc5:	42 0f 10 4c c2 10    	movups xmm1,XMMWORD PTR [rdx+r8*8+0x10]
+  1a4ccb:	42 0f 11 04 c0       	movups XMMWORD PTR [rax+r8*8],xmm0
+  1a4cd0:	42 0f 11 4c c0 10    	movups XMMWORD PTR [rax+r8*8+0x10],xmm1
+  1a4cd6:	49 83 c0 04          	add    r8,0x4
+  1a4cda:	4c 39 c6             	cmp    rsi,r8
+  1a4cdd:	75 e1                	jne    1a4cc0 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0xc0>
+  1a4cdf:	48 39 f1             	cmp    rcx,rsi
+  1a4ce2:	74 6b                	je     1a4d4f <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x14f>
+  1a4ce4:	49 89 c9             	mov    r9,rcx
+  1a4ce7:	49 89 f0             	mov    r8,rsi
+  1a4cea:	49 83 e1 03          	and    r9,0x3
+  1a4cee:	74 20                	je     1a4d10 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x110>
+  1a4cf0:	49 89 f0             	mov    r8,rsi
+  1a4cf3:	66 66 66 66 2e 0f 1f 	data16 data16 data16 cs nop WORD PTR [rax+rax*1+0x0]
+  1a4cfa:	84 00 00 00 00 00 
+  1a4d00:	4e 8b 14 c2          	mov    r10,QWORD PTR [rdx+r8*8]
+  1a4d04:	4e 89 14 c0          	mov    QWORD PTR [rax+r8*8],r10
+  1a4d08:	49 ff c0             	inc    r8
+  1a4d0b:	49 ff c9             	dec    r9
+  1a4d0e:	75 f0                	jne    1a4d00 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x100>
+  1a4d10:	48 29 ce             	sub    rsi,rcx
+  1a4d13:	48 83 fe fc          	cmp    rsi,0xfffffffffffffffc
+  1a4d17:	77 36                	ja     1a4d4f <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x14f>
+  1a4d19:	0f 1f 80 00 00 00 00 	nop    DWORD PTR [rax+0x0]
+  1a4d20:	4a 8b 34 c2          	mov    rsi,QWORD PTR [rdx+r8*8]
+  1a4d24:	4a 89 34 c0          	mov    QWORD PTR [rax+r8*8],rsi
+  1a4d28:	4a 8b 74 c2 08       	mov    rsi,QWORD PTR [rdx+r8*8+0x8]
+  1a4d2d:	4a 89 74 c0 08       	mov    QWORD PTR [rax+r8*8+0x8],rsi
+  1a4d32:	4a 8b 74 c2 10       	mov    rsi,QWORD PTR [rdx+r8*8+0x10]
+  1a4d37:	4a 89 74 c0 10       	mov    QWORD PTR [rax+r8*8+0x10],rsi
+  1a4d3c:	4a 8b 74 c2 18       	mov    rsi,QWORD PTR [rdx+r8*8+0x18]
+  1a4d41:	4a 89 74 c0 18       	mov    QWORD PTR [rax+r8*8+0x18],rsi
+  1a4d46:	49 83 c0 04          	add    r8,0x4
+  1a4d4a:	4c 39 c1             	cmp    rcx,r8
+  1a4d4d:	75 d1                	jne    1a4d20 <<alloc::vec::Vec<u64> as alloc::vec::spec_from_iter::SpecFromIter<u64, core::iter::adapters::map::Map<core::iter::adapters::copied::Copied<core::slice::iter::Iter<[u8; 8]>>, <u64>::from_le_bytes>>>::from_iter+0x120>
+  1a4d4f:	48 89 0f             	mov    QWORD PTR [rdi],rcx
+  1a4d52:	48 89 47 08          	mov    QWORD PTR [rdi+0x8],rax
+  1a4d56:	48 89 4f 10          	mov    QWORD PTR [rdi+0x10],rcx
+  1a4d5a:	48 89 f8             	mov    rax,rdi
+  1a4d5d:	48 83 c4 10          	add    rsp,0x10
+  1a4d61:	5b                   	pop    rbx
+  1a4d62:	41 5e                	pop    r14
+  1a4d64:	41 5f                	pop    r15
+  1a4d66:	c3                   	ret
+  1a4d67:	bf 08 00 00 00       	mov    edi,0x8
+  1a4d6c:	48 89 de             	mov    rsi,rbx
+  1a4d6f:	ff 15 a3 a7 0c 00    	call   QWORD PTR [rip+0xca7a3]        # 26f518 <_DYNAMIC+0x240>

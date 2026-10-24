@@ -1,7 +1,7 @@
 //! Typed Vector/List codecs with owned partial decode state.
 
 use crate::{
-    codec::{decode_elements, decode_fixed, fixed_size, validate_type, SequenceDecodeState, Ssz},
+    codec::{decode_elements, fixed_size, validate_type, SequenceDecodeState, Ssz},
     collection_tree::root_sequence,
     collections::{list, vector, LengthError, LengthErrorKind, List, Vector},
     error::{CodecError, DecodeFailure},
@@ -43,6 +43,23 @@ fn vector_type<T: Ssz, const N: usize>() -> Result<(), CodecError> {
     validate_type::<T>()
 }
 
+fn decode_fixed_values<T: Ssz>(
+    input: &[u8],
+    count: usize,
+) -> Result<Vec<T>, DecodeFailure<SequenceDecodeState<T>>> {
+    let values = T::decode_fixed_sequence(input)?;
+    if values.len() != count {
+        return Err(DecodeFailure {
+            kind: CodecError::InvalidLength,
+            state: SequenceDecodeState {
+                values,
+                child: None,
+            },
+        });
+    }
+    Ok(values)
+}
+
 fn decode_vector_values<T: Ssz>(
     input: &[u8],
     count: usize,
@@ -50,7 +67,7 @@ fn decode_vector_values<T: Ssz>(
     match fixed_size::<T>() {
         Ok(Some(width)) => {
             validate_fixed_vector(input.len(), width, count).map_err(empty_failure::<T>)?;
-            decode_fixed(input, width, count)
+            decode_fixed_values(input, count)
         }
         Ok(None) => {
             let view = variable_vector_view(input, count).map_err(empty_failure::<T>)?;
@@ -75,7 +92,7 @@ pub(crate) fn decode_list_values<T: Ssz>(
     match fixed_size::<T>() {
         Ok(Some(width)) => {
             let count = fixed_list_count(input.len(), width, limit).map_err(empty_failure::<T>)?;
-            decode_fixed(input, width, count)
+            decode_fixed_values(input, count)
         }
         Ok(None) => {
             let view = variable_list_view(input, limit).map_err(empty_failure::<T>)?;
