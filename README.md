@@ -13,7 +13,7 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Host and 32-bit tests; 95.27% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
-[Current codec comparison](docs/bulk-codecs.md) · [Fixed container decode](docs/const-decode.md) ·
+[Current codec comparison](docs/bulk-codecs.md) · [Fail-fast decode](docs/fail-fast-decode.md) ·
 [Verification scope](docs/verification.md)
 
 **Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
@@ -32,6 +32,9 @@ These new member laws are unproved under [#29](https://github.com/NyxFoundation/
 The provided `Ssz::decode_fixed_sequence` hook adds safe unsigned-integer bulk decoding
 without requiring manual impl changes; its laws are unproved under
 [#32](https://github.com/NyxFoundation/nyx-ssz/issues/32).
+`Ssz::decode` now fails directly with `CodecError`; partial decode-state ownership has been
+removed, and derived variable containers validate offsets with stack metadata. The breaking
+change and measurements are documented in [fail-fast decode](docs/fail-fast-decode.md).
 
 ## Example
 
