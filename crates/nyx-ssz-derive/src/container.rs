@@ -139,6 +139,11 @@ fn decode_method(
         .iter()
         .enumerate()
         .map(|(index, field)| decode_field(index, field, krate));
+    let declaration = quote! {
+        if let ::core::result::Result::Err(kind) = const { #krate::codec::validate_type::<Self>() } {
+            return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state });
+        }
+    };
     let fixed = if progressive {
         quote!()
     } else {
@@ -147,9 +152,7 @@ fn decode_method(
     quote! {
         fn decode(bytes: &[u8]) -> ::core::result::Result<Self, #krate::error::DecodeFailure<Self::DecodeState>> {
             let mut state = #state_name { #(#names: ::core::default::Default::default(),)* #marker: ::core::marker::PhantomData };
-            if let ::core::result::Result::Err(kind) = #krate::codec::validate_type::<Self>() {
-                return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state });
-            }
+            #declaration
             #fixed
             let view = match #krate::container::container_view(bytes, &[#(#krate::codec::fixed_size::<#types>(),)*]) {
                 ::core::result::Result::Ok(view) => view,
@@ -162,15 +165,35 @@ fn decode_method(
 }
 
 fn fixed_decode(names: &[&syn::Ident], types: &[&syn::Type], krate: &TokenStream) -> TokenStream {
+    let layout = const_layout(types, krate);
     let reads = names
         .iter()
         .zip(types)
-        .map(|(name, ty)| fixed_field(name, ty, krate));
+        .enumerate()
+        .map(|(index, (name, ty))| fixed_split(index, name, ty, krate));
     quote! {
-        match #krate::container::fixed_container_cursor(bytes, &[#(#krate::codec::fixed_size::<#types>(),)*]) {
-            ::core::result::Result::Ok(::core::option::Option::Some(mut cursor)) => {
+        if bytes.len() as u128 >= 4_294_967_296 {
+            return ::core::result::Result::Err(#krate::error::DecodeFailure {
+                kind: #krate::error::CodecError::SizeOverflow, state,
+            });
+        }
+        match #layout {
+            ::core::result::Result::Ok(::core::option::Option::Some((total, __ssz_widths))) => {
+                if bytes.len() != total {
+                    return ::core::result::Result::Err(#krate::error::DecodeFailure {
+                        kind: #krate::error::CodecError::InvalidLength, state,
+                    });
+                }
+                let mut __ssz_rest = bytes;
                 #(#reads)*
-                return ::core::result::Result::Ok(Self { #(#names: state.#names.value.take().expect("completed SSZ field"),)* });
+                if !__ssz_rest.is_empty() {
+                    return ::core::result::Result::Err(#krate::error::DecodeFailure {
+                        kind: #krate::error::CodecError::InvalidLength, state,
+                    });
+                }
+                return ::core::result::Result::Ok(Self {
+                    #(#names: state.#names.value.take().expect("completed SSZ field"),)*
+                });
             }
             ::core::result::Result::Ok(::core::option::Option::None) => {}
             ::core::result::Result::Err(kind) => {
@@ -180,25 +203,36 @@ fn fixed_decode(names: &[&syn::Ident], types: &[&syn::Type], krate: &TokenStream
     }
 }
 
-fn fixed_field(name: &syn::Ident, ty: &syn::Type, krate: &TokenStream) -> TokenStream {
+fn const_layout(types: &[&syn::Type], krate: &TokenStream) -> TokenStream {
+    let calls = types
+        .iter()
+        .map(|ty| quote!(#krate::codec::fixed_size::<#ty>()));
     quote! {
-        let slice = match cursor.read(match #krate::codec::fixed_size::<#ty>() {
-            ::core::result::Result::Ok(::core::option::Option::Some(width)) => width,
-            _ => return ::core::result::Result::Err(#krate::error::DecodeFailure {
-                kind: #krate::error::CodecError::InvalidLength,
-                state,
-            }),
-        }) {
-            ::core::result::Result::Ok(slice) => slice,
-            ::core::result::Result::Err(kind) => {
-                return ::core::result::Result::Err(#krate::error::DecodeFailure { kind, state });
-            }
+        const { #krate::codec::fixed_layout([#(#calls,)*]) }
+    }
+}
+
+fn fixed_split(
+    index: usize,
+    name: &syn::Ident,
+    ty: &syn::Type,
+    krate: &TokenStream,
+) -> TokenStream {
+    quote! {
+        let ::core::option::Option::Some((__ssz_slice, __ssz_next)) =
+            __ssz_rest.split_at_checked(__ssz_widths[#index]) else {
+            return ::core::result::Result::Err(#krate::error::DecodeFailure {
+                kind: #krate::error::CodecError::InvalidLength, state,
+            });
         };
-        match <#ty as #krate::codec::Ssz>::decode(slice) {
+        __ssz_rest = __ssz_next;
+        match <#ty as #krate::codec::Ssz>::decode(__ssz_slice) {
             ::core::result::Result::Ok(value) => state.#name.value = ::core::option::Option::Some(value),
             ::core::result::Result::Err(failure) => {
                 state.#name.child = ::core::option::Option::Some(failure.state);
-                return ::core::result::Result::Err(#krate::error::DecodeFailure { kind: failure.kind, state });
+                return ::core::result::Result::Err(#krate::error::DecodeFailure {
+                    kind: failure.kind, state,
+                });
             }
         }
     }
