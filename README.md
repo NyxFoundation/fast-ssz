@@ -13,7 +13,7 @@ Crate publishing remains disabled. This is not a security audit or a claim of pe
 - Host and 32-bit tests; 95.27% workspace line coverage; reproducible Criterion benchmarks.
 
 [Native API and limitations](docs/native-api.md) · [Benchmark results](docs/benchmarks.md) ·
-[Current codec comparison](docs/bulk-codecs.md) · [Small decode](docs/small-decode.md) ·
+[Current codec comparison](docs/bulk-codecs.md) · [Small decode](docs/small-decode.md) · [Fixed encode](docs/fixed-encode.md) ·
 [Verification scope](docs/verification.md)
 
 **Current-source Aeneas/Lean verification:** 12 hash-independent gindex/helper-index operations are freshly extracted and kernel checked.
