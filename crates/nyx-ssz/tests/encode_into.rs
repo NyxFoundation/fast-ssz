@@ -3,7 +3,7 @@ use nyx_ssz::{
     bytecollections::{ByteList, ByteVector},
     codec::Ssz,
     collections::{bounded_progressive_list, list, progressive_list, vector},
-    error::{CodecError, DecodeFailure},
+    error::CodecError,
     type_info::TypeDescriptor,
     U256,
 };
@@ -126,7 +126,6 @@ fn should_write_derived_mixed_sparse_and_union_values_in_one_destination() {
 #[derive(Debug)]
 struct ZeroVector<const N: usize>;
 impl<const N: usize> Ssz for ZeroVector<N> {
-    type DecodeState = ();
     const TYPE: &'static TypeDescriptor = &TypeDescriptor::ByteVector(N);
     fn encoded_len(&self) -> Result<usize, CodecError> {
         if N == 0 {
@@ -139,12 +138,9 @@ impl<const N: usize> Ssz for ZeroVector<N> {
         output.fill(0);
         Ok(())
     }
-    fn decode(input: &[u8]) -> Result<Self, DecodeFailure<()>> {
+    fn decode(input: &[u8]) -> Result<Self, CodecError> {
         if N == 0 || input.len() != N || input.iter().any(|&byte| byte != 0) {
-            return Err(DecodeFailure {
-                kind: CodecError::InvalidLength,
-                state: (),
-            });
+            return Err(CodecError::InvalidLength);
         }
         Ok(Self)
     }

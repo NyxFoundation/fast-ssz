@@ -10,7 +10,6 @@
       "nyx_ssz::bytecollections::ssz"
     ],
     "members": {
-      "DecodeState": "assoc_type",
       "TYPE": "assoc_const",
       "encode": "function",
       "decode": "function",
